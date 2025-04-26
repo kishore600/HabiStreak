@@ -1,11 +1,12 @@
 {
-  "name": "fixameme-backend",
+  "name": "habisteak-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.js", 
   "type": "module",
   "scripts": {
-    "start": "nodemon index.js"
+"start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
