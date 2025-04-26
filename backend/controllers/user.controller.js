@@ -1,10 +1,12 @@
 const User = require('../models/user.Model');
 const asyncHandler = require('express-async-handler');
-
+const generateToken = require("../utils/generateToken.utils.js");
+const { dataUri } = require('../middleware/upload.middleware.js');
+const { cloudinary } = require("../config/cloudnari.config.js");
 
 const getUserProfile = (req, res) => {
     res.send(`Get user profile for ID: ${req.params.id}`);
-  };
+};
 
 const sendFollowRequest = asyncHandler(async (req, res) => {
     const { targetUserId } = req.body;
@@ -158,4 +160,55 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getUserProfile, sendFollowRequest, unfollowUser,getPendingRequests,handleFollowRequest };
+const updateUserProfile = asyncHandler(async (req, res) => {
+
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  user.name = req.body.name || user.name;
+  user.email = req.body.email || user.email;
+
+  try {
+    if (req.file) {
+      const file = dataUri(req).content;
+      console.log(req.file);
+
+      if (user.image) {
+        const publicId = user.image.split("/").slice(-1)[0].split(".")[0];
+        console.log(publicId);
+        await cloudinary.uploader.destroy(`uploads/${publicId}`);
+      }
+
+      const result = await cloudinary.uploader.upload(file, {
+        folder: "uploads",
+        transformation: { width: 500, height: 500, crop: "limit" },
+      });
+
+      user.image = result.secure_url;
+    }
+
+    if (req.body.password) {
+      user.password = req.body.password;
+    }
+
+    const updatedUser = await user.save();
+
+    const populatedUser = await User.findById(updatedUser._id)
+      .populate("followers", "name email image")
+      .populate("following", "name email image")
+
+    res.json({
+      message: "Profile updated successfully",
+      updatedUser: populatedUser,
+      token: generateToken(updatedUser._id),
+    });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ message: "Error updating profile" });
+  }
+});
+
+
+module.exports = { getUserProfile, sendFollowRequest, unfollowUser,getPendingRequests,handleFollowRequest,updateUserProfile };

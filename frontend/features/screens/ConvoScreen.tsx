@@ -95,10 +95,16 @@
 
 
 import React from 'react'
-
+import {
+  View
+} from 'react-native';
+import { Text } from 'react-native-animatable';
 const ConvoScreen = () => {
   return (
-    <div>ConvoScreen</div>
+   <View>
+
+     <Text>ConvoScreen</Text>
+   </View> 
   )
 }
 

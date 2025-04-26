@@ -29,7 +29,7 @@ const TabNavigator = () => {
             Convo: 'plus',
           };
           return (
-            <Icon name={icons[route.name] as any} size={size} color={color} />
+            <Icon name={icons[route.name as keyof typeof icons]}  size={size} color={color} />
           );
         },
         tabBarActiveTintColor: 'tomato',

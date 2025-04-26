@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
-  FlatList,
+  // FlatList,
 } from 'react-native';
 import {useAuth} from '../context/AuthContext';
 import {Menu, Provider, Button, ActivityIndicator} from 'react-native-paper';
@@ -30,6 +30,11 @@ const ProfileScreen = ({navigation}: any) => {
 
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
+
+  useEffect(()=>{
+    fetchUserGroups()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[groups])
 
   const openEditModal = () => {
     setEditModalVisible(true);
@@ -132,8 +137,6 @@ const ProfileScreen = ({navigation}: any) => {
         <Text style={styles.name}>{name || 'Guest User'}</Text>
         <Text style={styles.email}>{email || 'No email provided'}</Text>
 
-        <Text>{JSON.stringify(convos)}</Text>
-        {/* Edit Profile Modal */}
         <Modal
           visible={editModalVisible}
           animationType="slide"
@@ -144,24 +147,9 @@ const ProfileScreen = ({navigation}: any) => {
               {userGroupLoading ? (
                 <ActivityIndicator size="large" color="tomato" />
               ) : (
-                <FlatList
-                  data={convos}
-                  numColumns={3} // Grid-like layout
-                  renderItem={({item}) => (
-                    <TouchableOpacity
-                      style={styles.convoItem}
-                      onPress={() =>
-                        navigation.navigate('ChatScreen', {convoId: item._id})
-                      }>
-                      <Image
-                        source={{uri: item.image}}
-                        style={styles.convoImage}
-                      />
-                      <Text style={styles.convoName}>{item.name}</Text>
-                    </TouchableOpacity>
-                  )}
-                  keyExtractor={item => item._id}
-                />
+             <View>
+              sd
+              </View>
               )}
               {/* Image Input */}
               <TouchableOpacity
