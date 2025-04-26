@@ -11,7 +11,7 @@ import { useGroup } from '../context/GroupContext';
 
 const HomeScreen = () => {
   const { groups, loading } = useGroup();
-
+console.log(groups)
   const renderItem = ({ item }: any) => (
     <View style={styles.convoContainer}>
       {/* User Info */}

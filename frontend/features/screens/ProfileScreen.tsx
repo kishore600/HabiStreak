@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useState} from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import {useGroup} from '../context/GroupContext';
 
 const ProfileScreen = ({navigation}: any) => {
   const {user, logout, updateUser}: any = useAuth();
-  const {groups, loading: userGroupLoading,fetchUserGroups} = useGroup();
+  const {userGroups, loading: userGroupLoading} = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -30,11 +30,6 @@ const ProfileScreen = ({navigation}: any) => {
 
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
-
-  useEffect(()=>{
-    fetchUserGroups()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[groups])
 
   const openEditModal = () => {
     setEditModalVisible(true);
@@ -106,7 +101,7 @@ const ProfileScreen = ({navigation}: any) => {
       </View>
     );
   }
-  console.log(groups);
+  console.log(userGroups);
   return (
     <Provider>
       <View style={styles.container}>

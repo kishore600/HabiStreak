@@ -35,10 +35,8 @@ const getGroups = asyncHandler(async (req, res) => {
     "members",
     "name email"
   );
-  res.json({
-    groups,
-    usergroups,
-  });
+  res.json(
+    groups);
 });
 
 const getuserGroups = asyncHandler(async (req, res) => {
