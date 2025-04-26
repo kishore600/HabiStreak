@@ -1,5 +1,4 @@
-
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const groupSchema = new mongoose.Schema({
   title: String,
@@ -7,8 +6,8 @@ const groupSchema = new mongoose.Schema({
   admin: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   goal: String,
   streak: { type: Number, default: 0 },
-  todo:{
-    type:mongoose.Schema.Types.ObjectId,ref:'Todo'
+  todo: {
+    type: mongoose.Schema.Types.ObjectId, ref: 'Todo'
   },
   userStreaks: {
     type: Map,
@@ -21,4 +20,4 @@ const groupSchema = new mongoose.Schema({
   },
 });
 
-export default mongoose.model('Group', groupSchema);
+module.exports = mongoose.model('Group', groupSchema);

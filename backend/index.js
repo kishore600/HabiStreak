@@ -1,14 +1,15 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import connectDB from './config/db.config.js';
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const connectDB = require('./config/db.config.js');
 
-import authRoutes from './routes/auth.Routes.js';
-import userRoutes from './routes/user.Routes.js';
-import habitRoutes from './routes/habit.Routes.js';
-import groupRoutes from './routes/group.Routes.js';
-import todoRoutes from './routes/todo.Routes.js';
-import leaderboardRoutes from './routes/leaderboard.Routes.js';
+const authRoutes = require('./routes/auth.Routes.js');
+const userRoutes = require('./routes/user.Routes.js');
+const habitRoutes = require('./routes/habit.Routes.js');
+const groupRoutes = require('./routes/group.Routes.js');
+const todoRoutes = require('./routes/todo.Routes.js');
+const leaderboardRoutes = require('./routes/leaderboard.Routes.js');
+
 
 dotenv.config();
 connectDB();

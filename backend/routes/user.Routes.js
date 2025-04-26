@@ -1,7 +1,6 @@
-
-import express from 'express';
-import { getPendingRequests, getUserProfile, handleFollowRequest, sendFollowRequest, unfollowUser } from '../controllers/user.controller.js';
-import { protect, admin } from "../middleware/auth.middleware.js";
+const express = require('express');
+const { getPendingRequests, getUserProfile, handleFollowRequest, sendFollowRequest, unfollowUser } = require('../controllers/user.controller.js');
+const { protect, admin } = require("../middleware/auth.middleware.js");
 
 const router = express.Router();
 
@@ -15,5 +14,4 @@ router.route("/pending/request").get(protect, getPendingRequests);
 
 router.route("/follow/handle").post(protect, handleFollowRequest);
 
-
-export default router;
+module.exports = router;

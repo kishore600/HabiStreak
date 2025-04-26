@@ -1,9 +1,9 @@
-import asyncHandler from "express-async-handler";
-import Group from "../models/group.model.js";
-import Todo from "../models/todo.model.js";
-import User from "../models/user.Model.js";
+const asyncHandler = require('express-async-handler');
+const Group = require('../models/group.model');
+const Todo = require('../models/todo.model');
+const User = require('../models/user.Model');
 
-export const createGroup = asyncHandler(async (req, res) => {
+const createGroup = asyncHandler(async (req, res) => {
   const { title, members, goal } = req.body;
   const userId = req.user._id;
   const existingGroup = await Group.findOne({ title });
@@ -29,12 +29,12 @@ export const createGroup = asyncHandler(async (req, res) => {
   res.status(201).json(group);
 });
 
-export const getGroups = asyncHandler(async (req, res) => {
+const getGroups = asyncHandler(async (req, res) => {
   const groups = await Group.find().populate("members admin todo");
   res.json(groups);
 });
 
-export const getGroupById = asyncHandler(async (req, res) => {
+const getGroupById = asyncHandler(async (req, res) => {
   const group = await Group.findById(req.params.groupId).populate(
     "members admin todo"
   );
@@ -45,19 +45,19 @@ export const getGroupById = asyncHandler(async (req, res) => {
   res.json(group);
 });
 
-export const updateGroup = asyncHandler(async (req, res) => {
+const updateGroup = asyncHandler(async (req, res) => {
   const group = await Group.findByIdAndUpdate(req.params.groupId, req.body, {
     new: true,
   });
   res.json(group);
 });
 
-export const deleteGroup = asyncHandler(async (req, res) => {
+const deleteGroup = asyncHandler(async (req, res) => {
   await Group.findByIdAndDelete(req.params.groupId);
   res.json({ message: "Group deleted" });
 });
 
-export const createTodoForGroup = asyncHandler(async (req, res) => {
+const createTodoForGroup = asyncHandler(async (req, res) => {
   const { groupId } = req.params;
   const { tasks } = req.body;
   const todo = new Todo({ tasks, group: groupId });
@@ -70,7 +70,7 @@ export const createTodoForGroup = asyncHandler(async (req, res) => {
   res.status(201).json(todo);
 });
 
-export const markTaskComplete = asyncHandler(async (req, res) => {
+const markTaskComplete = asyncHandler(async (req, res) => {
   const { groupId, taskId } = req.params;
   const userId = req.user._id;
 
@@ -122,7 +122,7 @@ export const markTaskComplete = asyncHandler(async (req, res) => {
   });
 });
 
-export const getLeaderboard = asyncHandler(async (req, res) => {
+const getLeaderboard = asyncHandler(async (req, res) => {
   const group = await Group.findById(req.params.groupId).populate("members");
   const leaderboard = Array.from(group.userStreaks.entries())
     .map(([userId, streak]) => {
@@ -135,3 +135,5 @@ export const getLeaderboard = asyncHandler(async (req, res) => {
 
   res.json(leaderboard);
 });
+
+module.exports = {createGroup,getGroupById,getGroups,updateGroup,deleteGroup,createTodoForGroup,markTaskComplete,getLeaderboard}

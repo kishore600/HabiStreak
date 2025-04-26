@@ -1,11 +1,12 @@
-import User from '../models/user.Model.js';
-import asyncHandler from 'express-async-handler'
+const User = require('../models/user.Model');
+const asyncHandler = require('express-async-handler');
 
-export const getUserProfile = (req, res) => {
+
+const getUserProfile = (req, res) => {
     res.send(`Get user profile for ID: ${req.params.id}`);
   };
 
-export const sendFollowRequest = asyncHandler(async (req, res) => {
+const sendFollowRequest = asyncHandler(async (req, res) => {
     const { targetUserId } = req.body;
     const requestingUserId = req.user._id;
   
@@ -55,7 +56,7 @@ export const sendFollowRequest = asyncHandler(async (req, res) => {
     res.status(200).json({ message: "Follow request sent" });
 });
   
-export const unfollowUser = asyncHandler(async (req, res) => {
+const unfollowUser = asyncHandler(async (req, res) => {
     const { targetUserId } = req.body;
     const requestingUserId = req.user._id;
   
@@ -91,7 +92,7 @@ export const unfollowUser = asyncHandler(async (req, res) => {
     res.status(200).json({ message: "Successfully unfollowed the user" });
 });
   
-export const getPendingRequests = asyncHandler(async (req, res) => {
+const getPendingRequests = asyncHandler(async (req, res) => {
     const userId = req.user._id;
   
     try {
@@ -111,7 +112,7 @@ export const getPendingRequests = asyncHandler(async (req, res) => {
     }
 });
 
-export const handleFollowRequest = asyncHandler(async (req, res) => {
+const handleFollowRequest = asyncHandler(async (req, res) => {
   const { requestId, status } = req.body;
   const userId = req.user._id;
 
@@ -156,3 +157,5 @@ export const handleFollowRequest = asyncHandler(async (req, res) => {
     res.status(200).json({ message: "Follow request rejected" });
   }
 });
+
+module.exports = { getUserProfile, sendFollowRequest, unfollowUser,getPendingRequests,handleFollowRequest };

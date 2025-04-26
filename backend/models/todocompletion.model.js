@@ -1,5 +1,5 @@
 
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const todoCompletionSchema = new mongoose.Schema({
   groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
@@ -8,4 +8,4 @@ const todoCompletionSchema = new mongoose.Schema({
   completed: Boolean,
 });
 
-export default mongoose.model('TodoCompletion', todoCompletionSchema);
+module.exports = mongoose.model('TodoCompletion', todoCompletionSchema);

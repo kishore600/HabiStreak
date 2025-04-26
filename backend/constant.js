@@ -1,4 +1,4 @@
-export const hobbies_enum = [
+const hobbies_enum = [
   "singing",
   "reading",
   "dancing",
@@ -49,3 +49,5 @@ export const hobbies_enum = [
   "puzzle solving",
   "RC car racing",
 ];
+
+module.exports = hobbies_enum

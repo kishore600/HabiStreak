@@ -1,11 +1,10 @@
-
-import express from 'express';
-import { register, login } from '../controllers/auth.controller.js';
-import { upload } from '../middleware/upload.middleware.js';
+const express = require('express');
+const { register, login } = require('../controllers/auth.controller.js');
+const { upload } = require('../middleware/upload.middleware.js');
 
 const router = express.Router();
 
 router.route("/register").post(upload.single("image"), register)
 router.route('/login').post(login);
 
-export default router;
+module.exports = router;

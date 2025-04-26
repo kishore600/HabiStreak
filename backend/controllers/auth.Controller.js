@@ -1,10 +1,10 @@
-import User from '../models/user.Model.js';
-import asyncHandler from 'express-async-handler'
-import { dataUri } from '../middleware/upload.middleware.js';
-import { cloudinary } from "../config/cloudnari.config.js";
-import generateToken from "../utils/generateToken.utils.js";
+const asyncHandler = require('express-async-handler');
+const User = require('../models/user.Model.js');
+const { dataUri } = require('../middleware/upload.middleware.js');
+const { cloudinary } = require("../config/cloudnari.config.js");
+const generateToken = require("../utils/generateToken.utils.js");
 
-export const register = asyncHandler(async (req, res) => {
+const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
@@ -24,7 +24,7 @@ export const register = asyncHandler(async (req, res) => {
       const result = await cloudinary.uploader.upload(file, {
         folder: "uploads",
         transformation: { width: 500, height: 500, crop: "limit" },
-      }); 
+      });
       imageUrl = result.secure_url;
     } else {
       return res.status(400).json({ message: "Image is required" });
@@ -57,7 +57,7 @@ export const register = asyncHandler(async (req, res) => {
   }
 });
 
-export const login = asyncHandler(async (req, res) => {
+const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
 
@@ -68,3 +68,5 @@ export const login = asyncHandler(async (req, res) => {
     throw new Error("Invalid email or password");
   }
 });
+
+module.exports = { register, login };

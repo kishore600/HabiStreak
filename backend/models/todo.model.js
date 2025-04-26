@@ -1,4 +1,5 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
+
 
 const taskSchema = new mongoose.Schema({
   title: String,
@@ -11,4 +12,4 @@ const todoSchema = new mongoose.Schema({
   group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' }
 });
 
-export default mongoose.model('Todo', todoSchema);
+module.exports = mongoose.model('Todo', todoSchema);

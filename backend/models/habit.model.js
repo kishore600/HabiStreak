@@ -1,9 +1,9 @@
 
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const habitSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   title: String,
 });
 
-export default mongoose.model('Habit', habitSchema);
+module.exports = mongoose.model('Habit', habitSchema);

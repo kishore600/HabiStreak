@@ -1,9 +1,9 @@
+const express = require('express');
+const { createHabit, getUserHabits } = require('../controllers/habit.controller.js');
 
-import express from 'express';
-import { createHabit, getUserHabits } from '../controllers/habit.controller.js';
 const router = express.Router();
 
 router.post('/', createHabit);
 router.get('/:userId', getUserHabits);
 
-export default router;
+module.exports = router;

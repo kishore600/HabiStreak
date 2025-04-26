@@ -1,6 +1,6 @@
-import multer from 'multer';
-import DatauriParser from 'datauri/parser.js';
-import path from 'path';
+const multer = require('multer');
+const DatauriParser = require('datauri/parser.js');
+const path = require('path');
 
 // Set up Multer Storage
 const storage = multer.memoryStorage(); // Store image in memory
@@ -24,4 +24,4 @@ const dataUriMultipleFiles = (file) => {
   return parser.format(ext, file.buffer); 
 };
 
-export { dataUri,dataUriMultipleFiles,upload };
+module.exports = { dataUri, dataUriMultipleFiles, upload };
