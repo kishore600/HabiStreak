@@ -39,14 +39,16 @@ const LoginScreen = ({navigation}: any) => {
   };
   const handleLogin = async () => {
     if (!validateForm()) return;
-  
+    try {
       const userData = await login(email, password); // ✅ Call login function
       if (userData) {
-        navigation.navigate('Main')
+        navigation.navigate('Main');
       }
-console.log(userData)
+    } catch (error) {
+      // Handle the error (e.g., show a message to the user)
+      console.error('Login failed:', error);
+    }
   };
-  
 
   return (
     <View style={styles.container}>

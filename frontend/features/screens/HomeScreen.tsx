@@ -7,60 +7,89 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import {useConvo} from '../context/ConvoContext';
+import { useGroup } from '../context/GroupContext';
 
 const HomeScreen = () => {
-  const {convos, loading} = useConvo();
+  const { groups, loading } = useGroup();
 
-const renderItem = ({ item }: any) => (
-  <View style={styles.convoContainer}>
-    {/* User Info */}
-    <View style={styles.userContainer}>
-      <Image source={{ uri: item.user.image }} style={styles.userImage} />
-      <View>
-        <Text style={styles.userName}>{item.user.name}</Text>
-        <Text style={styles.userId}>ID: {item.user._id}</Text>
-      </View>
-    </View>
-
-    {/* Conversation Image & Description */}
-    <Image source={{ uri: item.image }} style={styles.convoImage} />
-    <Text style={styles.description}>{item.description}</Text>
-
-    {/* Comments Section */}
-    <View style={styles.commentsContainer}>
-      <Text style={styles.commentsTitle}>Comments:</Text>
-      {item.comments.length > 0 ? (
-        item.comments.map((comment: any, index: number) => (
-          <Text key={index} style={styles.commentText}>
-            {comment.text}
-          </Text>
-        ))
+  const renderItem = ({ item }: any) => (
+    <View style={styles.convoContainer}>
+      {/* User Info */}
+      {item.admin ? (
+        <View style={styles.userContainer}>
+          <Image source={{ uri: item.admin.image }} style={styles.userImage} />
+          <View>
+            <Text style={styles.userName}>{item.admin.name}</Text>
+            <Text style={styles.userId}>ID: {item.admin._id}</Text>
+          </View>
+        </View>
       ) : (
-        <Text style={styles.noComments}>No comments yet</Text>
+        <View>
+          <Text style={{ color: 'red' }}>Admin not found</Text>
+        </View>
+      )}
+
+      {/* Group Title, Goal, and Description */}
+      <Text style={styles.groupTitle}>{item.title}</Text>
+      <Text style={styles.groupGoal}>Goal: {item.goal}</Text>
+
+      {/* Group Image */}
+      <Image source={{ uri: item.image }} style={styles.convoImage} />
+
+      {/* Group Description */}
+      <Text style={styles.description}>{item.description}</Text>
+
+      {/* Streak */}
+      <Text style={styles.streakText}>Streak: {item.streak}</Text>
+
+      {/* Comments Section */}
+      <View style={styles.commentsContainer}>
+        <Text style={styles.commentsTitle}>Comments:</Text>
+        {item.comments && item.comments.length > 0 ? (
+          item.comments.map((comment: any, index: number) => (
+            <Text key={index} style={styles.commentText}>
+              {comment.text}
+            </Text>
+          ))
+        ) : (
+          <Text style={styles.noComments}>No comments yet</Text>
+        )}
+      </View>
+
+      {/* Tasks Section */}
+      {item.todo && item.todo.tasks.length > 0 && (
+        <View style={styles.todoContainer}>
+          <Text style={styles.todoTitle}>Tasks:</Text>
+          {item.todo.tasks.map((task: any, index: number) => (
+            <Text key={index} style={styles.todoText}>
+              {task.title} - Completed by: {task.completedBy.join(", ")}
+            </Text>
+          ))}
+        </View>
+      )}
+
+      {/* Timestamp */}
+      {item.createdAt && (
+        <Text style={styles.timestamp}>
+          {new Date(item.createdAt).toLocaleString()}
+        </Text>
       )}
     </View>
+  );
 
-    {/* Timestamp */}
-    <Text style={styles.timestamp}>
-      {new Date(item.createdAt).toLocaleString()}
-    </Text>
-  </View>
-);
-
-  console.log(convos)
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Home</Text>
       {loading ? (
-         <View style={styles.loaderContainer}>
-         <ActivityIndicator size="large" color="#007bff" />
-       </View>
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#007bff" />
+        </View>
       ) : (
         <FlatList
-          data={convos}
+          data={groups}
           renderItem={renderItem}
-          keyExtractor={item => item._id}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.flatListContent}
         />
       )}
     </View>
@@ -70,16 +99,14 @@ const renderItem = ({ item }: any) => (
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: {flex: 1, padding: 10, backgroundColor: '#f8f9fa', top: 50},
+  container: { flex: 1, padding: 10, backgroundColor: '#f8f9fa', top: 50 },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
     textAlign: 'center',
+    color: '#333',
   },
-  
-  image: {width: '100%', height: 200, borderRadius: 8},
-  timestamp: {fontSize: 12, color: 'gray', marginTop: 5, textAlign: 'right'},
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -87,60 +114,107 @@ const styles = StyleSheet.create({
   },
   convoContainer: {
     padding: 15,
-    marginBottom: 10,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
+    marginBottom: 15,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   userContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 10,
   },
   userImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    marginRight: 15,
   },
   userName: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
+    color: '#333',
   },
   userId: {
     fontSize: 12,
-    color: "#666",
+    color: '#888',
+  },
+  groupTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginVertical: 5,
+  },
+  groupGoal: {
+    fontSize: 14,
+    color: '#007bff',
+    marginBottom: 10,
   },
   convoImage: {
-    width: "100%",
-    height: 200,
-    borderRadius: 8,
+    width: '100%',
+    height: 180,
+    borderRadius: 10,
     marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   description: {
     fontSize: 14,
-    color: "#333",
+    color: '#555',
+    marginVertical: 10,
+  },
+  streakText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#28a745',
+    marginTop: 5,
   },
   commentsContainer: {
-    marginTop: 10,
+    marginTop: 15,
     padding: 10,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 5,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
   },
   commentsTitle: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
+    fontSize: 16,
     marginBottom: 5,
   },
   commentText: {
     fontSize: 14,
-    color: "#555",
+    color: '#555',
   },
   noComments: {
-    fontSize: 12,
-    color: "#999",
+    fontSize: 14,
+    color: '#999',
   },
-
+  todoContainer: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#e9ecef',
+    borderRadius: 8,
+  },
+  todoTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  todoText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 10,
+    textAlign: 'right',
+  },
+  flatListContent: {
+    paddingBottom: 20,
+  },
 });

@@ -8,6 +8,7 @@ const {
   createTodoForGroup,
   markTaskComplete,
   getLeaderboard,
+  getMyGroups,
 } = require('../controllers/group.controller');
 const { protect } = require('../middleware/auth.middleware');
 

@@ -64,6 +64,7 @@ export const AuthProvider = ({children}: any) => {
         email,
         password,
       });
+      console.log(response)
       const {user: resuser, token: restoken} = response.data;
 
       // Store user & token in AsyncStorage

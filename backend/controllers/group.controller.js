@@ -31,7 +31,11 @@ const createGroup = asyncHandler(async (req, res) => {
 
 const getGroups = asyncHandler(async (req, res) => {
   const groups = await Group.find().populate("members admin todo");
-  res.json(groups);
+    const usergroups = await Group.find({ admin: req.user._id }).populate('members', 'name email');
+  res.json({
+    groups,
+    usergroups
+  });
 });
 
 const getGroupById = asyncHandler(async (req, res) => {

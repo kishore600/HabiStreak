@@ -12,7 +12,7 @@ import ProfileScreen from './features/screens/ProfileScreen';
 import ConvoScreen from './features/screens/ConvoScreen';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {AuthProvider} from './features/context/AuthContext';
-import {ConvoProvider} from './features/context/ConvoContext';
+import {GroupProvider} from './features/context/GroupContext';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -21,6 +21,7 @@ const TabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({route}) => ({
+        // eslint-disable-next-line react/no-unstable-nested-components
         tabBarIcon: ({color, size}) => {
           const icons = {
             Home: 'coffee',
@@ -71,7 +72,7 @@ const AppNavigator = () => {
     <NavigationContainer>
       <AlertNotificationRoot>
         <AuthProvider>
-          <ConvoProvider>
+          <GroupProvider>
             <Stack.Navigator
               screenOptions={{headerShown: false}}
               initialRouteName={initialRoute}>
@@ -79,7 +80,7 @@ const AppNavigator = () => {
               <Stack.Screen name="Signup" component={SignupScreen} />
               <Stack.Screen name="Main" component={TabNavigator} />
             </Stack.Navigator>
-          </ConvoProvider>
+          </GroupProvider>
         </AuthProvider>
       </AlertNotificationRoot>
     </NavigationContainer>

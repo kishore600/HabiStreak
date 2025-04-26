@@ -14,11 +14,11 @@ import {Menu, Provider, Button, ActivityIndicator} from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
-import {useConvo} from '../context/ConvoContext';
+import {useGroup} from '../context/GroupContext';
 
 const ProfileScreen = ({navigation}: any) => {
   const {user, logout, updateUser}: any = useAuth();
-  const {convos, loading: convoLoading,fetchUserConversations,userConvos} = useConvo();
+  const {groups, loading: userGroupLoading,fetchUserGroups} = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -101,7 +101,7 @@ const ProfileScreen = ({navigation}: any) => {
       </View>
     );
   }
-  console.log(convos);
+  console.log(groups);
   return (
     <Provider>
       <View style={styles.container}>
@@ -141,7 +141,7 @@ const ProfileScreen = ({navigation}: any) => {
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
-              {convoLoading ? (
+              {userGroupLoading ? (
                 <ActivityIndicator size="large" color="tomato" />
               ) : (
                 <FlatList
