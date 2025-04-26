@@ -50,7 +50,7 @@ export const GroupProvider = ({ children }: any) => {
     setLoading(true);
     try {
       const headers = await getAuthHeaders();
-      const response = await axios.get(`${API_BASE_URL}/groups/user-groups`, headers);
+      const response = await axios.get(`${API_BASE_URL}/groups/user`, headers);
       setUserGroups(response.data);
     } catch (error) {
       Dialog.show({

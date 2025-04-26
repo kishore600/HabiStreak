@@ -1,7 +1,7 @@
-const asyncHandler = require('express-async-handler');
-const Group = require('../models/group.model');
-const Todo = require('../models/todo.model');
-const User = require('../models/user.Model');
+const asyncHandler = require("express-async-handler");
+const Group = require("../models/group.model");
+const Todo = require("../models/todo.model");
+const User = require("../models/user.Model");
 
 const createGroup = asyncHandler(async (req, res) => {
   const { title, members, goal } = req.body;
@@ -31,10 +31,23 @@ const createGroup = asyncHandler(async (req, res) => {
 
 const getGroups = asyncHandler(async (req, res) => {
   const groups = await Group.find().populate("members admin todo");
-    const usergroups = await Group.find({ admin: req.user._id }).populate('members', 'name email');
+  const usergroups = await Group.find({ admin: req.user._id }).populate(
+    "members",
+    "name email"
+  );
   res.json({
     groups,
-    usergroups
+    usergroups,
+  });
+});
+
+const getuserGroups = asyncHandler(async (req, res) => {
+  const usergroups = await Group.find({ admin: req.user._id }).populate(
+    "members",
+    "name email"
+  );
+  res.json({
+    usergroups,
   });
 });
 
@@ -94,7 +107,9 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   task.completedBy.push(userId);
   await todo.save();
 
-  const userCompletedAllTasks = todo.tasks.every(t => t.completedBy.includes(userId));
+  const userCompletedAllTasks = todo.tasks.every((t) =>
+    t.completedBy.includes(userId)
+  );
   const user = await User.findById(userId);
 
   const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
@@ -102,8 +117,13 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   const userGroupKey = userId.toString();
 
   const groupStreakDateKey = `${userGroupKey}_${today}`;
-  if (group.completedDates && group.completedDates.includes(groupStreakDateKey)) {
-    return res.status(400).json({ message: "Already completed this group today" });
+  if (
+    group.completedDates &&
+    group.completedDates.includes(groupStreakDateKey)
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Already completed this group today" });
   }
 
   if (userCompletedAllTasks) {
@@ -140,4 +160,14 @@ const getLeaderboard = asyncHandler(async (req, res) => {
   res.json(leaderboard);
 });
 
-module.exports = {createGroup,getGroupById,getGroups,updateGroup,deleteGroup,createTodoForGroup,markTaskComplete,getLeaderboard}
+module.exports = {
+  createGroup,
+  getGroupById,
+  getGroups,
+  getuserGroups,
+  updateGroup,
+  deleteGroup,
+  createTodoForGroup,
+  markTaskComplete,
+  getLeaderboard,
+};
