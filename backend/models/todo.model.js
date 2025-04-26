@@ -1,0 +1,14 @@
+import mongoose from 'mongoose';
+
+const taskSchema = new mongoose.Schema({
+  title: String,
+  completedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] 
+});
+
+const todoSchema = new mongoose.Schema({
+  date: { type: Date, default: Date.now },
+  tasks: [taskSchema],
+  group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' }
+});
+
+export default mongoose.model('Todo', todoSchema);
