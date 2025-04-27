@@ -1,4 +1,4 @@
-import React, { useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import {useGroup} from '../context/GroupContext';
 
 const ProfileScreen = ({navigation}: any) => {
   const {user, logout, updateUser}: any = useAuth();
-  const {userGroups, loading: userGroupLoading} = useGroup();
+  const {userGroups, loading: userGroupLoading,fetchUserGroups} = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -101,6 +101,11 @@ const ProfileScreen = ({navigation}: any) => {
       </View>
     );
   }
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() =>{
+    fetchUserGroups()
+  },[fetchUserGroups])
   console.log(userGroups);
   return (
     <Provider>
@@ -131,7 +136,6 @@ const ProfileScreen = ({navigation}: any) => {
         {image && <Image source={{uri: image}} style={styles.avatar} />}
         <Text style={styles.name}>{name || 'Guest User'}</Text>
         <Text style={styles.email}>{email || 'No email provided'}</Text>
-
         <Modal
           visible={editModalVisible}
           animationType="slide"
@@ -142,9 +146,7 @@ const ProfileScreen = ({navigation}: any) => {
               {userGroupLoading ? (
                 <ActivityIndicator size="large" color="tomato" />
               ) : (
-             <View>
-              sd
-              </View>
+                <Text>sd</Text>
               )}
               {/* Image Input */}
               <TouchableOpacity
@@ -208,6 +210,28 @@ const ProfileScreen = ({navigation}: any) => {
           </View>
         </Modal>
       </View>
+
+      {/* User Groups */}
+      <View style={styles.groupContainer}>
+  <Text style={styles.sectionTitle}>Your Groups:</Text>
+  {userGroups.length > 0 ? (
+    userGroups.map((group: any) => (
+      <TouchableOpacity
+        key={group._id}
+        style={styles.groupItem}
+        onPress={() => navigation.navigate('GroupDetails', { group })}
+      >
+        <Text style={styles.groupTitle}>{group.title}</Text>
+        <Text style={styles.groupGoal}>Goal: {group.goal}</Text>
+        <Text style={styles.groupStreak}>
+          Your Streak: {group.userStreaks[user?._id] || 0} 🔥
+        </Text>
+      </TouchableOpacity>
+    ))
+  ) : (
+    <Text style={styles.noGroupText}>You are not part of any groups yet.</Text>
+  )}
+</View>
     </Provider>
   );
 };
@@ -313,6 +337,42 @@ const styles = StyleSheet.create({
   convoName: {
     fontSize: 12,
     marginTop: 5,
+  },
+  groupContainer: {
+    marginTop: 20,
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  groupItem: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
+  },
+  groupTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  groupGoal: {
+    fontSize: 14,
+    color: '#555',
+    marginTop: 4,
+  },
+  groupStreak: {
+    fontSize: 14,
+    color: 'tomato',
+    marginTop: 4,
+  },
+  noGroupText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 10,
   },
 });
 

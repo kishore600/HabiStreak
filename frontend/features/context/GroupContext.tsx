@@ -51,7 +51,7 @@ export const GroupProvider = ({ children }: any) => {
     try {
       const headers = await getAuthHeaders();
       const response = await axios.get(`${API_BASE_URL}/groups/user`, headers);
-      setUserGroups(response.data);
+      setUserGroups(response.data.usergroups);
     } catch (error) {
       Dialog.show({
         type: ALERT_TYPE.DANGER,

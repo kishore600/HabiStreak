@@ -170,15 +170,15 @@ export const AuthProvider = ({children}: any) => {
           name: 'profile.jpg',
         } as any);
       }
+      console.log(`${API_BASE_URL}/users/profile`);
 
-      const response = await axios.put(`${API_BASE_URL}/auth/update`, formData, {
+      const response = await axios.put(`${API_BASE_URL}/users/profile`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
         },
       });
 
-      console.log(response);
       const {user: updatedUser, token: newToken} = response.data;
 
       // Store updated user & new token in AsyncStorage

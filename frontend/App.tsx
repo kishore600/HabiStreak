@@ -10,9 +10,11 @@ import SignupScreen from './features/screens/SignupScreen';
 import HomeScreen from './features/screens/HomeScreen';
 import ProfileScreen from './features/screens/ProfileScreen';
 import ConvoScreen from './features/screens/ConvoScreen';
+import GroupDetailsScreen from './features/screens/GroupDetailsScreen';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {AuthProvider} from './features/context/AuthContext';
 import {GroupProvider} from './features/context/GroupContext';
+import SearchScreen from './features/screens/SearchScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -27,6 +29,7 @@ const TabNavigator = () => {
             Home: 'coffee',
             Profile: 'user',
             Convo: 'plus',
+            Search:'search'
           };
           return (
             <Icon name={icons[route.name as keyof typeof icons]}  size={size} color={color} />
@@ -38,6 +41,7 @@ const TabNavigator = () => {
         headerShown: false,
       })}>
       <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Convo" component={ConvoScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
@@ -79,6 +83,7 @@ const AppNavigator = () => {
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Signup" component={SignupScreen} />
               <Stack.Screen name="Main" component={TabNavigator} />
+              <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} /> 
             </Stack.Navigator>
           </GroupProvider>
         </AuthProvider>

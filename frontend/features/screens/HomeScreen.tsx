@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,21 @@ import {
   FlatList,
   ActivityIndicator,
   StyleSheet,
+  TouchableOpacity,
 } from 'react-native';
-import { useGroup } from '../context/GroupContext';
+import {useGroup} from '../context/GroupContext';
+import { Modal } from 'react-native';
 
 const HomeScreen = () => {
-  const { groups, loading } = useGroup();
-console.log(groups)
-  const renderItem = ({ item }: any) => (
+  const {groups, loading,fetchGroups} = useGroup();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTasks, setSelectedTasks] = useState<any[]>([]);
+  const renderItem = ({item}: any) => (
     <View style={styles.convoContainer}>
       {/* User Info */}
       {item.admin ? (
         <View style={styles.userContainer}>
-          <Image source={{ uri: item.admin.image }} style={styles.userImage} />
+          <Image source={{uri: item.admin.image}} style={styles.userImage} />
           <View>
             <Text style={styles.userName}>{item.admin.name}</Text>
             <Text style={styles.userId}>ID: {item.admin._id}</Text>
@@ -25,7 +28,7 @@ console.log(groups)
         </View>
       ) : (
         <View>
-          <Text style={{ color: 'red' }}>Admin not found</Text>
+          <Text style={{color: 'red'}}>Admin not found</Text>
         </View>
       )}
 
@@ -34,7 +37,7 @@ console.log(groups)
       <Text style={styles.groupGoal}>Goal: {item.goal}</Text>
 
       {/* Group Image */}
-      <Image source={{ uri: item.image }} style={styles.convoImage} />
+      <Image source={{uri: item.image}} style={styles.convoImage} />
 
       {/* Group Description */}
       <Text style={styles.description}>{item.description}</Text>
@@ -42,32 +45,20 @@ console.log(groups)
       {/* Streak */}
       <Text style={styles.streakText}>Streak: {item.streak}</Text>
 
-      {/* Comments Section */}
-      <View style={styles.commentsContainer}>
-        <Text style={styles.commentsTitle}>Comments:</Text>
-        {item.comments && item.comments.length > 0 ? (
-          item.comments.map((comment: any, index: number) => (
-            <Text key={index} style={styles.commentText}>
-              {comment.text}
-            </Text>
-          ))
-        ) : (
-          <Text style={styles.noComments}>No comments yet</Text>
-        )}
-      </View>
-
-      {/* Tasks Section */}
       {item.todo && item.todo.tasks.length > 0 && (
-        <View style={styles.todoContainer}>
-          <Text style={styles.todoTitle}>Tasks:</Text>
-          {item.todo.tasks.map((task: any, index: number) => (
-            <Text key={index} style={styles.todoText}>
-              {task.title} - Completed by: {task.completedBy.join(", ")}
-            </Text>
-          ))}
-        </View>
+        <TouchableOpacity
+          onPress={() => {
+            setSelectedTasks(item.todo.tasks);
+            setModalVisible(true);
+          }}>
+          <View style={styles.todoContainer}>
+            <Text style={styles.todoTitle}>Click to View Daily Todo</Text>
+          </View>
+        </TouchableOpacity>
       )}
+      
 
+      <Text>No of Members : {item.members.length}</Text>
       {/* Timestamp */}
       {item.createdAt && (
         <Text style={styles.timestamp}>
@@ -77,6 +68,9 @@ console.log(groups)
     </View>
   );
 
+  useEffect(() => {
+    fetchGroups()
+  },[])
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Home</Text>
@@ -88,10 +82,31 @@ console.log(groups)
         <FlatList
           data={groups}
           renderItem={renderItem}
-          keyExtractor={(item) => item._id}
+          keyExtractor={item => item._id}
           contentContainerStyle={styles.flatListContent}
         />
       )}
+      <Modal
+  animationType="slide"
+  transparent={true}
+  visible={modalVisible}
+  onRequestClose={() => setModalVisible(false)}
+>
+  <View style={styles.modalBackground}>
+    <View style={styles.modalContainer}>
+      <Text style={styles.modalTitle}>Daily Tasks</Text>
+      {selectedTasks.map((task, index) => (
+        <Text key={index} style={styles.modalTaskText}>
+          {task.title}
+        </Text>
+      ))}
+      <TouchableOpacity onPress={() => setModalVisible(false)}>
+        <Text style={styles.closeButton}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
     </View>
   );
 };
@@ -99,7 +114,7 @@ console.log(groups)
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10, backgroundColor: '#f8f9fa', top: 50 },
+  container: {flex: 1, padding: 10, backgroundColor: '#f8f9fa', top: 50},
   title: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -119,7 +134,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     elevation: 3,
     borderWidth: 1,
     borderColor: '#f0f0f0',
@@ -194,8 +209,9 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   todoContainer: {
-    marginTop: 15,
-    padding: 10,
+    // marginTop: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 0,
     backgroundColor: '#e9ecef',
     borderRadius: 8,
   },
@@ -217,4 +233,9 @@ const styles = StyleSheet.create({
   flatListContent: {
     paddingBottom: 20,
   },
+  modalBackground: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalContainer: { width: 300, padding: 20, backgroundColor: 'white', borderRadius: 10 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
+  modalTaskText: { fontSize: 16, marginBottom: 5 },
+  closeButton: { marginTop: 15, color: 'blue', textAlign: 'center', fontWeight: 'bold' },
 });

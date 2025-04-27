@@ -189,7 +189,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       user.image = result.secure_url;
     }
 
-    if (req.body.password) {
+    if (req.body.password && req.body.password.length > 1) {
       user.password = req.body.password;
     }
 
