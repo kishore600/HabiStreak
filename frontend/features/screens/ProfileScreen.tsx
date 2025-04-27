@@ -15,6 +15,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import {useGroup} from '../context/GroupContext';
+import {FlatList} from 'react-native';
 
 const ProfileScreen = ({navigation}: any) => {
   const {user, logout, updateUser}: any = useAuth();
@@ -31,11 +32,11 @@ const ProfileScreen = ({navigation}: any) => {
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
 
-  console.log(name,email)
+  console.log(name, email);
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     fetchUserGroups();
-  }, [fetchUserGroups]);
+  }, [fetchUserGroups, user]);
   const openEditModal = () => {
     setEditModalVisible(true);
     closeMenu();
@@ -107,9 +108,7 @@ const ProfileScreen = ({navigation}: any) => {
 
   return (
     <Provider>
-      <View style={styles.container}>
-        {/* Menu Button */}
-        <View style={styles.menuContainer}>
+         <View style={styles.menuContainer}>
           <Menu
             visible={menuVisible}
             onDismiss={closeMenu}
@@ -129,11 +128,23 @@ const ProfileScreen = ({navigation}: any) => {
             />
           </Menu>
         </View>
+      <View style={styles.container}>
+      <View>
+        {/* Menu Button */}
+     
 
         {/* Profile Info */}
-        {image && <Image source={{uri: image}} style={styles.avatar} />}
-        <Text style={styles.name}>{name || 'Guest User'}</Text>
-        <Text style={styles.email}>{email || 'No email provided'}</Text>
+        <View style={styles.topGrid}>
+          <View>
+          {image && <Image source={{uri: image}} style={styles.avatar} />}
+
+          </View>
+          <View>
+          <Text style={styles.name}>{name || 'Guest User'}</Text>
+
+          </View>
+        </View>
+   
         <Modal
           visible={editModalVisible}
           animationType="slide"
@@ -203,45 +214,64 @@ const ProfileScreen = ({navigation}: any) => {
           </View>
         </Modal>
       </View>
- {userGroupLoading ? (
+
+      <View>
+        {userGroupLoading ? (
           <ActivityIndicator size="small" color="#1c1c1e" />
         ) : (
           <View>
-              {/* User Groups */}
-      <View style={styles.groupContainer}>
-        <Text style={styles.sectionTitle}>Your Groups:</Text>
-        {userGroups.length > 0 ? (
-          userGroups.map((group: any) => (
-            <TouchableOpacity
-              key={group._id}
-              style={styles.groupItem}
-              onPress={() => navigation.navigate('GroupDetails', {group})}>
-              <Text style={styles.groupTitle}>{group.title}</Text>
-              <Text style={styles.groupGoal}>Goal: {group.goal}</Text>
-              <Text style={styles.groupStreak}>
-                Your Streak: {group.userStreaks[user?._id] || 0} 🔥
-              </Text>
-            </TouchableOpacity>
-          ))
-        ) : (
-          <Text style={styles.noGroupText}>
-            You are not part of any groups yet.
-          </Text>
-        )}
-      </View>
+            {/* User Groups */}
+            <View style={styles.groupContainer}>
+              <Text style={styles.sectionTitle}>Your Groups:</Text>
+
+              {userGroups.length > 0 ? (
+                <FlatList
+                  data={userGroups}
+                  numColumns={3} // 3 columns like Instagram
+                  keyExtractor={item => item._id}
+                  renderItem={({item}) => (
+                    <TouchableOpacity
+                      style={styles.gridItem}
+                      onPress={() =>
+                        navigation.navigate('GroupDetails', {group: item})
+                      }>
+                      <Image
+                        source={{uri: item.image}} // Assuming you have group.imageUrl
+                        style={styles.groupImage}
+                        resizeMode="cover"
+                      />
+                    </TouchableOpacity>
+                  )}
+                />
+              ) : (
+                <Text style={styles.noGroupText}>
+                  You are not part of any groups yet.
+                </Text>
+              )}
+            </View>
           </View>
         )}
-    
+      </View>
+      </View>
     </Provider>
   );
 };
 
 const styles = StyleSheet.create({
+  topGrid: {
+    flexDirection: 'row',      // Arrange items horizontally
+    flexWrap: 'wrap',          // Wrap to next line if needed
+    alignItems: 'center',      // Center items vertically
+    marginBottom: 10,      
+    gap:30  
+  },
+  
   container: {
-    flex: 1,
+    // flex: 1,
+    display: 'flex',
+    marginTop: 40,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    // backgroundColor: '#fff',
     padding: 20,
   },
   menuContainer: {
@@ -338,16 +368,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 5,
   },
-  groupContainer: {
-    marginTop: 20,
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
   groupItem: {
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
@@ -369,10 +389,29 @@ const styles = StyleSheet.create({
     color: 'tomato',
     marginTop: 4,
   },
+  groupContainer: {
+    marginTop: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
   noGroupText: {
+    textAlign: 'center',
+    marginTop: 20,
     fontSize: 16,
-    color: '#999',
-    marginTop: 10,
+    color: 'gray',
+  },
+  gridItem: {
+    flex: 1 / 3, // 3 items per row
+    aspectRatio: 1, // make it square
+    padding: 6, // small space between images
+  },
+  groupImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8, // optional: rounded corners
   },
 });
 

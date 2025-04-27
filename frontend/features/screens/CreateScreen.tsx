@@ -92,7 +92,11 @@ const CreateScreen = () => {
       }
   
       await createGroup(formData);
-  
+  setGroupTitle('');
+  setGoal('');
+  setTasks(['']); // assuming you want to reset to one empty task input
+  setImageUri(null);
+
     } catch (error) {
       console.error('Error creating group:', error);
       Dialog.show({

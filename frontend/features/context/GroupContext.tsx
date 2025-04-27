@@ -3,6 +3,8 @@ import axios from 'axios';
 import { API_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 interface GroupContextType {
   groups: any[];
@@ -16,13 +18,17 @@ interface GroupContextType {
   markTaskComplete: (groupId: string, taskId: string) => Promise<void>;
   getLeaderboard: (groupId: string) => void;
 }
+export type RootStackParamList = {
+  Home: undefined;
+  CreateGroup: undefined;
+};
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined);
-
 export const GroupProvider = ({ children }: any) => {
   const [groups, setGroups] = useState<any[]>([]);
   const [userGroups, setUserGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
@@ -79,7 +85,10 @@ export const GroupProvider = ({ children }: any) => {
         title: 'Success',
         textBody: 'Group created successfully!',
       });
+  navigation.navigate('Home'); // <--- Make sure you have access to navigation prop
+
       fetchGroups();
+      fetchUserGroups()
     } catch (error) {
       console.error('Create group error:', error);
       Dialog.show({

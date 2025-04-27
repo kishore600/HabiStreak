@@ -59,7 +59,7 @@ export const AuthProvider = ({children}: any) => {
 
   const login = async (email: any, password: any) => {
     try {
-      const response = await axios.post(`https://habisteak.onrender.com/api/auth/login`, {
+      const response = await axios.post(`${API_URL}/auth/login`, {
         email,
         password,
       });
@@ -105,7 +105,7 @@ export const AuthProvider = ({children}: any) => {
         });
       }
       console.log(`${API_URL}/auth/register`,);
-      const response = await axios.post(`https://habisteak.onrender.com/api/auth/register`, formData, {
+      const response = await axios.post(`${API_URL}/auth/register`, formData, {
         headers: {'Content-Type': 'multipart/form-data'},
       });
       console.log(response);
