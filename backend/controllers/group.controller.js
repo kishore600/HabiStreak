@@ -2,67 +2,81 @@ const asyncHandler = require("express-async-handler");
 const Group = require("../models/group.model");
 const Todo = require("../models/todo.model");
 const User = require("../models/user.Model");
-const { dataUri } = require('../middleware/upload.middleware.js');
+const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 
 const createGroup = asyncHandler(async (req, res) => {
-  const { title, members, goal, tasks } = req.body; // Get tasks also
-  const userId = req.user._id;
+  try {
+    const { title, members, goal, tasks } = req.body;
+    console.log("Received Data:", { title, members, goal, tasks });
 
-  const existingGroup = await Group.findOne({ title });
-  if (existingGroup) {
-    return res
-      .status(400)
-      .json({ message: "Group with this title already exists." });
-  }
+    const userId = req.user._id;
 
-  let imageUrl;
-  if (req.file) {
-    const file = dataUri(req).content;
-    const result = await cloudinary.uploader.upload(file, {
-      folder: "uploads",
-      transformation: { width: 500, height: 500, crop: "limit" },
+    const existingGroup = await Group.findOne({ title });
+    if (existingGroup) {
+      return res
+        .status(400)
+        .json({ message: "Group with this title already exists." });
+    }
+
+    let imageUrl;
+    if (req.file) {
+      const file = dataUri(req).content;
+      const result = await cloudinary.uploader.upload(file, {
+        folder: "uploads",
+        transformation: { width: 500, height: 500, crop: "limit" },
+      });
+      imageUrl = result.secure_url;
+    } else {
+      return res.status(400).json({ message: "Image is required" });
+    }
+
+    // Ensure members is an array of ObjectIds
+    const updatedMembers = [...(members || []), userId]; 
+
+    // Format tasks as objects if they are simple strings
+    const formattedTasks = (tasks || []).map(task => {
+      return { title: task }; // Create a task object with a `title` field
     });
-    imageUrl = result.secure_url;
-  } else {
-    return res.status(400).json({ message: "Image is required" });
+
+    // Step 1: Create the Group
+    const group = new Group({
+      title,
+      members: updatedMembers,
+      admin: userId,
+      goal,
+      image: imageUrl,
+      userStreaks: {},
+    });
+    await group.save();
+
+    // Step 2: Create the Todo linked to the Group
+    const todo = new Todo({
+      tasks: formattedTasks, // Pass formatted tasks
+      group: group._id,
+    });
+    await todo.save();
+
+    // Step 3: Update the Group with Todo ID
+    group.todo = todo._id;
+    await group.save();
+
+    // Step 4: Update User createdGroups
+    await User.findByIdAndUpdate(userId, {
+      $push: { createdGroups: group._id },
+    });
+
+    res.status(201).json({ group, todo });
+  } catch (error) {
+    console.error("Error in createGroup:", error.message);
+    res.status(500).json({ message: error.message || "Server Error" });
   }
-  const updatedMembers = [...members, userId];
-
-  // Step 1: Create the Group
-  const group = new Group({
-    title,
-    members: updatedMembers,
-    admin: userId,
-    goal,
-    image: imageUrl,
-    userStreaks: {},
-  });
-  await group.save();
-
-  // Step 2: Create the Todo linked to the Group
-  const todo = new Todo({
-    tasks, // tasks array
-    group: group._id, // link to group
-  });
-  await todo.save();
-
-  // Step 3: Update the Group with Todo ID
-  group.todo = todo._id;
-  await group.save();
-
-  // Step 4: Update User createdGroups
-  await User.findByIdAndUpdate(userId, {
-    $push: { createdGroups: group._id },
-  });
-
-  res.status(201).json({ group, todo });
 });
+
 
 const getGroups = asyncHandler(async (req, res) => {
   const groups = await Group.find().populate("members admin todo");
-  res.json(
-    groups);
+  res.json(groups);
 });
 
 const getuserGroups = asyncHandler(async (req, res) => {
@@ -87,26 +101,23 @@ const getGroupById = asyncHandler(async (req, res) => {
 });
 
 const updateGroup = asyncHandler(async (req, res) => {
+  if (req.file) {
+    const file = dataUri(req).content;
+    console.log(req.file);
 
-      if (req.file) {
-        const file = dataUri(req).content;
-        console.log(req.file);
-  
-        if (user.image) {
-          const publicId = user.image.split("/").slice(-1)[0].split(".")[0];
-          console.log(publicId);
-          await cloudinary.uploader.destroy(`uploads/${publicId}`);
-        }
-  
-        const result = await cloudinary.uploader.upload(file, {
-          folder: "uploads",
-          transformation: { width: 500, height: 500, crop: "limit" },
-        });
-  
-        user.image = result.secure_url;
-      }
-  
+    if (user.image) {
+      const publicId = user.image.split("/").slice(-1)[0].split(".")[0];
+      console.log(publicId);
+      await cloudinary.uploader.destroy(`uploads/${publicId}`);
+    }
 
+    const result = await cloudinary.uploader.upload(file, {
+      folder: "uploads",
+      transformation: { width: 500, height: 500, crop: "limit" },
+    });
+
+    user.image = result.secure_url;
+  }
 
   const group = await Group.findByIdAndUpdate(req.params.groupId, req.body, {
     new: true,

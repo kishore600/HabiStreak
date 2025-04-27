@@ -1,19 +1,28 @@
-import React, { useState } from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, Image, View, Button, StyleSheet } from 'react-native';
+import React, {useState} from 'react';
+import {
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  View,
+  Button,
+  StyleSheet,
+} from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
-import { useGroup } from '../context/GroupContext';
+import {useGroup} from '../context/GroupContext';
 
 const CreateScreen = () => {
   const [groupTitle, setGroupTitle] = useState('');
   const [goal, setGoal] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [tasks, setTasks] = useState<string[]>(['']);
-  const {createGroup} = useGroup()
-  
+  const {createGroup, loading} = useGroup();
+
   const handlePickImage = () => {
     ImagePicker.launchImageLibrary(
-      { mediaType: 'photo', quality: 1 },
-      (response) => {
+      {mediaType: 'photo', quality: 1},
+      response => {
         if (response.didCancel) {
           console.log('User cancelled image picker');
         } else if (response.errorMessage) {
@@ -21,7 +30,7 @@ const CreateScreen = () => {
         } else if (response.assets && response.assets.length > 0) {
           setImageUri(response.assets[0].uri as any);
         }
-      }
+      },
     );
   };
 
@@ -42,14 +51,25 @@ const CreateScreen = () => {
   };
   const handleSubmit = async () => {
     try {
-      const newGroup = {
-        title: groupTitle,
-        goal: goal,
-        members: [], // Assuming you're handling members later (can add current user ID here if needed)
-        tasks: tasks, // Include tasks if your backend expects them
-      };
+      const formData = new FormData();
+      formData.append('title', groupTitle);
+      formData.append('goal', goal);
+      formData.append('members', JSON.stringify([])); // Send members as a JSON string
+      formData.append('tasks', JSON.stringify(tasks)); // Send tasks as a JSON string
   
-      await createGroup(newGroup); // Call createGroup function
+      if (imageUri) {
+        const filename = imageUri.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename ?? '');
+        const type = match ? `image/${match[1]}` : `image`;
+  
+        formData.append('image', {
+          uri: imageUri,
+          name: filename,
+          type,
+        } as any); // Casting because React Native's FormData requires it
+      }
+  
+      await createGroup(formData); // Send FormData to createGroup
     } catch (error) {
       console.error('Error creating group:', error);
     }
@@ -75,12 +95,12 @@ const CreateScreen = () => {
 
       <TouchableOpacity onPress={handlePickImage} style={styles.imagePicker}>
         {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.image} />
+          <Image source={{uri: imageUri}} style={styles.image} />
         ) : (
-          // <Text style={{ color: '#aaa' }}>Pick an Image</Text>
-          // C:\Users\kishore.k\Documents\HabiStreak\frontend\assets\dummy.jpg
-          <Image  source={require('../../assets/dummy.jpg')} style={styles.image} />
-
+          <Image
+            source={require('../../assets/dummy.jpg')}
+            style={styles.image}
+          />
         )}
       </TouchableOpacity>
 
@@ -91,19 +111,26 @@ const CreateScreen = () => {
           <TextInput
             placeholder={`Task ${index + 1}`}
             value={task}
-            onChangeText={(text) => handleTaskChange(text, index)}
-            style={[styles.input, { flex: 1 }]}
+            onChangeText={text => handleTaskChange(text, index)}
+            style={[styles.input, {flex: 1}]}
           />
-          <TouchableOpacity onPress={() => handleRemoveTask(index)} style={styles.removeButton}>
-            <Text style={{ color: 'white' }}>X</Text>
+          <TouchableOpacity
+            onPress={() => handleRemoveTask(index)}
+            style={styles.removeButton}>
+            <Text style={{color: 'white'}}>X</Text>
           </TouchableOpacity>
         </View>
       ))}
 
       <Button title="Add Another Task" onPress={handleAddTask} />
 
-      <View style={{ marginVertical: 20 }}>
-        <Button title="Create Group and Todo" onPress={handleSubmit} color="#4CAF50" />
+      <View style={{marginVertical: 20}}>
+        <Button
+          title={loading ? 'Creating...' : 'Create Group and Todo'}
+          onPress={handleSubmit}
+          color="#4CAF50"
+          disabled={loading}
+        />
       </View>
     </ScrollView>
   );
@@ -113,7 +140,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingBottom: 50,
-    marginTop:50
+    marginTop: 50,
   },
   heading: {
     fontSize: 24,
@@ -150,7 +177,7 @@ const styles = StyleSheet.create({
   taskContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent:'center',
+    justifyContent: 'center',
     marginBottom: 10,
   },
   removeButton: {
@@ -158,7 +185,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginLeft: 10,
     borderRadius: 8,
-    marginBottom:10
+    marginBottom: 10,
   },
 });
 

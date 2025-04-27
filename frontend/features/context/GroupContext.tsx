@@ -8,7 +8,7 @@ interface GroupContextType {
   groups: any[];
   userGroups: any[];
   loading: boolean;
-  createGroup: (newGroup: { title: string; members: string[]; goal: string }) => Promise<void>;
+  createGroup: any;
   deleteGroup: (id: string) => Promise<void>;
   fetchGroups: () => void;
   fetchUserGroups: () => void;
@@ -62,24 +62,36 @@ export const GroupProvider = ({ children }: any) => {
       setLoading(false);
     }
   },[]);
-  const createGroup = async (newGroup: { title: string; members: string[]; goal: string; tasks: string[] }) => {
+  const createGroup = async (formData: FormData) => {
     try {
+      setLoading(true);
+      console.log(formData)
       const headers = await getAuthHeaders();
-      await axios.post(`${API_URL}/groups`, newGroup, headers);
+      await axios.post(`${API_URL}/groups`, formData, {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          'Content-Type': 'multipart/form-data', // very important
+        },
+      });
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Success',
         textBody: 'Group created successfully!',
       });
-      fetchGroups(); // Re-fetch groups after creation
+      fetchGroups();
     } catch (error) {
+      console.error('Create group error:', error);
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Error',
         textBody: 'Failed to create group',
       });
+    } finally {
+      setLoading(false);
     }
   };
+  
   
 
   const deleteGroup = async (id: string) => {
