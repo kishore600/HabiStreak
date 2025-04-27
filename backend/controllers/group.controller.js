@@ -8,10 +8,11 @@ const { cloudinary } = require("../config/cloudnari.config.js");
 const createGroup = asyncHandler(async (req, res) => {
   try {
     const { title, members, goal, tasks } = req.body;
-    console.log("Received Data:", { title, members, goal, tasks });
+    console.log("Received Data (raw):", { title, members, goal, tasks });
 
     const userId = req.user._id;
 
+    // Check if a group with the same title exists
     const existingGroup = await Group.findOne({ title });
     if (existingGroup) {
       return res
@@ -19,6 +20,7 @@ const createGroup = asyncHandler(async (req, res) => {
         .json({ message: "Group with this title already exists." });
     }
 
+    // Handle image upload
     let imageUrl;
     if (req.file) {
       const file = dataUri(req).content;
@@ -31,15 +33,37 @@ const createGroup = asyncHandler(async (req, res) => {
       return res.status(400).json({ message: "Image is required" });
     }
 
-    // Ensure members is an array of ObjectIds
-    const updatedMembers = [...(members || []), userId]; 
+    // Safely parse members
+    let parsedMembers = members;
+    if (typeof members === 'string') {
+      try {
+        parsedMembers = JSON.parse(members);
+      } catch (error) {
+        console.error("Error parsing members:", error.message);
+        return res.status(400).json({ message: "Invalid members format" });
+      }
+    }
 
-    // Format tasks as objects if they are simple strings
-    const formattedTasks = (tasks || []).map(task => {
-      return { title: task }; // Create a task object with a `title` field
-    });
+    // Add current user to members
+    const updatedMembers = [...(parsedMembers || []), userId];
 
-    // Step 1: Create the Group
+    // Safely parse tasks
+    let parsedTasks = tasks;
+    if (typeof tasks === 'string') {
+      try {
+        parsedTasks = JSON.parse(tasks);
+      } catch (error) {
+        console.error("Error parsing tasks:", error.message);
+        return res.status(400).json({ message: "Invalid tasks format" });
+      }
+    }
+
+    // Format tasks for Todo
+    const formattedTasks = (parsedTasks || []).map(task => ({
+      title: task
+    }));
+
+    // Step 1: Create Group
     const group = new Group({
       title,
       members: updatedMembers,
@@ -50,14 +74,14 @@ const createGroup = asyncHandler(async (req, res) => {
     });
     await group.save();
 
-    // Step 2: Create the Todo linked to the Group
+    // Step 2: Create Todo linked to Group
     const todo = new Todo({
-      tasks: formattedTasks, // Pass formatted tasks
+      tasks: formattedTasks,
       group: group._id,
     });
     await todo.save();
 
-    // Step 3: Update the Group with Todo ID
+    // Step 3: Link Todo back to Group
     group.todo = todo._id;
     await group.save();
 
@@ -67,12 +91,12 @@ const createGroup = asyncHandler(async (req, res) => {
     });
 
     res.status(201).json({ group, todo });
+
   } catch (error) {
     console.error("Error in createGroup:", error.message);
     res.status(500).json({ message: error.message || "Server Error" });
   }
 });
-
 
 const getGroups = asyncHandler(async (req, res) => {
   const groups = await Group.find().populate("members admin todo");

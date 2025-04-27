@@ -74,7 +74,7 @@ const CreateScreen = () => {
       console.error('Error creating group:', error);
     }
   };
-  
+  console.log(loading)
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Create Group</Text>
@@ -97,10 +97,7 @@ const CreateScreen = () => {
         {imageUri ? (
           <Image source={{uri: imageUri}} style={styles.image} />
         ) : (
-          <Image
-            source={require('../../assets/dummy.jpg')}
-            style={styles.image}
-          />
+         <Text>Place Image</Text>
         )}
       </TouchableOpacity>
 
@@ -126,10 +123,10 @@ const CreateScreen = () => {
 
       <View style={{marginVertical: 20}}>
         <Button
-          title={loading ? 'Creating...' : 'Create Group and Todo'}
+          title={ 'Create Group and Todo'}
           onPress={handleSubmit}
           color="#4CAF50"
-          disabled={loading}
+          // disabled={loading}
         />
       </View>
     </ScrollView>

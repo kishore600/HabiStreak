@@ -65,7 +65,7 @@ export const GroupProvider = ({ children }: any) => {
   const createGroup = async (formData: FormData) => {
     try {
       setLoading(true);
-      console.log(formData)
+      console.log(formData,API_URL)
       const headers = await getAuthHeaders();
       await axios.post(`${API_URL}/groups`, formData, {
         ...headers,
