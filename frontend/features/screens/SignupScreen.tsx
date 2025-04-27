@@ -6,14 +6,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {useAuth} from '../context/AuthContext';
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-const SignupScreen = ({ navigation }: { navigation: any }) => {
+const SignupScreen = ({navigation}: {navigation: any}) => {
   const {signup}: any = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -45,13 +45,17 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
 
   const handleSignup = async () => {
     let newErrors: any = {};
-    if (!name.trim()) {newErrors.name = 'Name is required';}
+    if (!name.trim()) {
+      newErrors.name = 'Name is required';
+    }
     if (!email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!validateEmail(email)) {
       newErrors.email = 'Invalid email format';
     }
-    if (!password.trim()) {newErrors.password = 'Password is required';}
+    if (!password.trim()) {
+      newErrors.password = 'Password is required';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -59,15 +63,14 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
     }
     setLoading(true);
     try {
-      const data = await signup(name, email, password, imageUri)
-      if(data){
+      const data = await signup(name, email, password, imageUri);
+      if (data) {
         navigation.navigate('Main');
-      setErrors({});
+        setErrors({});
       }
     } catch (error: any) {
       setLoading(false);
-
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
@@ -132,15 +135,15 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
         }}
         secureTextEntry={!showPassword}
       />
-       <TouchableOpacity
-                onPress={() => setShowPassword(prev => !prev)}
-                style={styles.eyeIcon}>
-                <Icon
-                  name={showPassword ? 'eye-slash' : 'eye'}
-                  size={20}
-                  color="#999"
-                />
-              </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => setShowPassword(prev => !prev)}
+        style={styles.eyeIcon}>
+        <Icon
+          name={showPassword ? 'eye-slash' : 'eye'}
+          size={20}
+          color="#999"
+        />
+      </TouchableOpacity>
       {errors.password && (
         <Animatable.Text animation="shake" style={styles.errorText}>
           {errors.password}
@@ -148,16 +151,16 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
       )}
 
       <TouchableOpacity style={styles.button} onPress={handleSignup}>
-      <TouchableOpacity
-        style={[styles.button, loading && styles.disabledButton]} // Disable button style
-        onPress={handleSignup}
-        disabled={loading}>
-        {loading ? (
-          <ActivityIndicator size="small" color="#1c1c1e" />
-        ) : (
-          <Text style={styles.buttonText}>Sign Up</Text>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, loading && styles.disabledButton]} // Disable button style
+          onPress={handleSignup}
+          disabled={loading}>
+          {loading ? (
+            <ActivityIndicator size="small" color="#1c1c1e" />
+          ) : (
+            <Text style={styles.buttonText}>Sign Up</Text>
+          )}
+        </TouchableOpacity>
       </TouchableOpacity>
 
       <Text style={styles.footerText}>
@@ -179,7 +182,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    gap:10,
+    gap: 10,
   },
   title: {
     fontSize: 28,

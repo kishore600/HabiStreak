@@ -45,7 +45,6 @@ const register = asyncHandler(async (req, res) => {
           email: user.email,
           image: user.image,
         },
-        type: user.type,
         token: generateToken(user._id),
       });
     } else {
