@@ -6,15 +6,15 @@ const { dataUri } = require('../middleware/upload.middleware.js');
 const { cloudinary } = require("../config/cloudnari.config.js");
 
 const createGroup = asyncHandler(async (req, res) => {
-  const { title, members, goal } = req.body;
+  const { title, members, goal, tasks } = req.body; // Get tasks also
   const userId = req.user._id;
+
   const existingGroup = await Group.findOne({ title });
   if (existingGroup) {
     return res
       .status(400)
       .json({ message: "Group with this title already exists." });
   }
-
 
   let imageUrl;
   if (req.file) {
@@ -28,22 +28,34 @@ const createGroup = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Image is required" });
   }
 
-
+  // Step 1: Create the Group
   const group = new Group({
     title,
     members,
-    admin: req.user._id,
+    admin: userId,
     goal,
     image: imageUrl,
     userStreaks: {},
   });
   await group.save();
 
+  // Step 2: Create the Todo linked to the Group
+  const todo = new Todo({
+    tasks, // tasks array
+    group: group._id, // link to group
+  });
+  await todo.save();
+
+  // Step 3: Update the Group with Todo ID
+  group.todo = todo._id;
+  await group.save();
+
+  // Step 4: Update User createdGroups
   await User.findByIdAndUpdate(userId, {
     $push: { createdGroups: group._id },
   });
 
-  res.status(201).json(group);
+  res.status(201).json({ group, todo });
 });
 
 const getGroups = asyncHandler(async (req, res) => {

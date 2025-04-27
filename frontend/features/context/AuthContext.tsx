@@ -3,7 +3,7 @@ import axios from 'axios';
 import {Alert} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
-import { API_URL } from '@env';
+import {API_URL} from '@env';
 
 interface AuthContextType {
   user: any;
@@ -54,7 +54,6 @@ export const AuthProvider = ({children}: any) => {
     }
   };
   useEffect(() => {
-
     loadUserData();
   }, []);
 
@@ -64,7 +63,7 @@ export const AuthProvider = ({children}: any) => {
         email,
         password,
       });
-      console.log(response)
+      console.log(response);
       const {user: resuser, token: restoken} = response.data;
 
       // Store user & token in AsyncStorage
@@ -105,14 +104,14 @@ export const AuthProvider = ({children}: any) => {
           name: 'profile.jpg',
         });
       }
-console.log(`${API_URL}/auth/register`)
+      console.log(`${API_URL}/auth/register`,);
       const response = await axios.post(`${API_URL}/auth/register`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: {'Content-Type': 'multipart/form-data'},
       });
-console.log(response)
+      console.log(response);
       const {user: resuser, token: restoken} = response.data;
 
-      // Store user & token in AsyncStorage
+      // Store user & token in AsyncStorages
       await AsyncStorage.setItem('user', JSON.stringify(resuser));
       await AsyncStorage.setItem('token', restoken);
 
@@ -125,7 +124,7 @@ console.log(response)
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'SignUp Failed',
-        textBody: error.response?.data?.message || '',
+        textBody: error.response?.data?.message || 'SignupFailed',
         button: 'OK',
       });
     }
@@ -176,7 +175,7 @@ console.log(response)
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response)
+      console.log(response);
       const {updatedUser, token: newToken} = response.data;
 
       // Store updated user & new token in AsyncStorage

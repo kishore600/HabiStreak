@@ -9,7 +9,7 @@ import LoginScreen from './features/screens/LoginScreen';
 import SignupScreen from './features/screens/SignupScreen';
 import HomeScreen from './features/screens/HomeScreen';
 import ProfileScreen from './features/screens/ProfileScreen';
-import ConvoScreen from './features/screens/ConvoScreen';
+import CreateScreen from './features/screens/CreateScreen';
 import GroupDetailsScreen from './features/screens/GroupDetailsScreen';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {AuthProvider} from './features/context/AuthContext';
@@ -42,7 +42,7 @@ const TabNavigator = () => {
       })}>
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Convo" component={ConvoScreen} />
+      <Tab.Screen name="Convo" component={CreateScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

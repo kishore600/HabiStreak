@@ -13,12 +13,12 @@ import {useAuth} from '../context/AuthContext';
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-const SignupScreen = ({navigation}: {navigation: any}) => {
-  const {signup}: any = useAuth();
+const SignupScreen = ({ navigation }: { navigation: any }) => {
+  const { signup }: any = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [imageUri, setImageUri] = useState(null);
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [errors, setErrors] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -30,16 +30,16 @@ const SignupScreen = ({navigation}: {navigation: any}) => {
 
   const selectImage = () => {
     launchImageLibrary(
-      {mediaType: 'photo', includeBase64: false},
+      { mediaType: 'photo', includeBase64: false },
       (response: any) => {
         if (response.didCancel) {
           console.log('User cancelled image picker');
         } else if (response.errorMessage) {
-          console.log('Image picker error: ', response.errorMessage);
+          console.log('Image picker error:', response.errorMessage);
         } else if (response.assets && response.assets.length > 0) {
           setImageUri(response.assets[0].uri);
         }
-      },
+      }
     );
   };
 
@@ -61,6 +61,7 @@ const SignupScreen = ({navigation}: {navigation: any}) => {
       setErrors(newErrors);
       return;
     }
+
     setLoading(true);
     try {
       const data = await signup(name, email, password, imageUri);
@@ -69,7 +70,9 @@ const SignupScreen = ({navigation}: {navigation: any}) => {
         setErrors({});
       }
     } catch (error: any) {
-      setLoading(false);
+      console.log('Signup error:', error);
+      const errorMessage ='Signup failed. Please try again.';
+      setErrors({ general: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -81,7 +84,7 @@ const SignupScreen = ({navigation}: {navigation: any}) => {
 
       <TouchableOpacity style={styles.imagePicker} onPress={selectImage}>
         {imageUri ? (
-          <Image source={{uri: imageUri}} style={styles.image} />
+          <Image source={{ uri: imageUri }} style={styles.image} />
         ) : (
           <Image
             source={require('../../assets/dummy.jpg')}
@@ -97,7 +100,7 @@ const SignupScreen = ({navigation}: {navigation: any}) => {
         value={name}
         onChangeText={text => {
           setName(text);
-          setErrors((prev: any) => ({...prev, name: ''}));
+          setErrors((prev: any) => ({ ...prev, name: '' }));
         }}
       />
       {errors.name && (
@@ -113,7 +116,7 @@ const SignupScreen = ({navigation}: {navigation: any}) => {
         value={email}
         onChangeText={text => {
           setEmail(text);
-          setErrors((prev: any) => ({...prev, email: ''}));
+          setErrors((prev: any) => ({ ...prev, email: '' }));
         }}
         keyboardType="email-address"
         autoCapitalize="none"
@@ -124,50 +127,59 @@ const SignupScreen = ({navigation}: {navigation: any}) => {
         </Animatable.Text>
       )}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#999"
-        value={password}
-        onChangeText={text => {
-          setPassword(text);
-          setErrors((prev: any) => ({...prev, password: ''}));
-        }}
-        secureTextEntry={!showPassword}
-      />
-      <TouchableOpacity
-        onPress={() => setShowPassword(prev => !prev)}
-        style={styles.eyeIcon}>
-        <Icon
-          name={showPassword ? 'eye-slash' : 'eye'}
-          size={20}
-          color="#999"
+      {/* <View> */}
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#999"
+          value={password}
+          onChangeText={text => {
+            setPassword(text);
+            setErrors((prev: any) => ({ ...prev, password: '' }));
+          }}
+          secureTextEntry={!showPassword}
         />
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setShowPassword(prev => !prev)}
+          style={styles.eyeIcon}
+        >
+          <Icon
+            name={showPassword ? 'eye-slash' : 'eye'}
+            size={20}
+            color="#999"
+          />
+        </TouchableOpacity>
+      {/* </View> */}
       {errors.password && (
         <Animatable.Text animation="shake" style={styles.errorText}>
           {errors.password}
         </Animatable.Text>
       )}
 
-      <TouchableOpacity style={styles.button} onPress={handleSignup}>
-        <TouchableOpacity
-          style={[styles.button, loading && styles.disabledButton]} // Disable button style
-          onPress={handleSignup}
-          disabled={loading}>
-          {loading ? (
-            <ActivityIndicator size="small" color="#1c1c1e" />
-          ) : (
-            <Text style={styles.buttonText}>Sign Up</Text>
-          )}
-        </TouchableOpacity>
+      {errors.general && (
+        <Animatable.Text animation="shake" style={styles.errorText}>
+          {errors.general}
+        </Animatable.Text>
+      )}
+
+      <TouchableOpacity
+        style={[styles.button, loading && styles.disabledButton]}
+        onPress={handleSignup}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color="#1c1c1e" />
+        ) : (
+          <Text style={styles.buttonText}>Sign Up</Text>
+        )}
       </TouchableOpacity>
 
       <Text style={styles.footerText}>
         Already have an account?{' '}
         <Text
           style={styles.signupText}
-          onPress={() => navigation.navigate('Login')}>
+          onPress={() => navigation.navigate('Login')}
+        >
           Login
         </Text>
       </Text>
