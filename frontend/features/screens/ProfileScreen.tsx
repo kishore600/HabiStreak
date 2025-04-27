@@ -18,7 +18,7 @@ import {useGroup} from '../context/GroupContext';
 
 const ProfileScreen = ({navigation}: any) => {
   const {user, logout, updateUser}: any = useAuth();
-  const {userGroups, loading: userGroupLoading,fetchUserGroups} = useGroup();
+  const {userGroups, loading: userGroupLoading, fetchUserGroups} = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -30,10 +30,12 @@ const ProfileScreen = ({navigation}: any) => {
 
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
+
+  console.log(user)
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() =>{
-    fetchUserGroups()
-  },[fetchUserGroups])
+  useEffect(() => {
+    fetchUserGroups();
+  }, [fetchUserGroups]);
   const openEditModal = () => {
     setEditModalVisible(true);
     closeMenu();
@@ -104,7 +106,6 @@ const ProfileScreen = ({navigation}: any) => {
       </View>
     );
   }
-
 
   return (
     <Provider>
@@ -212,25 +213,26 @@ const ProfileScreen = ({navigation}: any) => {
 
       {/* User Groups */}
       <View style={styles.groupContainer}>
-  <Text style={styles.sectionTitle}>Your Groups:</Text>
-  {userGroups.length > 0 ? (
-    userGroups.map((group: any) => (
-      <TouchableOpacity
-        key={group._id}
-        style={styles.groupItem}
-        onPress={() => navigation.navigate('GroupDetails', { group })}
-      >
-        <Text style={styles.groupTitle}>{group.title}</Text>
-        <Text style={styles.groupGoal}>Goal: {group.goal}</Text>
-        <Text style={styles.groupStreak}>
-          Your Streak: {group.userStreaks[user?._id] || 0} 🔥
-        </Text>
-      </TouchableOpacity>
-    ))
-  ) : (
-    <Text style={styles.noGroupText}>You are not part of any groups yet.</Text>
-  )}
-</View>
+        <Text style={styles.sectionTitle}>Your Groups:</Text>
+        {userGroups.length > 0 ? (
+          userGroups.map((group: any) => (
+            <TouchableOpacity
+              key={group._id}
+              style={styles.groupItem}
+              onPress={() => navigation.navigate('GroupDetails', {group})}>
+              <Text style={styles.groupTitle}>{group.title}</Text>
+              <Text style={styles.groupGoal}>Goal: {group.goal}</Text>
+              <Text style={styles.groupStreak}>
+                Your Streak: {group.userStreaks[user?._id] || 0} 🔥
+              </Text>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text style={styles.noGroupText}>
+            You are not part of any groups yet.
+          </Text>
+        )}
+      </View>
     </Provider>
   );
 };

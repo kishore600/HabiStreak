@@ -169,7 +169,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
   user.name = req.body.name || user.name;
   user.email = req.body.email || user.email;
-
+console.log(user.name,user.email)
   try {
     if (req.file) {
       const file = dataUri(req).content;

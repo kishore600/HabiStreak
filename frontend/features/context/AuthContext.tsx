@@ -169,7 +169,6 @@ export const AuthProvider = ({children}: any) => {
           name: 'profile.jpg',
         } as any);
       }
-      console.log(`${API_BASE_URL}/users/profile`);
 
       const response = await axios.put(`${API_BASE_URL}/users/profile`, formData, {
         headers: {
@@ -177,8 +176,8 @@ export const AuthProvider = ({children}: any) => {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      const {user: updatedUser, token: newToken} = response.data;
+      console.log(response)
+      const {updatedUser, token: newToken} = response.data;
 
       // Store updated user & new token in AsyncStorage
       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));

@@ -26,7 +26,7 @@ const pendingRequestSchema = mongoose.Schema(
 );
 
 const userSchema = new mongoose.Schema({
-  name: String,
+  name: { type: String },
   email: { type: String, unique: true },
   image: { type: String, required: false },
   password: String,
