@@ -6,6 +6,7 @@ const GroupDetailsScreen = ({ route, navigation }: any) => {
   const { group } = route.params;
   const [groupData, setGroupData] = useState(group);
 
+  console.log(groupData)
   const handleDeleteGroup = () => {
     Alert.alert(
       'Delete Group',
@@ -71,6 +72,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    marginTop:50
   },
   title: {
     fontSize: 28,

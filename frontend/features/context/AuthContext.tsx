@@ -143,7 +143,6 @@ export const AuthProvider = ({children}: any) => {
   };
 
   const updateUser = async (
-    id: string,
     name: string,
     email: string,
     password: string,

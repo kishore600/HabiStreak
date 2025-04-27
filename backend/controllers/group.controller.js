@@ -2,6 +2,8 @@ const asyncHandler = require("express-async-handler");
 const Group = require("../models/group.model");
 const Todo = require("../models/todo.model");
 const User = require("../models/user.Model");
+const { dataUri } = require('../middleware/upload.middleware.js');
+const { cloudinary } = require("../config/cloudnari.config.js");
 
 const createGroup = asyncHandler(async (req, res) => {
   const { title, members, goal } = req.body;
@@ -13,11 +15,26 @@ const createGroup = asyncHandler(async (req, res) => {
       .json({ message: "Group with this title already exists." });
   }
 
+
+  let imageUrl;
+  if (req.file) {
+    const file = dataUri(req).content;
+    const result = await cloudinary.uploader.upload(file, {
+      folder: "uploads",
+      transformation: { width: 500, height: 500, crop: "limit" },
+    });
+    imageUrl = result.secure_url;
+  } else {
+    return res.status(400).json({ message: "Image is required" });
+  }
+
+
   const group = new Group({
     title,
     members,
     admin: req.user._id,
     goal,
+    image: imageUrl,
     userStreaks: {},
   });
   await group.save();
@@ -31,10 +48,6 @@ const createGroup = asyncHandler(async (req, res) => {
 
 const getGroups = asyncHandler(async (req, res) => {
   const groups = await Group.find().populate("members admin todo");
-  const usergroups = await Group.find({ admin: req.user._id }).populate(
-    "members",
-    "name email"
-  );
   res.json(
     groups);
 });
@@ -42,7 +55,7 @@ const getGroups = asyncHandler(async (req, res) => {
 const getuserGroups = asyncHandler(async (req, res) => {
   const usergroups = await Group.find({ admin: req.user._id }).populate(
     "members",
-    "name email"
+    "name email image"
   );
   res.json({
     usergroups,
@@ -61,6 +74,27 @@ const getGroupById = asyncHandler(async (req, res) => {
 });
 
 const updateGroup = asyncHandler(async (req, res) => {
+
+      if (req.file) {
+        const file = dataUri(req).content;
+        console.log(req.file);
+  
+        if (user.image) {
+          const publicId = user.image.split("/").slice(-1)[0].split(".")[0];
+          console.log(publicId);
+          await cloudinary.uploader.destroy(`uploads/${publicId}`);
+        }
+  
+        const result = await cloudinary.uploader.upload(file, {
+          folder: "uploads",
+          transformation: { width: 500, height: 500, crop: "limit" },
+        });
+  
+        user.image = result.secure_url;
+      }
+  
+
+
   const group = await Group.findByIdAndUpdate(req.params.groupId, req.body, {
     new: true,
   });

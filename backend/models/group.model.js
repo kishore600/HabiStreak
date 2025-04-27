@@ -18,6 +18,8 @@ const groupSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  image: { type: String, required: true },
+
 });
 
 module.exports = mongoose.model('Group', groupSchema);

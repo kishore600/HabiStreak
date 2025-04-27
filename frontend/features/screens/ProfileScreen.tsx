@@ -30,7 +30,10 @@ const ProfileScreen = ({navigation}: any) => {
 
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
-
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() =>{
+    fetchUserGroups()
+  },[fetchUserGroups])
   const openEditModal = () => {
     setEditModalVisible(true);
     closeMenu();
@@ -102,11 +105,7 @@ const ProfileScreen = ({navigation}: any) => {
     );
   }
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() =>{
-    fetchUserGroups()
-  },[fetchUserGroups])
-  console.log(userGroups);
+
   return (
     <Provider>
       <View style={styles.container}>
