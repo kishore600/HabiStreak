@@ -11,7 +11,10 @@ const {
   getuserGroups,
 } = require('../controllers/group.controller');
 const { protect } = require('../middleware/auth.middleware');
-const { upload } = require('../middleware/upload.middleware.js');
+// const { upload } = require('../middleware/upload.middleware.js');
+const multer = require('multer');
+const storage = multer.memoryStorage(); // recommended for Cloudinary
+const upload = multer({ storage });
 
 const router = express.Router();
 

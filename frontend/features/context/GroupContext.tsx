@@ -91,8 +91,6 @@ export const GroupProvider = ({ children }: any) => {
       setLoading(false);
     }
   };
-  
-  
 
   const deleteGroup = async (id: string) => {
     try {

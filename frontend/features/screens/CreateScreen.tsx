@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
 import {useGroup} from '../context/GroupContext';
+import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 
 const CreateScreen = () => {
   const [groupTitle, setGroupTitle] = useState('');
@@ -51,11 +52,32 @@ const CreateScreen = () => {
   };
   const handleSubmit = async () => {
     try {
+      if (!imageUri) {
+        Dialog.show({
+          type: ALERT_TYPE.DANGER,
+          title: 'Error',
+          textBody: 'Please select an image for the group.',
+        });
+        return;
+      }
+  
+      // Filter out empty tasks
+      const nonEmptyTasks = tasks.filter(task => task.trim() !== '');
+  
+      if (nonEmptyTasks.length === 0) {
+        Dialog.show({
+          type: ALERT_TYPE.DANGER,
+          title: 'Error',
+          textBody: 'Please add at least one todo task.',
+        });
+        return;
+      }
+  
       const formData = new FormData();
       formData.append('title', groupTitle);
       formData.append('goal', goal);
-      formData.append('members', JSON.stringify([])); // Send members as a JSON string
-      formData.append('tasks', JSON.stringify(tasks)); // Send tasks as a JSON string
+      formData.append('members', JSON.stringify([])); // Send members as JSON
+      formData.append('tasks', JSON.stringify(nonEmptyTasks)); // Send only non-empty tasks
   
       if (imageUri) {
         const filename = imageUri.split('/').pop();
@@ -66,14 +88,21 @@ const CreateScreen = () => {
           uri: imageUri,
           name: filename,
           type,
-        } as any); // Casting because React Native's FormData requires it
+        } as any);
       }
   
-      await createGroup(formData); // Send FormData to createGroup
+      await createGroup(formData);
+  
     } catch (error) {
       console.error('Error creating group:', error);
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Error',
+        textBody: 'Something went wrong while creating the group.',
+      });
     }
   };
+  
   console.log(loading)
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -123,10 +152,10 @@ const CreateScreen = () => {
 
       <View style={{marginVertical: 20}}>
         <Button
-          title={ 'Create Group and Todo'}
+          title={ loading ? 'Laoding' : 'Create Group and Todo'}
           onPress={handleSubmit}
           color="#4CAF50"
-          // disabled={loading}
+          disabled={loading}
         />
       </View>
     </ScrollView>
