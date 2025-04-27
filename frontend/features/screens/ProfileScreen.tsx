@@ -31,7 +31,7 @@ const ProfileScreen = ({navigation}: any) => {
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
 
-  console.log(user)
+  console.log(name,email)
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     fetchUserGroups();
@@ -53,14 +53,12 @@ const ProfileScreen = ({navigation}: any) => {
       return;
     }
 
-    const id = user?._id; // Ensure user ID is available
-
     try {
-      console.log('Updating Profile:', {id, name, email, password, image});
+      console.log('Updating Profile:', {name, email, password, image});
 
       setLoading(true);
 
-      await updateUser(id, name, email, password, image)
+      await updateUser(name, email, password, image)
         .then(() => {
           Dialog.show({
             type: ALERT_TYPE.SUCCESS,
@@ -143,11 +141,6 @@ const ProfileScreen = ({navigation}: any) => {
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
-              {userGroupLoading ? (
-                <ActivityIndicator size="large" color="tomato" />
-              ) : (
-                <Text>sd</Text>
-              )}
               {/* Image Input */}
               <TouchableOpacity
                 style={styles.imagePicker}

@@ -105,8 +105,8 @@ export const AuthProvider = ({children}: any) => {
           name: 'profile.jpg',
         });
       }
-
-      const response = await axios.post(`${API_BASE_URL}/auth/signup`, formData, {
+console.log(`${API_BASE_URL}/auth/register`)
+      const response = await axios.post(`${API_BASE_URL}/auth/register`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

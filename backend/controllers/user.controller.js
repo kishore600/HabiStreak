@@ -1,117 +1,117 @@
-const User = require('../models/user.Model');
-const asyncHandler = require('express-async-handler');
+const User = require("../models/user.Model");
+const asyncHandler = require("express-async-handler");
 const generateToken = require("../utils/generateToken.utils.js");
-const { dataUri } = require('../middleware/upload.middleware.js');
+const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 
 const getUserProfile = (req, res) => {
-    res.send(`Get user profile for ID: ${req.params.id}`);
+  res.send(`Get user profile for ID: ${req.params.id}`);
 };
 
 const sendFollowRequest = asyncHandler(async (req, res) => {
-    const { targetUserId } = req.body;
-    const requestingUserId = req.user._id;
-  
-    if (requestingUserId.toString() === targetUserId.toString()) {
-      res.status(400);
-      throw new Error("Cannot follow yourself");
-    }
-  
-    const targetUser = await User.findById(targetUserId);
-    const requestingUser = await User.findById(requestingUserId);
-  
-    if (!targetUser) {
-      res.status(404);
-      throw new Error("User not found");
-    }
-  
-    if (targetUser.followers.includes(requestingUserId)) {
-      res.status(400);
-      throw new Error("Already following this user");
-    }
-  
-    if (requestingUser.followers.includes(targetUserId)) {
-      res.status(400);
-      throw new Error("Already sent follow request");
-    }
-  
-    if (
-      targetUser.pendingRequest.some(
-        (req) => req.user.toString() === requestingUserId.toString()
-      )
-    ) {
-      res.status(400);
-      throw new Error("Follow request already sent");
-    }
-  
-    const pendingRequests = {
-      user: requestingUserId,
-      receiver: targetUserId,
-      status: "pending",
-    };
-    requestingUser.following.push(targetUserId);
-    targetUser.followers.push(requestingUserId);
-    targetUser.pendingRequest.push(pendingRequests);
-    await targetUser.save();
-    await requestingUser.save();
-  
-    res.status(200).json({ message: "Follow request sent" });
+  const { targetUserId } = req.body;
+  const requestingUserId = req.user._id;
+
+  if (requestingUserId.toString() === targetUserId.toString()) {
+    res.status(400);
+    throw new Error("Cannot follow yourself");
+  }
+
+  const targetUser = await User.findById(targetUserId);
+  const requestingUser = await User.findById(requestingUserId);
+
+  if (!targetUser) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  if (targetUser.followers.includes(requestingUserId)) {
+    res.status(400);
+    throw new Error("Already following this user");
+  }
+
+  if (requestingUser.followers.includes(targetUserId)) {
+    res.status(400);
+    throw new Error("Already sent follow request");
+  }
+
+  if (
+    targetUser.pendingRequest.some(
+      (req) => req.user.toString() === requestingUserId.toString()
+    )
+  ) {
+    res.status(400);
+    throw new Error("Follow request already sent");
+  }
+
+  const pendingRequests = {
+    user: requestingUserId,
+    receiver: targetUserId,
+    status: "pending",
+  };
+  requestingUser.following.push(targetUserId);
+  targetUser.followers.push(requestingUserId);
+  targetUser.pendingRequest.push(pendingRequests);
+  await targetUser.save();
+  await requestingUser.save();
+
+  res.status(200).json({ message: "Follow request sent" });
 });
-  
+
 const unfollowUser = asyncHandler(async (req, res) => {
-    const { targetUserId } = req.body;
-    const requestingUserId = req.user._id;
-  
-    const targetUser = await User.findById(targetUserId);
-    const requestingUser = await User.findById(requestingUserId);
-  
-    if (!targetUser) {
-      res.status(404);
-      throw new Error("Target user not found");
-    }
-  
-    if (!requestingUser) {
-      res.status(404);
-      throw new Error("Requesting user not found");
-    }
-  
-    // if (!targetUser.followers.includes(requestingUserId)) {
-    //   res.status(400);
-    //   throw new Error("You are not following this user");
-    // }
-  
-    targetUser.followers = targetUser.followers.filter(
-      (userId) => userId.toString() !== requestingUserId.toString()
-    );
-    targetUser.pendingRequest.splice(targetUserId, 1);
-  
-    requestingUser.following = requestingUser.following.filter(
-      (userId) => userId.toString() !== targetUserId.toString()
-    );
-  
-    await Promise.all([targetUser.save(), requestingUser.save()]);
-  
-    res.status(200).json({ message: "Successfully unfollowed the user" });
+  const { targetUserId } = req.body;
+  const requestingUserId = req.user._id;
+
+  const targetUser = await User.findById(targetUserId);
+  const requestingUser = await User.findById(requestingUserId);
+
+  if (!targetUser) {
+    res.status(404);
+    throw new Error("Target user not found");
+  }
+
+  if (!requestingUser) {
+    res.status(404);
+    throw new Error("Requesting user not found");
+  }
+
+  // if (!targetUser.followers.includes(requestingUserId)) {
+  //   res.status(400);
+  //   throw new Error("You are not following this user");
+  // }
+
+  targetUser.followers = targetUser.followers.filter(
+    (userId) => userId.toString() !== requestingUserId.toString()
+  );
+  targetUser.pendingRequest.splice(targetUserId, 1);
+
+  requestingUser.following = requestingUser.following.filter(
+    (userId) => userId.toString() !== targetUserId.toString()
+  );
+
+  await Promise.all([targetUser.save(), requestingUser.save()]);
+
+  res.status(200).json({ message: "Successfully unfollowed the user" });
 });
-  
+
 const getPendingRequests = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
-  
-    try {
-      const user = await User.findById(userId)
-        .populate({
-          path: "pendingRequest.user",
-          select: "name email image",
-        })
-        .populate({
-          path: "pendingRequest.receiver",
-          select: "name email image",
-        });
-  
-      res.status(200).json(user.pendingRequest);
-    } catch (error) {
-      res.status(400).json({ message: error.message });
-    }
+  const userId = req.user._id;
+
+  try {
+    const user = await User.findById(userId)
+      .populate({
+        path: "pendingRequest.user",
+        select: "name email image",
+      })
+      .populate({
+        path: "pendingRequest.receiver",
+        select: "name email image",
+      });
+
+    res.status(200).json(user.pendingRequest);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 });
 
 const handleFollowRequest = asyncHandler(async (req, res) => {
@@ -161,7 +161,6 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
 });
 
 const updateUserProfile = asyncHandler(async (req, res) => {
-
   const user = await User.findById(req.user._id);
   if (!user) {
     return res.status(404).json({ message: "User not found" });
@@ -169,7 +168,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
   user.name = req.body.name || user.name;
   user.email = req.body.email || user.email;
-console.log(user.name,user.email)
+  console.log(user.name, user.email);
   try {
     if (req.file) {
       const file = dataUri(req).content;
@@ -197,7 +196,7 @@ console.log(user.name,user.email)
 
     const populatedUser = await User.findById(updatedUser._id)
       .populate("followers", "name email image")
-      .populate("following", "name email image")
+      .populate("following", "name email image");
 
     res.json({
       message: "Profile updated successfully",
@@ -210,5 +209,11 @@ console.log(user.name,user.email)
   }
 });
 
-
-module.exports = { getUserProfile, sendFollowRequest, unfollowUser,getPendingRequests,handleFollowRequest,updateUserProfile };
+module.exports = {
+  getUserProfile,
+  sendFollowRequest,
+  unfollowUser,
+  getPendingRequests,
+  handleFollowRequest,
+  updateUserProfile,
+};
