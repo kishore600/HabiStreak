@@ -61,9 +61,9 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
       setErrors(newErrors);
       return;
     }
-
-    setLoading(true);
+    
     try {
+      setLoading(true);
       const data = await signup(name, email, password, imageUri);
       if (data) {
         navigation.navigate('Main');

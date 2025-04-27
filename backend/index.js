@@ -9,8 +9,6 @@ const habitRoutes = require('./routes/habit.Routes.js');
 const groupRoutes = require('./routes/group.Routes.js');
 const todoRoutes = require('./routes/todo.Routes.js');
 const leaderboardRoutes = require('./routes/leaderboard.Routes.js');
-
-
 dotenv.config();
 connectDB();
 
