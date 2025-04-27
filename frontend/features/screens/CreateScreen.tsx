@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, Image, View, Button, StyleSheet } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
+import { useGroup } from '../context/GroupContext';
 
 const CreateScreen = () => {
   const [groupTitle, setGroupTitle] = useState('');
   const [goal, setGoal] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [tasks, setTasks] = useState<string[]>(['']);
-
+  const {createGroup} = useGroup()
+  
   const handlePickImage = () => {
     ImagePicker.launchImageLibrary(
       { mediaType: 'photo', quality: 1 },
@@ -38,12 +40,21 @@ const CreateScreen = () => {
     updatedTasks[index] = text;
     setTasks(updatedTasks);
   };
-
-  const handleSubmit = () => {
-    console.log({ groupTitle, goal, imageUri, tasks });
-    // Call your API here
+  const handleSubmit = async () => {
+    try {
+      const newGroup = {
+        title: groupTitle,
+        goal: goal,
+        members: [], // Assuming you're handling members later (can add current user ID here if needed)
+        tasks: tasks, // Include tasks if your backend expects them
+      };
+  
+      await createGroup(newGroup); // Call createGroup function
+    } catch (error) {
+      console.error('Error creating group:', error);
+    }
   };
-
+  
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Create Group</Text>

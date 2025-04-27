@@ -27,11 +27,12 @@ const createGroup = asyncHandler(async (req, res) => {
   } else {
     return res.status(400).json({ message: "Image is required" });
   }
+  const updatedMembers = [...members, userId];
 
   // Step 1: Create the Group
   const group = new Group({
     title,
-    members,
+    members: updatedMembers,
     admin: userId,
     goal,
     image: imageUrl,

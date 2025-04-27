@@ -62,8 +62,7 @@ export const GroupProvider = ({ children }: any) => {
       setLoading(false);
     }
   },[]);
-
-  const createGroup = async (newGroup: { title: string; members: string[]; goal: string }) => {
+  const createGroup = async (newGroup: { title: string; members: string[]; goal: string; tasks: string[] }) => {
     try {
       const headers = await getAuthHeaders();
       await axios.post(`${API_URL}/groups`, newGroup, headers);
@@ -81,6 +80,7 @@ export const GroupProvider = ({ children }: any) => {
       });
     }
   };
+  
 
   const deleteGroup = async (id: string) => {
     try {
