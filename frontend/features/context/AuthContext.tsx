@@ -3,7 +3,7 @@ import axios from 'axios';
 import {Alert} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
-import { API_BASE_URL } from '@env';
+import { API_URL } from '@env';
 
 interface AuthContextType {
   user: any;
@@ -60,7 +60,7 @@ export const AuthProvider = ({children}: any) => {
 
   const login = async (email: any, password: any) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+      const response = await axios.post(`${API_URL}/auth/login`, {
         email,
         password,
       });
@@ -105,11 +105,11 @@ export const AuthProvider = ({children}: any) => {
           name: 'profile.jpg',
         });
       }
-console.log(`${API_BASE_URL}/auth/register`)
-      const response = await axios.post(`${API_BASE_URL}/auth/register`, formData, {
+console.log(`${API_URL}/auth/register`)
+      const response = await axios.post(`${API_URL}/auth/register`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-
+console.log(response)
       const {user: resuser, token: restoken} = response.data;
 
       // Store user & token in AsyncStorage
@@ -170,7 +170,7 @@ console.log(`${API_BASE_URL}/auth/register`)
         } as any);
       }
 
-      const response = await axios.put(`${API_BASE_URL}/users/profile`, formData, {
+      const response = await axios.put(`${API_URL}/users/profile`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,

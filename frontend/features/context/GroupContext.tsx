@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import axios from 'axios';
-import { API_BASE_URL } from '@env';
+import { API_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 
@@ -33,7 +33,7 @@ export const GroupProvider = ({ children }: any) => {
     setLoading(true);
     try {
       const headers = await getAuthHeaders();
-      const response = await axios.get(`${API_BASE_URL}/groups`, headers);
+      const response = await axios.get(`${API_URL}/groups`, headers);
       setGroups(response.data);
     } catch (error) {
       Dialog.show({
@@ -50,7 +50,7 @@ export const GroupProvider = ({ children }: any) => {
     setLoading(true);
     try {
       const headers = await getAuthHeaders();
-      const response = await axios.get(`${API_BASE_URL}/groups/user`, headers);
+      const response = await axios.get(`${API_URL}/groups/user`, headers);
       setUserGroups(response.data.usergroups);
     } catch (error) {
       Dialog.show({
@@ -66,7 +66,7 @@ export const GroupProvider = ({ children }: any) => {
   const createGroup = async (newGroup: { title: string; members: string[]; goal: string }) => {
     try {
       const headers = await getAuthHeaders();
-      await axios.post(`${API_BASE_URL}/groups`, newGroup, headers);
+      await axios.post(`${API_URL}/groups`, newGroup, headers);
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Success',
@@ -85,7 +85,7 @@ export const GroupProvider = ({ children }: any) => {
   const deleteGroup = async (id: string) => {
     try {
       const headers = await getAuthHeaders();
-      await axios.delete(`${API_BASE_URL}/groups/${id}`, headers);
+      await axios.delete(`${API_URL}/groups/${id}`, headers);
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Deleted',
@@ -104,7 +104,7 @@ export const GroupProvider = ({ children }: any) => {
   const createTodoForGroup = async (groupId: string, tasks: string[]) => {
     try {
       const headers = await getAuthHeaders();
-      await axios.post(`${API_BASE_URL}/groups/${groupId}/todos`, { tasks }, headers);
+      await axios.post(`${API_URL}/groups/${groupId}/todos`, { tasks }, headers);
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Success',
@@ -122,7 +122,7 @@ export const GroupProvider = ({ children }: any) => {
   const markTaskComplete = async (groupId: string, taskId: string) => {
     try {
       const headers = await getAuthHeaders();
-      await axios.patch(`${API_BASE_URL}/groups/${groupId}/todos/${taskId}/complete`, {}, headers);
+      await axios.patch(`${API_URL}/groups/${groupId}/todos/${taskId}/complete`, {}, headers);
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Success',
@@ -140,7 +140,7 @@ export const GroupProvider = ({ children }: any) => {
   const getLeaderboard = async (groupId: string) => {
     try {
       const headers = await getAuthHeaders();
-      const response = await axios.get(`${API_BASE_URL}/groups/${groupId}/leaderboard`, headers);
+      const response = await axios.get(`${API_URL}/groups/${groupId}/leaderboard`, headers);
       console.log(response.data); // Handle leaderboard data (e.g., display in UI)
     } catch (error) {
       Dialog.show({

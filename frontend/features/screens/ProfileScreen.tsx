@@ -203,8 +203,11 @@ const ProfileScreen = ({navigation}: any) => {
           </View>
         </Modal>
       </View>
-
-      {/* User Groups */}
+ {userGroupLoading ? (
+          <ActivityIndicator size="small" color="#1c1c1e" />
+        ) : (
+          <View>
+              {/* User Groups */}
       <View style={styles.groupContainer}>
         <Text style={styles.sectionTitle}>Your Groups:</Text>
         {userGroups.length > 0 ? (
@@ -226,6 +229,9 @@ const ProfileScreen = ({navigation}: any) => {
           </Text>
         )}
       </View>
+          </View>
+        )}
+    
     </Provider>
   );
 };

@@ -8,7 +8,7 @@ const asyncHandler = fn => (req, res, next) => {
 
 const router = express.Router();
 
-router.route("/register").post(upload.single("image"), asyncHandler(register));
-router.route('/login').post(asyncHandler(login));
+router.route("/register").post(upload.single("image"), register);
+router.route('/login').post(login);
 
 module.exports = router;
