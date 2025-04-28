@@ -19,7 +19,7 @@ const createGroup = asyncHandler(async (req, res) => {
         .status(400)
         .json({ message: "Group with this title already exists." });
     }
-
+    
     // Handle image upload
     let imageUrl;
     if (req.file) {

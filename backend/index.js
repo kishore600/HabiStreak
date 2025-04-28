@@ -8,6 +8,7 @@ const userRoutes = require('./routes/user.Routes.js');
 const habitRoutes = require('./routes/habit.Routes.js');
 const groupRoutes = require('./routes/group.Routes.js');
 const todoRoutes = require('./routes/todo.Routes.js');
+const globalRoutes = require('./routes/global.Routes.js');
 const leaderboardRoutes = require('./routes/leaderboard.Routes.js');
 dotenv.config();
 connectDB();
@@ -22,6 +23,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/todos', todoRoutes);
+app.use('/api/global', globalRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 
 // Global Error Handling Middleware
