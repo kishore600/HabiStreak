@@ -4,9 +4,27 @@ const generateToken = require("../utils/generateToken.utils.js");
 const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 
-const getUserProfile = (req, res) => {
-  res.send(`Get user profile for ID: ${req.params.id}`);
+
+const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select("-password -pendingRequest") // Exclude password and pendingRequest
+      .populate("followers", "name email image")
+      .populate("following", "name email image")
+      .populate("createdGroups", "title description image"); // assuming group has these fields
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 };
+
+module.exports = { getUserProfile };
 
 const sendFollowRequest = asyncHandler(async (req, res) => {
   const { targetUserId } = req.body;

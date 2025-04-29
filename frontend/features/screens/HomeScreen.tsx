@@ -9,12 +9,16 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import {useGroup} from '../context/GroupContext';
-import { Modal } from 'react-native';
+import {Modal} from 'react-native';
 
 const HomeScreen = () => {
-  const {groups, loading,fetchGroups} = useGroup();
+  const {groups, loading, fetchGroups} = useGroup();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<any[]>([]);
+  useEffect(() => {
+    fetchGroups();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const renderItem = ({item}: any) => (
     <View style={styles.convoContainer}>
       {/* User Info */}
@@ -56,7 +60,6 @@ const HomeScreen = () => {
           </View>
         </TouchableOpacity>
       )}
-      
 
       <Text>No of Members : {item.members.length}</Text>
       {/* Timestamp */}
@@ -68,9 +71,7 @@ const HomeScreen = () => {
     </View>
   );
 
-  useEffect(() => {
-    fetchGroups()
-  },[])
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Home</Text>
@@ -87,26 +88,24 @@ const HomeScreen = () => {
         />
       )}
       <Modal
-  animationType="slide"
-  transparent={true}
-  visible={modalVisible}
-  onRequestClose={() => setModalVisible(false)}
->
-  <View style={styles.modalBackground}>
-    <View style={styles.modalContainer}>
-      <Text style={styles.modalTitle}>Daily Tasks</Text>
-      {selectedTasks.map((task, index) => (
-        <Text key={index} style={styles.modalTaskText}>
-          {task.title}
-        </Text>
-      ))}
-      <TouchableOpacity onPress={() => setModalVisible(false)}>
-        <Text style={styles.closeButton}>Close</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Daily Tasks</Text>
+            {selectedTasks.map((task, index) => (
+              <Text key={index} style={styles.modalTaskText}>
+                {task.title}
+              </Text>
+            ))}
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeButton}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -212,7 +211,7 @@ const styles = StyleSheet.create({
     // marginTop: 15,
     paddingVertical: 10,
     paddingHorizontal: 0,
-    backgroundColor: '#e9ecef',
+    // backgroundColor: '#e9ecef',
     borderRadius: 8,
   },
   todoTitle: {
@@ -233,9 +232,24 @@ const styles = StyleSheet.create({
   flatListContent: {
     paddingBottom: 20,
   },
-  modalBackground: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContainer: { width: 300, padding: 20, backgroundColor: 'white', borderRadius: 10 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
-  modalTaskText: { fontSize: 16, marginBottom: 5 },
-  closeButton: { marginTop: 15, color: 'blue', textAlign: 'center', fontWeight: 'bold' },
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContainer: {
+    width: 300,
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+  },
+  modalTitle: {fontSize: 20, fontWeight: 'bold', marginBottom: 10},
+  modalTaskText: {fontSize: 16, marginBottom: 5},
+  closeButton: {
+    marginTop: 15,
+    color: 'blue',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
 });

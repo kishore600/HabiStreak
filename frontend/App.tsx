@@ -14,6 +14,8 @@ import GroupDetailsScreen from './features/screens/GroupDetailsScreen';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {AuthProvider} from './features/context/AuthContext';
 import {GroupProvider} from './features/context/GroupContext';
+import {SearchProvider} from './features/context/SearchContext';
+
 import SearchScreen from './features/screens/SearchScreen';
 
 const Stack = createNativeStackNavigator();
@@ -77,6 +79,7 @@ const AppNavigator = () => {
       <AlertNotificationRoot>
         <AuthProvider>
           <GroupProvider>
+            <SearchProvider>
             <Stack.Navigator
               screenOptions={{headerShown: false}}
               initialRouteName={initialRoute}>
@@ -85,6 +88,7 @@ const AppNavigator = () => {
               <Stack.Screen name="Main" component={TabNavigator} />
               <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} /> 
             </Stack.Navigator>
+            </SearchProvider>
           </GroupProvider>
         </AuthProvider>
       </AlertNotificationRoot>
