@@ -72,7 +72,7 @@ const getUserProfile1 = async (req, res) => {
       .populate({
         path: 'pendingRequest',
         populate: {
-          path: 'receiver',
+          path: 'user',
           select: 'name email image _id',
         },
       })

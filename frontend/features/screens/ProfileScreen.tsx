@@ -163,7 +163,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     setUserListModalVisible(true);
   };
 
-  console.log(user.pendingRequest);
+  console.log(user)
 
   return (
     <Provider>
@@ -225,7 +225,7 @@ const ProfileScreen = ({route, navigation}: any) => {
             alignItems: 'center',
             marginBottom: 10,
           }}>
-          <Text>{item?.receiver}</Text>
+          <Text>{item?.receiver.name}</Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             {/* <Button onPress={() => acceptFollower(follower._id)}>Accept</Button>
             <Button onPress={() => rejectFollower(follower._id)}>Reject</Button> */}
