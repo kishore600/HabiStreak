@@ -66,7 +66,7 @@ const getUserProfile1 = async (req, res) => {
 
     // Find user by userId
     const user = await User.findById(userId)
-      .select('-password -pendingRequest')
+      .select('-password')
       .populate('followers', 'name email image')
       .populate('following', 'name email image')
       .populate('createdGroups');

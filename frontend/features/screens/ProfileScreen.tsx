@@ -28,7 +28,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     currentUser,
     profileUser,
     setIsCurrentUser,
-    loadUserData,
+    fetchProfile,
     sendFollowRequest,
     unfollowUser,
   }: any = useAuth();
@@ -48,6 +48,7 @@ const ProfileScreen = ({route, navigation}: any) => {
   const [userListType, setUserListType] = useState<
     'followers' | 'following' | null
   >(null);
+  const[showPendingModal,setShowPendingModal] = useState(false)
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
@@ -60,25 +61,20 @@ const ProfileScreen = ({route, navigation}: any) => {
   useFocusEffect(
     useCallback(() => {
       let uid = route?.params?.user?._id;
+
       if (uid && uid !== user?._id) {
         fetchUserProfile(uid);
         setIsCurrentUser(false);
       }
+      return () => {
+        setIsCurrentUser(true);
+        navigation.setParams({user: null});
+        fetchProfile();
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [route?.params?.user?._id]),
   );
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        // Triggered on screen unfocus
-        console.log('unfocused');
-        setIsCurrentUser(true);
-        navigation.setParams({ user: null });
-        
-      };
-    }, [])
-  );
-  
-  
+
   useEffect(() => {
     if (profileUser && !currentUser) {
       setName(profileUser.name || '');
@@ -88,9 +84,9 @@ const ProfileScreen = ({route, navigation}: any) => {
     }
     if (currentUser) {
       setGroups(userGroups);
-      setName(user.name);
-      setEmail(user.email);
-      setImage(user.image);
+      setName(user?.name);
+      setEmail(user?.email);
+      setImage(user?.image);
       setGroups(userGroups);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -166,7 +162,9 @@ const ProfileScreen = ({route, navigation}: any) => {
     setUserListType(type);
     setUserListModalVisible(true);
   };
-  console.log(profileUser.followers.includes(user._id));
+
+  console.log(user.pendingRequest);
+
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
@@ -189,9 +187,57 @@ const ProfileScreen = ({route, navigation}: any) => {
               }}
               title="Logout"
             />
+          {user?.pendingRequest?.length > 0 && (
+  <Menu.Item
+    onPress={() => setShowPendingModal(true)}
+    title={`Requested Users (${user.pendingRequest.length})`}
+  />
+)}
+
           </Menu>
         )}
       </View>
+      <Modal
+  visible={showPendingModal}
+  animationType="slide"
+  transparent={true}>
+  <View style={{
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)'
+  }}>
+    <View style={{
+      backgroundColor: 'white',
+      padding: 20,
+      width: '85%',
+      borderRadius: 10
+    }}>
+      <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>
+        Pending Follow Requests
+      </Text>
+      {user?.pendingFollowers?.map((follower: any) => (
+        <View
+          key={follower._id}
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 10,
+          }}>
+          <Text>{follower.name}</Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            {/* <Button onPress={() => acceptFollower(follower._id)}>Accept</Button>
+            <Button onPress={() => rejectFollower(follower._id)}>Reject</Button> */}
+          </View>
+        </View>
+      ))}
+      <TouchableOpacity onPress={() => setShowPendingModal(false)} style={{ marginTop: 10 }}>
+        <Text style={{ color: 'blue', textAlign: 'center' }}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
 
       <Modal
         visible={userListModalVisible}
@@ -216,11 +262,46 @@ const ProfileScreen = ({route, navigation}: any) => {
             </Text>
             <FlatList
               data={
-                user?.followers.length > 0 ? user?.followers : user?.following
+                userListType === 'followers' ? user?.followers : user?.following
               }
               keyExtractor={item => item._id}
-              renderItem={({item}) => <Text>{item.name}</Text>}
+              renderItem={({item}) => (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: 10,
+                  }}>
+                  <Text>{item.name}</Text>
+                  {userListType === 'following' && (
+                    <TouchableOpacity onPress={() => unfollowUser(item._id)}>
+                      <Button
+                        onPress={async () => {
+                          try {
+                            await unfollowUser(profileUser._id);
+                            Dialog.show({
+                              type: ALERT_TYPE.SUCCESS,
+                              title: 'Unfollowed',
+                              textBody: 'You have unfollowed this user.',
+                            });
+                            fetchUserProfile(profileUser._id); // Refresh state
+                          } catch (err: any) {
+                            Dialog.show({
+                              type: ALERT_TYPE.DANGER,
+                              title: 'Error',
+                              textBody: err.message,
+                            });
+                          }
+                        }}>
+                        ❌
+                      </Button>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             />
+
             <TouchableOpacity
               onPress={closeUserListModal}
               style={{marginTop: 10}}>
@@ -258,8 +339,9 @@ const ProfileScreen = ({route, navigation}: any) => {
             </View>
             {!currentUser && (
               <View style={{marginTop: 20}}>
-                {profileUser.followers.some(
-                  f => f._id.toString() === user._id.toString(),
+                {profileUser?.followers.some(
+                  (f: {_id: {toString: () => any}}) =>
+                    f._id.toString() === user._id.toString(),
                 ) ? (
                   <Button
                     onPress={async () => {
@@ -286,6 +368,7 @@ const ProfileScreen = ({route, navigation}: any) => {
                     onPress={async () => {
                       try {
                         await sendFollowRequest(profileUser._id);
+                        fetchProfile();
                         Dialog.show({
                           type: ALERT_TYPE.SUCCESS,
                           title: 'Follow Requested',
@@ -422,7 +505,6 @@ const ProfileScreen = ({route, navigation}: any) => {
 const styles = StyleSheet.create({
   followModel: {
     fontSize: 12,
-    padding: '6px 12px',
   },
   topGrid: {
     flexDirection: 'row', // Arrange items horizontally
