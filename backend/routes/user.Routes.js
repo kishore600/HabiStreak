@@ -1,5 +1,5 @@
 const express = require('express');
-const { getPendingRequests, getUserProfile, handleFollowRequest, sendFollowRequest, unfollowUser,updateUserProfile } = require('../controllers/user.controller.js');
+const { getPendingRequests, getUserProfile, handleFollowRequest, sendFollowRequest, unfollowUser,updateUserProfile,getUserProfile1 } = require('../controllers/user.controller.js');
 const { protect, admin } = require("../middleware/auth.middleware.js");
 const multer = require('multer');
 const storage = multer.memoryStorage(); // recommended for Cloudinary
@@ -8,6 +8,8 @@ const upload = multer({ storage });
 const router = express.Router();
 
 router.route('/:id').get(protect,getUserProfile);
+
+router.route('/user/profile').get(protect,getUserProfile1);
 
 router.route("/follow").post(protect, sendFollowRequest);
 
