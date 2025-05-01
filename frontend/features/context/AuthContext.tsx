@@ -202,12 +202,13 @@ export const AuthProvider = ({children}: any) => {
     }
   };
 
-const fetchUserProfile = async (userId: any, isCurrentUser: boolean) => {
+const fetchUserProfile = async (userId: any) => {
   try {
+
     const token = await AsyncStorage.getItem("token");
 
     const url = `${API_URL}/users/${userId}`;
-
+    console.log(url)
     const res = await axios.get(url, {
       headers: {
         Authorization: `Bearer ${token}`,
