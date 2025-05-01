@@ -202,14 +202,24 @@ export const AuthProvider = ({children}: any) => {
     }
   };
 
-  const fetchUserProfile = async (userId:any) => {
-    try {
-      const res = await axios.get(`${API_URL}/users/${userId}`);
-      setProfileUser(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+const fetchUserProfile = async (userId: any, isCurrentUser: boolean) => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+
+    const url = `${API_URL}/users/${userId}`;
+
+    const res = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    setProfileUser(res.data);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
   
   const sendFollowRequest = async (targetUserId: string ) => {
     const token = await AsyncStorage.getItem('token');

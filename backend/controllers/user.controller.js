@@ -7,7 +7,7 @@ const { default: mongoose } = require("mongoose");
 
 const getUserProfile = async (req, res) => {
   try {
-    const userId = req.user?._id || req.params.id;
+    const userId = req.params.id || req.user?._id;
 
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
