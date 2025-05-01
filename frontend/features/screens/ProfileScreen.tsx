@@ -16,9 +16,22 @@ import {launchImageLibrary} from 'react-native-image-picker';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import {useGroup} from '../context/GroupContext';
 import {FlatList} from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
+import {useCallback} from 'react';
 
-const ProfileScreen = ({navigation}: any) => {
-  const {user, logout, updateUser}: any = useAuth();
+const ProfileScreen = ({route, navigation}: any) => {
+  const {
+    user,
+    logout,
+    updateUser,
+    fetchUserProfile,
+    currentUser,
+    profileUser,
+    setIsCurrentUser,
+    loadUserData,
+    sendFollowRequest,
+    unfollowUser,
+  }: any = useAuth();
   const {userGroups, loading: userGroupLoading, fetchUserGroups} = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -28,15 +41,61 @@ const ProfileScreen = ({navigation}: any) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const [groups, setGroups] = useState(userGroups);
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
+  const [userListModalVisible, setUserListModalVisible] = useState(false); // New state for user list modal
+  const [userListType, setUserListType] = useState<
+    'followers' | 'following' | null
+  >(null);
 
-  console.log(name, email);
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
-    fetchUserGroups();
-  }, [fetchUserGroups, user]);
+    if (currentUser) {
+      fetchUserGroups();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let uid = route?.params?.user?._id;
+      if (uid && uid !== user?._id) {
+        fetchUserProfile(uid);
+        setIsCurrentUser(false);
+      }
+    }, [route?.params?.user?._id]),
+  );
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        // Triggered on screen unfocus
+        console.log('unfocused');
+        setIsCurrentUser(true);
+        navigation.setParams({ user: null });
+        
+      };
+    }, [])
+  );
+  
+  
+  useEffect(() => {
+    if (profileUser && !currentUser) {
+      setName(profileUser.name || '');
+      setEmail(profileUser.email || '');
+      setImage(profileUser.image || '');
+      setGroups(profileUser?.createdGroups);
+    }
+    if (currentUser) {
+      setGroups(userGroups);
+      setName(user.name);
+      setEmail(user.email);
+      setImage(user.image);
+      setGroups(userGroups);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileUser, currentUser]);
+
   const openEditModal = () => {
     setEditModalVisible(true);
     closeMenu();
@@ -55,8 +114,6 @@ const ProfileScreen = ({navigation}: any) => {
     }
 
     try {
-      console.log('Updating Profile:', {name, email, password, image});
-
       setLoading(true);
 
       await updateUser(name, email, password, image)
@@ -88,9 +145,7 @@ const ProfileScreen = ({navigation}: any) => {
       {mediaType: 'photo', includeBase64: false},
       (response: any) => {
         if (response.didCancel) {
-          console.log('User cancelled image picker');
         } else if (response.errorMessage) {
-          console.log('Image picker error: ', response.errorMessage);
         } else if (response.assets && response.assets.length > 0) {
           setImage(response.assets[0].uri);
         }
@@ -105,10 +160,18 @@ const ProfileScreen = ({navigation}: any) => {
       </View>
     );
   }
+  const closeUserListModal = () => setUserListModalVisible(false);
 
+  const openUserListModal = (type: 'followers' | 'following') => {
+    setUserListType(type);
+    setUserListModalVisible(true);
+  };
+  console.log(profileUser.followers.includes(user._id));
   return (
     <Provider>
-         <View style={styles.menuContainer}>
+      {/* <ScrollView style={styles.container}></ScrollView> */}
+      <View style={styles.menuContainer}>
+        {currentUser && (
           <Menu
             visible={menuVisible}
             onDismiss={closeMenu}
@@ -127,145 +190,248 @@ const ProfileScreen = ({navigation}: any) => {
               title="Logout"
             />
           </Menu>
-        </View>
-      <View style={styles.container}>
-      <View>
-        {/* Menu Button */}
-     
-
-        {/* Profile Info */}
-        <View style={styles.topGrid}>
-          <View>
-          {image && <Image source={{uri: image}} style={styles.avatar} />}
-
-          </View>
-          <View>
-          <Text style={styles.name}>{name || 'Guest User'}</Text>
-
-          </View>
-        </View>
-   
-        <Modal
-          visible={editModalVisible}
-          animationType="slide"
-          transparent={true}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              {/* Image Input */}
-              <TouchableOpacity
-                style={styles.imagePicker}
-                onPress={selectImage}>
-                {user?.image ? (
-                  <Image source={{uri: user?.image}} style={styles.image} />
-                ) : (
-                  <Image source={user?.image} style={styles.image} />
-                )}
-              </TouchableOpacity>
-
-              {/* Name Input */}
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Name"
-                value={name}
-                onChangeText={setName}
-              />
-
-              {/* Email Input */}
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Email"
-                value={email}
-                onChangeText={setEmail}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(prev => !prev)}
-                style={styles.eyeIcon}>
-                <Icon
-                  name={showPassword ? 'eye-slash' : 'eye'}
-                  size={20}
-                  color="#999"
-                />
-              </TouchableOpacity>
-
-              {/* Buttons */}
-              <View style={styles.buttonContainer}>
-                <Button
-                  mode="contained"
-                  style={{backgroundColor: 'tomato'}}
-                  onPress={saveProfileChanges}>
-                  Save
-                </Button>
-                <Button
-                  mode="outlined"
-                  onPress={() => setEditModalVisible(false)}>
-                  Cancel
-                </Button>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      </View>
-
-      <View>
-        {userGroupLoading ? (
-          <ActivityIndicator size="small" color="#1c1c1e" />
-        ) : (
-          <View>
-            {/* User Groups */}
-            <View style={styles.groupContainer}>
-              <Text style={styles.sectionTitle}>Your Groups:</Text>
-
-              {userGroups.length > 0 ? (
-                <FlatList
-                  data={userGroups}
-                  numColumns={3} // 3 columns like Instagram
-                  keyExtractor={item => item._id}
-                  renderItem={({item}) => (
-                    <TouchableOpacity
-                      style={styles.gridItem}
-                      onPress={() =>
-                        navigation.navigate('GroupDetails', {group: item})
-                      }>
-                      <Image
-                        source={{uri: item.image}} // Assuming you have group.imageUrl
-                        style={styles.groupImage}
-                        resizeMode="cover"
-                      />
-                    </TouchableOpacity>
-                  )}
-                />
-              ) : (
-                <Text style={styles.noGroupText}>
-                  You are not part of any groups yet.
-                </Text>
-              )}
-            </View>
-          </View>
         )}
       </View>
+
+      <Modal
+        visible={userListModalVisible}
+        animationType="slide"
+        transparent={true}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}>
+          <View
+            style={{
+              backgroundColor: 'white',
+              padding: 20,
+              width: '80%',
+              borderRadius: 10,
+            }}>
+            <Text style={{fontSize: 18, fontWeight: 'bold', marginBottom: 10}}>
+              User List
+            </Text>
+            <FlatList
+              data={
+                user?.followers.length > 0 ? user?.followers : user?.following
+              }
+              keyExtractor={item => item._id}
+              renderItem={({item}) => <Text>{item.name}</Text>}
+            />
+            <TouchableOpacity
+              onPress={closeUserListModal}
+              style={{marginTop: 10}}>
+              <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <View style={styles.container}>
+        <View>
+          {/* Menu Button */}
+
+          {/* Profile Info */}
+          <View style={styles.topGrid}>
+            <View>
+              {image && <Image source={{uri: image}} style={styles.avatar} />}
+            </View>
+            <View>
+              <Text style={styles.name}>{name || 'Guest User'}</Text>
+            </View>
+            <View>
+              {currentUser && (
+                <View>
+                  <View style={{marginTop: 20}}>
+                    <Button onPress={() => openUserListModal('followers')}>
+                      {user?.followers.length}Followers
+                    </Button>
+                    <Button onPress={() => openUserListModal('following')}>
+                      {user?.following.length}Fllowing
+                    </Button>
+                  </View>
+                </View>
+              )}
+            </View>
+            {!currentUser && (
+              <View style={{marginTop: 20}}>
+                {profileUser.followers.some(
+                  f => f._id.toString() === user._id.toString(),
+                ) ? (
+                  <Button
+                    onPress={async () => {
+                      try {
+                        await unfollowUser(profileUser._id);
+                        Dialog.show({
+                          type: ALERT_TYPE.SUCCESS,
+                          title: 'Unfollowed',
+                          textBody: 'You have unfollowed this user.',
+                        });
+                        fetchUserProfile(profileUser._id); // Refresh state
+                      } catch (err: any) {
+                        Dialog.show({
+                          type: ALERT_TYPE.DANGER,
+                          title: 'Error',
+                          textBody: err.message,
+                        });
+                      }
+                    }}>
+                    Unfollow
+                  </Button>
+                ) : (
+                  <Button
+                    onPress={async () => {
+                      try {
+                        await sendFollowRequest(profileUser._id);
+                        Dialog.show({
+                          type: ALERT_TYPE.SUCCESS,
+                          title: 'Follow Requested',
+                          textBody: 'Follow request sent.',
+                        });
+                      } catch (err: any) {
+                        console.log(err);
+                        Dialog.show({
+                          type: ALERT_TYPE.DANGER,
+                          title: 'Error',
+                          textBody: err.message,
+                        });
+                      }
+                    }}>
+                    Follow
+                  </Button>
+                )}
+              </View>
+            )}
+          </View>
+
+          <Modal
+            visible={editModalVisible}
+            animationType="slide"
+            transparent={true}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Edit Profile</Text>
+                {/* Image Input */}
+                <TouchableOpacity
+                  style={styles.imagePicker}
+                  onPress={selectImage}>
+                  {user?.image ? (
+                    <Image source={{uri: user?.image}} style={styles.image} />
+                  ) : (
+                    <Image source={user?.image} style={styles.image} />
+                  )}
+                </TouchableOpacity>
+
+                {/* Name Input */}
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter Name"
+                  value={name}
+                  onChangeText={setName}
+                />
+
+                {/* Email Input */}
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter Email"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor="#999"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(prev => !prev)}
+                  style={styles.eyeIcon}>
+                  <Icon
+                    name={showPassword ? 'eye-slash' : 'eye'}
+                    size={20}
+                    color="#999"
+                  />
+                </TouchableOpacity>
+
+                {/* Buttons */}
+                <View style={styles.buttonContainer}>
+                  <Button
+                    mode="contained"
+                    style={{backgroundColor: 'tomato'}}
+                    onPress={saveProfileChanges}>
+                    Save
+                  </Button>
+                  <Button
+                    mode="outlined"
+                    onPress={() => setEditModalVisible(false)}>
+                    Cancel
+                  </Button>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        </View>
+
+        <View>
+          {userGroupLoading ? (
+            <ActivityIndicator size="small" color="#1c1c1e" />
+          ) : (
+            <View>
+              {/* User Groups */}
+              <View style={styles.groupContainer}>
+                <Text style={styles.sectionTitle}>Your Groups:</Text>
+
+                {groups?.length > 0 ? (
+                  <FlatList
+                    data={groups}
+                    numColumns={3} // 3 columns like Instagram
+                    keyExtractor={item => item._id}
+                    renderItem={({item}) => (
+                      <TouchableOpacity
+                        style={styles.gridItem}
+                        onPress={() =>
+                          navigation.navigate('GroupDetails', {group: item})
+                        }>
+                        <Image
+                          source={{uri: item.image}} // Assuming you have group.imageUrl
+                          style={styles.groupImage}
+                          resizeMode="cover"
+                        />
+                      </TouchableOpacity>
+                    )}
+                  />
+                ) : (
+                  <Text style={styles.noGroupText}>
+                    You are not part of any groups yet.
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
+        </View>
       </View>
     </Provider>
   );
 };
 
 const styles = StyleSheet.create({
-  topGrid: {
-    flexDirection: 'row',      // Arrange items horizontally
-    flexWrap: 'wrap',          // Wrap to next line if needed
-    alignItems: 'center',      // Center items vertically
-    marginBottom: 10,      
-    gap:30  
+  followModel: {
+    fontSize: 12,
+    padding: '6px 12px',
   },
-  
+  topGrid: {
+    flexDirection: 'row', // Arrange items horizontally
+    flexWrap: 'wrap', // Wrap to next line if needed
+    alignItems: 'center', // Center items vertically
+    marginBottom: 10,
+    gap: 30,
+  },
+
   container: {
     // flex: 1,
     display: 'flex',

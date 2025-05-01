@@ -7,7 +7,7 @@ const upload = multer({ storage });
 
 const router = express.Router();
 
-router.get('/:id', getUserProfile);
+router.route('/:id').get(protect,getUserProfile);
 
 router.route("/follow").post(protect, sendFollowRequest);
 
@@ -17,6 +17,6 @@ router.route("/pending/request").get(protect, getPendingRequests);
 
 router.route("/follow/handle").post(protect, handleFollowRequest);
 
-router.route("/profile").get(protect, getUserProfile).put(protect, upload.single("image"), updateUserProfile);
+router.route("/profile").put(protect, upload.single("image"), updateUserProfile);
 
 module.exports = router;

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { Button } from 'react-native-paper';
 
@@ -31,6 +32,7 @@ const GroupDetailsScreen = ({ route, navigation }: any) => {
     // TODO: Navigate to EditGroup screen or open a modal to edit
     console.log('Edit group');
   };
+
 
   return (
     <View style={styles.container}>

@@ -3,29 +3,33 @@ const asyncHandler = require("express-async-handler");
 const generateToken = require("../utils/generateToken.utils.js");
 const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
-
+const { default: mongoose } = require("mongoose");
 
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id)
-      .select("-password -pendingRequest") // Exclude password and pendingRequest
-      .populate("followers", "name email image")
-      .populate("following", "name email image")
-      .populate("createdGroups", "title description image"); // assuming group has these fields
+    const userId = req.user?._id || req.params.id;
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    const user = await User.findById(userId)
+      .select('-password -pendingRequest')
+      .populate('followers', 'name email image')
+      .populate('following', 'name email image')
+      .populate('createdGroups');
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' });
     }
 
     res.json(user);
   } catch (error) {
-    console.error("Error fetching user profile:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
-
-module.exports = { getUserProfile };
-
 const sendFollowRequest = asyncHandler(async (req, res) => {
   const { targetUserId } = req.body;
   const requestingUserId = req.user._id;

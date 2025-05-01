@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   TextInput,
@@ -7,27 +7,34 @@ import {
   FlatList,
   ActivityIndicator,
   StyleSheet,
-} from "react-native";
-import { useSearch } from "../context/SearchContext";
-import { Image } from "react-native-animatable";
-import { useNavigation } from "@react-navigation/native";
+} from 'react-native';
+import {useSearch} from '../context/SearchContext';
+import {Image} from 'react-native-animatable';
+import {useNavigation} from '@react-navigation/native';
 
 const SearchScreen = () => {
   const navigation = useNavigation();
 
-  const { query, setQuery, selectedType, setSelectedType, results, search, loading } = useSearch();
+  const {
+    query,
+    setQuery,
+    selectedType,
+    setSelectedType,
+    results,
+    search,
+    loading,
+  } = useSearch();
 
-  const toggleType = (type: "user" | "group") => {
+  const toggleType = (type: 'user' | 'group') => {
     setSelectedType((prev: any) => (prev === type ? null : type));
   };
 
   const handlePress = (item: any) => {
-    if (item.type === "user") {
-      navigation.navigate("UserScreen", { user: item });
+    if (item.type === 'user') {
+      navigation.navigate('Profile', {user: item});
     }
     // You can add similar logic for "group" later
   };
-
 
   return (
     <View style={styles.container}>
@@ -43,50 +50,62 @@ const SearchScreen = () => {
       {/* Tags */}
       <View style={styles.tagsContainer}>
         <TouchableOpacity
-          style={[styles.tag, selectedType === "user" && styles.selectedTag]}
-          onPress={() => toggleType("user")}
-        >
+          style={[styles.tag, selectedType === 'user' && styles.selectedTag]}
+          onPress={() => toggleType('user')}>
           <Text style={styles.tagText}>User</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tag, selectedType === "group" && styles.selectedTag]}
-          onPress={() => toggleType("group")}
-        >
+          style={[styles.tag, selectedType === 'group' && styles.selectedTag]}
+          onPress={() => toggleType('group')}>
           <Text style={styles.tagText}>Group</Text>
         </TouchableOpacity>
       </View>
 
       {/* Results */}
       {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" style={{ marginTop: 20 }} />
+        <ActivityIndicator
+          size="large"
+          color="#0000ff"
+          style={{marginTop: 20}}
+        />
       ) : (
         <FlatList
           data={results}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) => (
+          keyExtractor={item => item._id}
+          renderItem={({item}:any) => (
             <TouchableOpacity onPress={() => handlePress(item)}>
+              <View style={styles.resultItem}>
+                <View style={styles.align}>
+                  <View  style={styles.resultText}>
 
-            <View style={styles.resultItem}>
-              <View style={styles.resultText}>
-                <View>
-                  
-                {item.image && <Image source={{uri: item.image}} style={styles.avatar} />}
-                </View>
-                <View>
-                <Text>
-
-                {item.type === "user" ? ` ${item.name}` : `${item.title}`}
-                </Text>
+                  <View>
+                    {item.image && (
+                      <Image source={{uri: item.image}} style={styles.avatar} />
+                    )}
                   </View>
-                  <View style={[styles.badge, item.type === 'user' ? styles.userBadge : styles.groupBadge]}>
-  <Text style={styles.badgeText}>
-    {item.type === 'user' ? 'User' : 'Group'}
-  </Text>
-</View>              </View>
-            </View>
-            </TouchableOpacity>
+                  
+                  <View>
+                    <Text>
+                      {item.type === 'user' ? ` ${item.name}` : `${item.title}`}
+                    </Text>
+                  </View>
+                  </View>
 
+                  <View
+                    style={[
+                      styles.badge,
+                      item.type === 'user'
+                        ? styles.userBadge
+                        : styles.groupBadge,
+                    ]}>
+                    <Text style={styles.badgeText}>
+                      {item.type === 'user' ? 'User' : 'Group'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </TouchableOpacity>
           )}
         />
       )}
@@ -97,6 +116,12 @@ const SearchScreen = () => {
 export default SearchScreen;
 
 const styles = StyleSheet.create({
+  align:{
+display:'flex',
+flexDirection:'row',
+justifyContent:'space-between',
+alignItems:'center'
+  },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -114,53 +139,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#333',
   },
-  
+
   container: {
     flex: 1,
     padding: 16,
-    marginTop:50,
-    backgroundColor: "#fff",
+    marginTop: 50,
+    backgroundColor: '#fff',
   },
   input: {
     height: 50,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
     borderWidth: 1,
     paddingHorizontal: 16,
     borderRadius: 8,
     marginBottom: 12,
   },
   tagsContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
     marginBottom: 16,
     gap: 10,
   },
   tag: {
     borderWidth: 1,
-    borderColor: "#aaa",
+    borderColor: '#aaa',
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 20,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
   },
   selectedTag: {
-    backgroundColor: "#007bff",
-    borderColor: "#007bff",
+    backgroundColor: '#007bff',
+    borderColor: '#007bff',
   },
   tagText: {
-    color: "#000",
+    color: '#000',
   },
   resultItem: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   resultText: {
     fontSize: 16,
-    display:'flex',
-    justifyContent:'start',
-    alignItems:'center',
-    flexDirection:'row',
-    gap:4
+    display: 'flex',
+    justifyContent: 'start',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
   },
   avatar: {
     width: 40,
