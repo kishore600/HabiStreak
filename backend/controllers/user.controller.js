@@ -69,6 +69,13 @@ const getUserProfile1 = async (req, res) => {
       .select('-password')
       .populate('followers', 'name email image')
       .populate('following', 'name email image')
+      .populate({
+        path: 'pendingRequest',
+        populate: {
+          path: 'receiver',
+          select: 'name email image _id',
+        },
+      })
       .populate('createdGroups');
 
     if (!user) {

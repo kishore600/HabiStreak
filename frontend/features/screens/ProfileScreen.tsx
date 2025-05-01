@@ -216,16 +216,16 @@ const ProfileScreen = ({route, navigation}: any) => {
       <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>
         Pending Follow Requests
       </Text>
-      {user?.pendingFollowers?.map((follower: any) => (
+      {user?.pendingRequest?.map((item: any) => (
         <View
-          key={follower._id}
+          key={item?._id}
           style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: 10,
           }}>
-          <Text>{follower.name}</Text>
+          <Text>{item?.receiver}</Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             {/* <Button onPress={() => acceptFollower(follower._id)}>Accept</Button>
             <Button onPress={() => rejectFollower(follower._id)}>Reject</Button> */}
