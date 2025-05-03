@@ -260,6 +260,8 @@ const sendFollowRequest = async (targetUserId: string ) => {
       { targetUserId },
       { headers: { Authorization: `Bearer ${token}` } }
     );
+
+    console.log(response)
     fetchProfile()
 
     return response.data;

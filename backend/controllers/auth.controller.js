@@ -58,7 +58,9 @@ console.log(name, email, password)
 
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).select('-password -pendingRequest')
+  .populate('followers', 'name email image')
+  .populate('following', 'name email image');
 
   if (user && (await user.matchPassword(password))) {
     res.json({ user: user, token: generateToken(user._id) });

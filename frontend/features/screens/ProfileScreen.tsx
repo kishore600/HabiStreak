@@ -164,7 +164,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     setUserListType(type);
     setUserListModalVisible(true);
   };
-
+console.log(user)
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
