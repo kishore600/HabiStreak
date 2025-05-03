@@ -218,6 +218,8 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
 
   if (status === "accepted") {
     user.pendingRequest.splice(requestingUserIndex, 1);
+    user.followers.splice(requestingUserIndex, 1);
+
 
     const requestingUser = await User.findById(requestingUserId);
     user.following.push(requestingUser._id);

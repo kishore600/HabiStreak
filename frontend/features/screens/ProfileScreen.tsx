@@ -31,6 +31,8 @@ const ProfileScreen = ({route, navigation}: any) => {
     fetchProfile,
     sendFollowRequest,
     unfollowUser,
+    handleFollowRequest,
+    pendingRequest
   }: any = useAuth();
   const {userGroups, loading: userGroupLoading, fetchUserGroups} = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -48,7 +50,7 @@ const ProfileScreen = ({route, navigation}: any) => {
   const [userListType, setUserListType] = useState<
     'followers' | 'following' | null
   >(null);
-  const[showPendingModal,setShowPendingModal] = useState(false)
+  const [showPendingModal, setShowPendingModal] = useState(false);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
@@ -163,8 +165,6 @@ const ProfileScreen = ({route, navigation}: any) => {
     setUserListModalVisible(true);
   };
 
-  console.log(user)
-
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
@@ -187,57 +187,75 @@ const ProfileScreen = ({route, navigation}: any) => {
               }}
               title="Logout"
             />
-          {user?.pendingRequest?.length > 0 && (
-  <Menu.Item
-    onPress={() => setShowPendingModal(true)}
-    title={`Requested Users (${user.pendingRequest.length})`}
-  />
-)}
-
+            {user?.pendingRequest?.length > 0 && (
+              <Menu.Item
+                onPress={() => setShowPendingModal(true)}
+                title={`Requested Users (${user.pendingRequest.length})`}
+              />
+            )}
           </Menu>
         )}
       </View>
       <Modal
-  visible={showPendingModal}
-  animationType="slide"
-  transparent={true}>
-  <View style={{
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)'
-  }}>
-    <View style={{
-      backgroundColor: 'white',
-      padding: 20,
-      width: '85%',
-      borderRadius: 10
-    }}>
-      <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>
-        Pending Follow Requests
-      </Text>
-      {user?.pendingRequest?.map((item: any) => (
+        visible={showPendingModal}
+        animationType="slide"
+        transparent={true}>
         <View
-          key={item?._id}
           style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
+            flex: 1,
+            justifyContent: 'center',
             alignItems: 'center',
-            marginBottom: 10,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
           }}>
-          <Text>{item?.receiver.name}</Text>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            {/* <Button onPress={() => acceptFollower(follower._id)}>Accept</Button>
-            <Button onPress={() => rejectFollower(follower._id)}>Reject</Button> */}
+          <View
+            style={{
+              backgroundColor: 'white',
+              padding: 20,
+              width: '85%',
+              borderRadius: 10,
+            }}>
+            <Text style={{fontWeight: 'bold', fontSize: 18, marginBottom: 10}}>
+              Pending Follow Requests
+            </Text>
+            {pendingRequest?.map((item: any) => (
+              <View
+                key={item?._id}
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 10,
+                }}>
+                <Text>{item?.user.name}</Text>
+                <View style={{flexDirection: 'row', gap: 10}}>
+                  <Button
+                    onPress={() =>{
+
+                      handleFollowRequest(item?.user._id, 'accepted');
+                      setUserListModalVisible(false)
+                    }
+                    }>
+                    Accept
+                  </Button>
+                  <Button
+                    onPress={() =>{
+                      handleFollowRequest(item?.user._id, 'rejected');
+                      setUserListModalVisible(false)
+                    }
+                    }>
+                    Reject
+                  </Button>
+                </View>
+              </View>
+            ))}
+            <TouchableOpacity
+              onPress={() => setShowPendingModal(false)}
+              style={{marginTop: 10}}>
+              <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      ))}
-      <TouchableOpacity onPress={() => setShowPendingModal(false)} style={{ marginTop: 10 }}>
-        <Text style={{ color: 'blue', textAlign: 'center' }}>Close</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
+      </Modal>
 
       <Modal
         visible={userListModalVisible}

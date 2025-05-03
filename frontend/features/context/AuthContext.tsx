@@ -34,7 +34,8 @@ interface AuthContextType {
   unfollowUser:any,
   getPendingRequests:any,
   handleFollowRequest:any,
-  fetchProfile:any
+  fetchProfile:any,
+  pendingRequest:any
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -45,6 +46,7 @@ export const AuthProvider = ({children}: any) => {
   const isAuthenticated = !!user;
   const [currentUser,setIsCurrentUser] = useState(true)
   const [profileUser, setProfileUser] = useState<any>(null);
+  const [pendingRequest,setPendingRequest] = useState(null)
 
   const loadUserData = async () => {
     try {
@@ -69,6 +71,7 @@ export const AuthProvider = ({children}: any) => {
   useEffect(() => {
     loadUserData();
     fetchProfile()
+    getPendingRequests()
   }, []);
 
   const login = async (email: any, password: any) => {
@@ -221,7 +224,6 @@ export const AuthProvider = ({children}: any) => {
     }
   };
 
-  
 const fetchProfile = async () => {
   try {
 
@@ -240,11 +242,9 @@ setUser(res.data)
     console.error(err);
   }
 };
-  
-  const sendFollowRequest = async (targetUserId: string ) => {
-    const token = await AsyncStorage.getItem('token');
 
-    
+const sendFollowRequest = async (targetUserId: string ) => {
+
     const response = await axios.post(
       `${API_URL}/users/follow`,
       { targetUserId:targetUserId },
@@ -253,7 +253,6 @@ setUser(res.data)
     fetchUserProfile(targetUserId)
     return response.data;
   };
-
 
   const unfollowUser = async (targetUserId: string) => {
     const response = await axios.post(
@@ -266,18 +265,17 @@ setUser(res.data)
     return response.data;
   };
 
-
-  const getPendingRequests = async () => {
+const getPendingRequests = async () => {
     const token = await AsyncStorage.getItem('token');
 
     const response = await axios.get(`${API_URL}/users/pending/request`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    setPendingRequest(response.data);
     return response.data;
   };
 
-
-  const handleFollowRequest = async (requestId: string, status: string ) => {
+ const handleFollowRequest = async (requestId: string, status: string ) => {
     const token = await AsyncStorage.getItem('token');
 
     const response = await axios.post(
@@ -285,13 +283,13 @@ setUser(res.data)
       { requestId, status },
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    
+    fetchProfile()
     return response.data;
   };
 
   return (
     <AuthContext.Provider
-      value={{user, isAuthenticated, login, signup, logout, updateUser,fetchUserProfile,currentUser,profileUser,token,setIsCurrentUser,setProfileUser,loadUserData,sendFollowRequest,unfollowUser,getPendingRequests,handleFollowRequest,fetchProfile}}>
+      value={{user, isAuthenticated, login, signup, logout, updateUser,fetchUserProfile,currentUser,profileUser,token,setIsCurrentUser,setProfileUser,loadUserData,sendFollowRequest,unfollowUser,getPendingRequests,handleFollowRequest,fetchProfile,pendingRequest}}>
       {children}
     </AuthContext.Provider>
   );
