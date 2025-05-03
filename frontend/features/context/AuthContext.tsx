@@ -254,7 +254,7 @@ const sendFollowRequest = async (targetUserId: string ) => {
     return response.data;
   };
 
-  const unfollowUser = async (targetUserId: string) => {
+const unfollowUser = async (targetUserId: string) => {
     const response = await axios.post(
       `${API_URL}/users/unfollow`,
       { targetUserId },
@@ -265,7 +265,7 @@ const sendFollowRequest = async (targetUserId: string ) => {
     fetchProfile()
 
     return response.data;
-  };
+};
 
 const getPendingRequests = async () => {
     const token = await AsyncStorage.getItem('token');
@@ -277,17 +277,17 @@ const getPendingRequests = async () => {
     return response.data;
   };
 
- const handleFollowRequest = async (requestId: string, status: string ) => {
+const handleFollowRequest = async (requesterId: string, action: string ) => {
     const token = await AsyncStorage.getItem('token');
 
     const response = await axios.post(
       `${API_URL}/users/follow/handle`,
-      { requestId, status },
+      { requesterId, action },
       { headers: { Authorization: `Bearer ${token}` } }
     );
     fetchProfile()
     return response.data;
-  };
+};
 
   return (
     <AuthContext.Provider
