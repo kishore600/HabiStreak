@@ -1,10 +1,16 @@
-import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useCallback,
+  useEffect,
+} from 'react';
 import axios from 'axios';
-import { API_URL } from '@env';
+import {API_URL} from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 interface GroupContextType {
   groups: any[];
@@ -22,12 +28,12 @@ interface GroupContextType {
     title: string,
     goal: string,
     members: any[],
-    image: any
+    image: any,
   ) => Promise<void>;
-  group:any
-  fetchGroupById:any
-  handleDeleteGroup: (groupId: string) => Promise<void>,
-  setLoading:any;
+  group: any;
+  fetchGroupById: any;
+  handleDeleteGroup: (groupId: string) => Promise<void>;
+  setLoading: any;
 }
 export type RootStackParamList = {
   Home: undefined;
@@ -35,31 +41,33 @@ export type RootStackParamList = {
 };
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined);
-export const GroupProvider = ({ children }: any) => {
+export const GroupProvider = ({children}: any) => {
   const [groups, setGroups] = useState<any[]>([]);
   const [userGroups, setUserGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [group, setGroup] = useState(null);
 
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
-    return { headers: { Authorization: `Bearer ${token}` } };
+    return {headers: {Authorization: `Bearer ${token}`}};
   };
 
   const fetchGroupById = async (groupId: string) => {
     try {
       const headers = await getAuthHeaders();
-      const res = await axios.get(`${API_URL}/groups/${groupId}`,headers);  
+      const res = await axios.get(`${API_URL}/groups/${groupId}`, headers);
       setGroup(res.data);
       setLoading(false);
     } catch (error: any) {
-      console.error('❌ Failed to fetch group:', error?.response?.data || error.message || error);
+      console.error(
+        '❌ Failed to fetch group:',
+        error?.response?.data || error.message || error,
+      );
       setLoading(false);
     }
   };
-  
-
 
   const fetchGroups = useCallback(async () => {
     setLoading(true);
@@ -93,12 +101,12 @@ export const GroupProvider = ({ children }: any) => {
     } finally {
       setLoading(false);
     }
-  },[]);
+  }, []);
 
   const createGroup = async (formData: FormData) => {
     try {
       setLoading(true);
-      console.log(formData,API_URL)
+      console.log(formData, API_URL);
       const headers = await getAuthHeaders();
       await axios.post(`${API_URL}/groups`, formData, {
         ...headers,
@@ -112,10 +120,10 @@ export const GroupProvider = ({ children }: any) => {
         title: 'Success',
         textBody: 'Group created successfully!',
       });
-  navigation.navigate('Home'); // <--- Make sure you have access to navigation prop
+      navigation.navigate('Home'); // <--- Make sure you have access to navigation prop
 
       fetchGroups();
-      fetchUserGroups()
+      fetchUserGroups();
     } catch (error) {
       console.error('Create group error:', error);
       Dialog.show({
@@ -150,7 +158,7 @@ export const GroupProvider = ({ children }: any) => {
   const createTodoForGroup = async (groupId: string, tasks: string[]) => {
     try {
       const headers = await getAuthHeaders();
-      await axios.post(`${API_URL}/groups/${groupId}/todos`, { tasks }, headers);
+      await axios.post(`${API_URL}/groups/${groupId}/todos`, {tasks}, headers);
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Success',
@@ -168,7 +176,11 @@ export const GroupProvider = ({ children }: any) => {
   const markTaskComplete = async (groupId: string, taskId: string) => {
     try {
       const headers = await getAuthHeaders();
-      await axios.patch(`${API_URL}/groups/${groupId}/todos/${taskId}/complete`, {}, headers);
+      await axios.patch(
+        `${API_URL}/groups/${groupId}/todos/${taskId}/complete`,
+        {},
+        headers,
+      );
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Success',
@@ -186,7 +198,10 @@ export const GroupProvider = ({ children }: any) => {
   const getLeaderboard = async (groupId: string) => {
     try {
       const headers = await getAuthHeaders();
-      const response = await axios.get(`${API_URL}/groups/${groupId}/leaderboard`, headers);
+      const response = await axios.get(
+        `${API_URL}/groups/${groupId}/leaderboard`,
+        headers,
+      );
       console.log(response.data); // Handle leaderboard data (e.g., display in UI)
     } catch (error) {
       Dialog.show({
@@ -196,40 +211,43 @@ export const GroupProvider = ({ children }: any) => {
       });
     }
   };
-  
+
   const handleUpdateGroup = async (
     groupId: string,
     title: string,
     goal: string,
     members: any[],
-    image: any
+    image: any,
   ) => {
     try {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('goal', goal);
       formData.append('members', JSON.stringify(members));
-  
-      if (image) {
-        formData.append('image', {
+
+      if (image && image.uri) {
+        const imageFile = {
           uri: image.uri,
           name: image.fileName || 'photo.jpg',
           type: image.type || 'image/jpeg',
-        });
+        };
+
+        formData.append('image', imageFile as any);
       }
-  
+
       const headers = await getAuthHeaders();
-      const response = await axios.put(`${API_URL}/groups/${groupId}`, formData, {
-        ...headers,
-        headers: {
-          ...headers.headers,
-          'Content-Type': 'multipart/form-data',
+
+      const response = await axios.put(
+        `${API_URL}/groups/${groupId}`,
+        formData,
+        {
+          headers: {
+            ...headers.headers,
+            'Content-Type': 'multipart/form-data',
+          },
         },
-      });
-  
-      // Log the response to ensure it's successful
-      console.log('Group updated:', response);
-  
+      );
+
       // Ensure the response message matches
       if (response.data.message === 'update successfully') {
         Dialog.show({
@@ -238,10 +256,11 @@ export const GroupProvider = ({ children }: any) => {
           textBody: 'Group updated successfully!',
           button: 'OK',
         });
-  
+
         // Refresh data
         fetchGroups();
         fetchUserGroups();
+        navigation.goBack();
       } else {
         Dialog.show({
           type: ALERT_TYPE.DANGER,
@@ -251,27 +270,35 @@ export const GroupProvider = ({ children }: any) => {
         });
       }
     } catch (error: any) {
+      console.error('❌ Error during group update:', error.message);
+      console.error('❌ Full error object:', error);
+    
+      if (error.response) {
+        console.error('❌ error.response.data:', error.response.data);
+        console.error('❌ error.response.status:', error.response.status);
+      }
+    
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Update Failed',
-        textBody: error.response?.data?.message || '222Something went wrong',
+        textBody: error.response?.data?.message || error.message || 'Something went wrong',
         button: 'OK',
       });
     }
+    
   };
-  
-  
+
   const handleDeleteGroup = async (groupId: string) => {
     try {
       const headers = await getAuthHeaders();
       await axios.delete(`${API_URL}/groups/${groupId}`, headers);
-  
+
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Deleted',
         textBody: 'Group deleted successfully!',
       });
-  
+
       fetchGroups();
       fetchUserGroups();
       navigation.goBack();
@@ -307,9 +334,8 @@ export const GroupProvider = ({ children }: any) => {
         handleUpdateGroup,
         group,
         fetchGroupById,
-        setLoading
-      }}
-    >
+        setLoading,
+      }}>
       {children}
     </GroupContext.Provider>
   );

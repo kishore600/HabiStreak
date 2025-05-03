@@ -5,10 +5,12 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { useGroup } from '../context/GroupContext';
+import { useNavigation } from '@react-navigation/native';
 
 
 const GroupDetailsScreen = ({ route }: any) => {
   const { user }: any = useAuth();
+  const navigation = useNavigation()
   const { groupId }: any = route.params;
   const {
     group,
@@ -68,7 +70,7 @@ const GroupDetailsScreen = ({ route }: any) => {
   const saveGroupChanges = async () => {
     try {
       setLoading(true);
-      await handleUpdateGroup(groupId, title, goal, selectedMembers, image);
+      await handleUpdateGroup(groupId, title, goal, selectedMembers, image);      
     } catch (error: any) {
       console.log(error);
     } finally {
