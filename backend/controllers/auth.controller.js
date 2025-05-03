@@ -58,7 +58,16 @@ console.log(name, email, password)
 
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email })
+  const user = await User.findOne({ email }) .populate('followers', 'name email image')
+  .populate('following', 'name email image')
+  .populate({
+    path: 'pendingRequest',
+    populate: {
+      path: 'user',
+      select: 'name email image _id',
+    },
+  })
+  .populate('createdGroups');
 
   if (user && (await user.matchPassword(password))) {
     res.json({ user: user, token: generateToken(user._id) });
