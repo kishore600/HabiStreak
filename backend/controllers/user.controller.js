@@ -88,6 +88,7 @@ const getUserProfile1 = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 const sendFollowRequest = asyncHandler(async (req, res) => {
   const { targetUserId } = req.body;
   const requestingUserId = req.user._id;
@@ -131,7 +132,6 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
   }
 });
 
-
 const unfollowUser = asyncHandler(async (req, res) => {
   const { targetUserId } = req.body;
   const requestingUserId = req.user._id;
@@ -155,7 +155,6 @@ const unfollowUser = asyncHandler(async (req, res) => {
 
   res.status(200).json({ message: "Unfollowed successfully" });
 });
-
 
 const getPendingRequests = asyncHandler(async (req, res) => {
   const userId = req.user._id;
