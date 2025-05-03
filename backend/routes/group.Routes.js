@@ -9,9 +9,9 @@ const {
   markTaskComplete,
   getLeaderboard,
   getuserGroups,
+  updateTodoForGroup,
 } = require('../controllers/group.controller');
 const { protect } = require('../middleware/auth.middleware');
-// const { upload } = require('../middleware/upload.middleware.js');
 const multer = require('multer');
 const storage = multer.memoryStorage(); // recommended for Cloudinary
 const upload = multer({ storage });
@@ -27,5 +27,6 @@ router.delete('/:groupId', protect, deleteGroup);
 router.post('/:groupId/todo', protect, createTodoForGroup);
 router.put('/:groupId/task/:taskId/complete', protect, markTaskComplete);
 router.get('/:groupId/leaderboard', protect, getLeaderboard);
+router.put('/groups/:groupId/todo',protect, updateTodoForGroup);
 
 module.exports = router;

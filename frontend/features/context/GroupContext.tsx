@@ -288,6 +288,32 @@ export const GroupProvider = ({children}: any) => {
     
   };
 
+
+  const updateTodo = async (groupId:any, tasks:any) => {
+    try {
+      const headers = await getAuthHeaders();
+
+      const response = await axios.put(`/api/todos/${groupId}`, { tasks },headers);
+      // Refresh data
+      fetchGroups();
+      fetchUserGroups();
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Error',
+        textBody: 'Group update failed!',
+        button: 'OK',
+      });
+      navigation.goBack();
+    } catch (error) {
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Error',
+        textBody: 'Group update failed!',
+        button: 'OK',
+      });
+    }
+    }
+  };
   const handleDeleteGroup = async (groupId: string) => {
     try {
       const headers = await getAuthHeaders();

@@ -274,6 +274,40 @@ const getLeaderboard = asyncHandler(async (req, res) => {
   res.json(leaderboard);
 });
 
+const updateTodoForGroup = asyncHandler(async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { tasks } = req.body;
+
+    // Find the group and populate the todo
+    const group = await Group.findById(groupId).populate('todo');
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Check if the group has an existing todo
+    if (group.todo) {
+      // Update existing todo
+      group.todo.tasks = tasks;
+      await group.todo.save();
+      return res.status(200).json(group.todo);
+    } else {
+      // If no todo exists, optionally create one
+      const newTodo = new Todo({ tasks, group: groupId });
+      await newTodo.save();
+
+      group.todo = newTodo._id;
+      await group.save();
+
+      return res.status(201).json(newTodo);
+    }
+  } catch (error) {
+    console.error('Failed to update todo:', error);
+    res.status(500).json({ message: 'Failed to update todo', error: error.message });
+  }
+});
+
+
 module.exports = {
   createGroup,
   getGroupById,
@@ -284,4 +318,5 @@ module.exports = {
   createTodoForGroup,
   markTaskComplete,
   getLeaderboard,
+  updateTodoForGroup
 };
