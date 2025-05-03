@@ -254,7 +254,7 @@ export const GroupProvider = ({ children }: any) => {
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Update Failed',
-        textBody: error.response?.data?.message || 'Something went wrong',
+        textBody: error.response?.data?.message || '222Something went wrong',
         button: 'OK',
       });
     }
