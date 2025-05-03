@@ -15,7 +15,6 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import {AuthProvider} from './features/context/AuthContext';
 import {GroupProvider} from './features/context/GroupContext';
 import {SearchProvider} from './features/context/SearchContext';
-
 import SearchScreen from './features/screens/SearchScreen';
 
 const Stack = createNativeStackNavigator();

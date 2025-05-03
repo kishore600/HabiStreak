@@ -4,6 +4,7 @@ const Todo = require("../models/todo.model");
 const User = require("../models/user.Model");
 const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
+const { default: mongoose } = require("mongoose");
 
 const createGroup = asyncHandler(async (req, res) => {
   try {
@@ -125,28 +126,61 @@ const getGroupById = asyncHandler(async (req, res) => {
 });
 
 const updateGroup = asyncHandler(async (req, res) => {
-  if (req.file) {
-    const file = dataUri(req).content;
-    console.log(req.file);
-
-    if (user.image) {
-      const publicId = user.image.split("/").slice(-1)[0].split(".")[0];
-      console.log(publicId);
-      await cloudinary.uploader.destroy(`uploads/${publicId}`);
+  try {
+    // Find the existing group by groupId
+    const group = await Group.findById(req.params.groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
     }
 
-    const result = await cloudinary.uploader.upload(file, {
-      folder: "uploads",
-      transformation: { width: 500, height: 500, crop: "limit" },
+    // If there is an image file in the request, upload and update the image
+    if (req.file) {
+      const file = dataUri(req).content;
+      console.log(req.file);
+
+      // If the group already has an image, remove the old image from Cloudinary
+      if (group.image) {
+        const publicId = group.image.split("/").slice(-1)[0].split(".")[0];
+        console.log(publicId);
+        await cloudinary.uploader.destroy(`uploads/${publicId}`);
+      }
+
+      // Upload the new image to Cloudinary
+      const result = await cloudinary.uploader.upload(file, {
+        folder: "uploads",
+        transformation: { width: 500, height: 500, crop: "limit" },
+      });
+
+      // Update the group's image with the new URL
+      group.image = result.secure_url;
+    }
+
+    // Ensure members are converted to ObjectIds if members is provided
+    if (req.body.members) {
+      // Check if members is a string (e.g., JSON string) and parse it
+      if (typeof req.body.members === 'string') {
+        req.body.members = JSON.parse(req.body.members);
+      }
+      
+      // Ensure members is an array before calling map
+      if (Array.isArray(req.body.members)) {
+        req.body.members = req.body.members.map((id) => new mongoose.Types.ObjectId(id));
+      } else {
+        return res.status(400).json({ message: 'Invalid members format' });
+      }
+    }
+
+    // Update the group document with the new data
+    const updatedGroup = await Group.findByIdAndUpdate(req.params.groupId, req.body, {
+      new: true,
     });
 
-    user.image = result.secure_url;
+    // Respond with the updated group
+    res.json({ message: 'update successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to update group', error: error.message });
   }
-
-  const group = await Group.findByIdAndUpdate(req.params.groupId, req.body, {
-    new: true,
-  });
-  res.json(group);
 });
 
 const deleteGroup = asyncHandler(async (req, res) => {

@@ -17,6 +17,17 @@ interface GroupContextType {
   createTodoForGroup: (groupId: string, tasks: string[]) => Promise<void>;
   markTaskComplete: (groupId: string, taskId: string) => Promise<void>;
   getLeaderboard: (groupId: string) => void;
+  handleUpdateGroup: (
+    groupId: string,
+    title: string,
+    goal: string,
+    members: any[],
+    image: any
+  ) => Promise<void>;
+  group:any
+  fetchGroupById:any
+  handleDeleteGroup: (groupId: string) => Promise<void>,
+  setLoading:any;
 }
 export type RootStackParamList = {
   Home: undefined;
@@ -29,11 +40,26 @@ export const GroupProvider = ({ children }: any) => {
   const [userGroups, setUserGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [group, setGroup] = useState(null);
 
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
     return { headers: { Authorization: `Bearer ${token}` } };
   };
+
+  const fetchGroupById = async (groupId: string) => {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await axios.get(`${API_URL}/groups/${groupId}`,headers);  
+      setGroup(res.data);
+      setLoading(false);
+    } catch (error: any) {
+      console.error('❌ Failed to fetch group:', error?.response?.data || error.message || error);
+      setLoading(false);
+    }
+  };
+  
+
 
   const fetchGroups = useCallback(async () => {
     setLoading(true);
@@ -68,6 +94,7 @@ export const GroupProvider = ({ children }: any) => {
       setLoading(false);
     }
   },[]);
+
   const createGroup = async (formData: FormData) => {
     try {
       setLoading(true);
@@ -169,6 +196,94 @@ export const GroupProvider = ({ children }: any) => {
       });
     }
   };
+  
+  const handleUpdateGroup = async (
+    groupId: string,
+    title: string,
+    goal: string,
+    members: any[],
+    image: any
+  ) => {
+    try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('goal', goal);
+      formData.append('members', JSON.stringify(members));
+  
+      if (image) {
+        formData.append('image', {
+          uri: image.uri,
+          name: image.fileName || 'photo.jpg',
+          type: image.type || 'image/jpeg',
+        });
+      }
+  
+      const headers = await getAuthHeaders();
+      const response = await axios.put(`${API_URL}/groups/${groupId}`, formData, {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      // Log the response to ensure it's successful
+      console.log('Group updated:', response);
+  
+      // Ensure the response message matches
+      if (response.data.message === 'update successfully') {
+        Dialog.show({
+          type: ALERT_TYPE.SUCCESS,
+          title: 'Success',
+          textBody: 'Group updated successfully!',
+          button: 'OK',
+        });
+  
+        // Refresh data
+        fetchGroups();
+        fetchUserGroups();
+      } else {
+        Dialog.show({
+          type: ALERT_TYPE.DANGER,
+          title: 'Error',
+          textBody: 'Group update failed!',
+          button: 'OK',
+        });
+      }
+    } catch (error: any) {
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Update Failed',
+        textBody: error.response?.data?.message || 'Something went wrong',
+        button: 'OK',
+      });
+    }
+  };
+  
+  
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      const headers = await getAuthHeaders();
+      await axios.delete(`${API_URL}/groups/${groupId}`, headers);
+  
+      Dialog.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Deleted',
+        textBody: 'Group deleted successfully!',
+      });
+  
+      fetchGroups();
+      fetchUserGroups();
+      navigation.goBack();
+    } catch (error) {
+      console.error(error);
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Error',
+        textBody: 'Failed to delete group',
+      });
+    }
+  };
 
   useEffect(() => {
     fetchGroups();
@@ -188,6 +303,11 @@ export const GroupProvider = ({ children }: any) => {
         createTodoForGroup,
         markTaskComplete,
         getLeaderboard,
+        handleDeleteGroup,
+        handleUpdateGroup,
+        group,
+        fetchGroupById,
+        setLoading
       }}
     >
       {children}

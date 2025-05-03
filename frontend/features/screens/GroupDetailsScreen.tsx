@@ -1,114 +1,331 @@
-import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
 import { Button } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { useAuth } from '../context/AuthContext';
+import { useGroup } from '../context/GroupContext';
 
-const GroupDetailsScreen = ({ route, navigation }: any) => {
-  const { group } = route.params;
-  const [groupData, setGroupData] = useState(group);
 
-  console.log(groupData)
-  const handleDeleteGroup = () => {
-    Alert.alert(
-      'Delete Group',
-      'Are you sure you want to delete this group?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            // TODO: Call your delete group API here
-            console.log('Group deleted!');
-            navigation.goBack();
-          },
-        },
-      ],
-      { cancelable: true }
+const GroupDetailsScreen = ({ route }: any) => {
+  const { user }: any = useAuth();
+  const { groupId }: any = route.params;
+  const {
+    group,
+    fetchGroupById,
+    handleUpdateGroup,
+    handleDeleteGroup,
+    loading,
+    setLoading,
+  }: any = useGroup();
+
+  const [editMode, setEditMode] = useState(false);
+  const [title, setTitle] = useState('');
+  const [goal, setGoal] = useState('');
+  const [members, setMembers] = useState([]);
+  const [selectedMembers, setSelectedMembers] = useState([]);
+  const [image, setImage] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      await fetchGroupById(groupId);
+      setLoading(false);
+    };
+
+    if (groupId) {
+      fetchData();
+    }
+  }, [groupId]);
+
+  useEffect(() => {
+    if (group) {
+      setTitle(group.title);
+      setGoal(group.goal);
+      setMembers(group.members || []);
+      setImage(group.image);
+      setSelectedMembers(group.members?.map((m: any) => m._id) || []);
+    }
+  }, [group]);
+
+  const pickImage = async () => {
+    const result: any = await launchImageLibrary({
+      mediaType: 'photo',
+      includeBase64: false,
+    });
+
+    if (result?.assets && result.assets.length > 0) {
+      setImage(result.assets[0]);
+    }
+  };
+
+  const toggleMemberSelection = (id: string) => {
+    setSelectedMembers((prev: any) =>
+      prev.includes(id) ? prev.filter((mid: any) => mid !== id) : [...prev, id],
     );
   };
 
-  const handleEditGroup = () => {
-    // TODO: Navigate to EditGroup screen or open a modal to edit
-    console.log('Edit group');
+  const saveGroupChanges = async () => {
+    try {
+      setLoading(true);
+      await handleUpdateGroup(groupId, title, goal, selectedMembers, image);
+    } catch (error: any) {
+      console.log(error);
+    } finally {
+      setLoading(false); // Stop loading
+    }
   };
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{groupData.title}</Text>
-      <Text style={styles.goal}>Goal: {groupData.goal}</Text>
-      <Text style={styles.streak}>Group Streak: {groupData.streak}</Text>
+    <FlatList
+      style={styles.container}
+      data={[group]} // Pass your group data here for rendering
+      keyExtractor={(item: any) => item?._id}
+      ListHeaderComponent={
+        <>
+          {editMode ? (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Group Title"
+                value={title}
+                onChangeText={setTitle}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Group Goal"
+                value={goal}
+                onChangeText={setGoal}
+              />
+              <TouchableOpacity onPress={pickImage}>
+                <Text style={{ color: 'blue', marginBottom: 10 }}>
+                  Pick New Group Image
+                </Text>
+              </TouchableOpacity>
+              {image ? (
+                <Image
+                  source={{ uri: image.uri || image }}
+                  style={{ width: 100, height: 100, marginBottom: 10 }}
+                />
+              ) : (
+                <TouchableOpacity onPress={pickImage}>
+                  <View
+                    style={{
+                      width: 100,
+                      height: 100,
+                      marginBottom: 10,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      backgroundColor: '#eee',
+                      borderRadius: 8,
+                    }}>
+                    <Text style={{ color: '#888' }}>Pick Group Image</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
 
-      <Text style={styles.subTitle}>Members:</Text>
-      <FlatList
-        data={groupData.members}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <View style={styles.memberItem}>
-            <Text style={styles.memberName}>{item.name}</Text>
-            <Text style={styles.memberEmail}>{item.email}</Text>
-          </View>
-        )}
-      />
+              <Text style={styles.subTitle}>Select Members:</Text>
+              <FlatList
+                data={user.followers}
+                keyExtractor={item => item._id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.memberItem}
+                    onPress={() => toggleMemberSelection(item._id)}>
+                    <Icon
+                      name={
+                        selectedMembers.includes(item._id)
+                          ? 'check-circle'
+                          : 'circle-o'
+                      }
+                      size={24}
+                      color={selectedMembers.includes(item._id) ? 'green' : 'gray'}
+                      style={{ marginRight: 10 }}
+                    />
+                    <View>
+                      <Text style={styles.memberName}>{item.name}</Text>
+                      <Text style={styles.memberEmail}>{item.email}</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            </>
+          ) : (
+            <>
+              <Text style={styles.title}>{group?.title}</Text>
+              <Text style={styles.goal}>Goal: {group?.goal}</Text>
+              <Text style={styles.streak}>Group Streak: {group?.streak}</Text>
 
-      <View style={styles.buttonContainer}>
-        <Button
-          mode="contained"
-          style={{ backgroundColor: 'tomato', marginBottom: 10 }}
-          onPress={handleEditGroup}
-        >
-          Edit Group
-        </Button>
-        <Button mode="outlined" onPress={handleDeleteGroup}>
-          Delete Group
-        </Button>
-      </View>
-    </View>
+              <Text style={styles.subTitle}>Admin</Text>
+              <View style={styles.adminContainer}>
+                <Image source={{ uri: group?.admin?.image }} style={styles.adminImage} />
+                <View>
+                  <Text style={styles.memberName}>{group?.admin?.name}</Text>
+                  <Text style={styles.memberEmail}>{group?.admin?.email}</Text>
+                </View>
+              </View>
+
+              <Text style={styles.subTitle}>Members</Text>
+              <FlatList
+                data={members}
+                keyExtractor={(item: any) => item?._id}
+                renderItem={({ item }) => (
+                  <View style={styles.memberItem}>
+                    <Image source={{ uri: item?.image }} style={styles.memberImage} />
+                    <View>
+                      <Text style={styles.memberName}>{item?.name}</Text>
+                      <Text style={styles.memberEmail}>{item?.email}</Text>
+                    </View>
+                  </View>
+                )}
+              />
+
+              <Text style={styles.subTitle}>To-Do Tasks</Text>
+              {group?.todo?.tasks?.map((task: any) => (
+                <View key={task._id} style={styles.taskItem}>
+                  <Text>{task.title}</Text>
+                </View>
+              ))}
+            </>
+          )}
+        </>
+      }
+      ListFooterComponent={
+        <View style={styles.buttonContainer}>
+          {editMode ? (
+            <>
+              <Button mode="contained" onPress={saveGroupChanges}>
+                Save Changes
+              </Button>
+              <Button mode="outlined" onPress={() => setEditMode(false)}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                mode="contained"
+                style={{ backgroundColor: 'tomato', marginBottom: 10 }}
+                onPress={() => setEditMode(true)}>
+                Edit Group
+              </Button>
+              <Button mode="outlined" onPress={handleDeleteGroup}>
+                Delete Group
+              </Button>
+            </>
+          )}
+        </View>
+      }
+    />
   );
 };
 
 export default GroupDetailsScreen;
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    marginTop:50
+    paddingTop: 60,
+    backgroundColor: '#f7f7f7',
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 5,
+    color: '#333',
   },
   goal: {
-    fontSize: 18,
+    fontSize: 16,
     marginBottom: 5,
+    color: '#555',
   },
   streak: {
-    fontSize: 18,
-    marginBottom: 20,
+    fontSize: 16,
+    marginBottom: 15,
+    color: '#28a745',
   },
   subTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '600',
+    marginTop: 25,
     marginBottom: 10,
+    color: '#444',
+  },
+  adminContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: {width: 0, height: 2},
+    shadowRadius: 4,
+    marginBottom: 10,
+  },
+  adminImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 15,
   },
   memberItem: {
-    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
     padding: 10,
-    backgroundColor: '#f2f2f2',
-    borderRadius: 8,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: {width: 0, height: 2},
+    shadowRadius: 4,
+    marginBottom: 10,
+  },
+  memberImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
   },
   memberName: {
-    fontSize: 16,
     fontWeight: 'bold',
+    fontSize: 16,
+    color: '#333',
   },
   memberEmail: {
-    fontSize: 14,
-    color: '#666',
+    color: '#777',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  taskItem: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: {width: 0, height: 1},
+    shadowRadius: 3,
   },
   buttonContainer: {
-    marginTop: 20,
+    marginTop: 30,
+    marginBottom: 20,
+    gap: 10,
   },
 });

@@ -54,7 +54,7 @@ const ProfileScreen = ({route, navigation}: any) => {
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && user) {
       fetchUserGroups();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -164,7 +164,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     setUserListType(type);
     setUserListModalVisible(true);
   };
-console.log(user)
+console.log(userGroups)
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
@@ -496,7 +496,7 @@ console.log(user)
                       <TouchableOpacity
                         style={styles.gridItem}
                         onPress={() =>
-                          navigation.navigate('GroupDetails', {group: item})
+                          navigation.navigate('GroupDetails', {groupId: item._id})
                         }>
                         <Image
                           source={{uri: item.image}} // Assuming you have group.imageUrl
