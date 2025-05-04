@@ -15,6 +15,7 @@ import {useAuth} from '../context/AuthContext';
 import {useGroup} from '../context/GroupContext';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import {ScrollView} from 'react-native';
+import Leaderboard from '../components/Leaderboard';
 
 const GroupDetailsScreen = ({route}: any) => {
   const {user}: any = useAuth();
@@ -37,7 +38,7 @@ const GroupDetailsScreen = ({route}: any) => {
   const [selectedMembers, setSelectedMembers] = useState<any>([]);
   const [image, setImage] = useState<any>(null);
   const [tasks, setTasks] = useState<any>([]);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -157,14 +158,14 @@ const GroupDetailsScreen = ({route}: any) => {
     try {
       setLoading(true);
       const res = await markTaskComplete(groupId, taskId);
-  
+
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Success',
         textBody: res.message || 'Task marked complete!',
         button: 'OK',
       });
-  
+
       await fetchGroupById(groupId); // Refresh group tasks
     } catch (error: any) {
       Dialog.show({
@@ -177,7 +178,7 @@ const GroupDetailsScreen = ({route}: any) => {
       setLoading(false);
     }
   };
-  
+
   return (
     <ScrollView
       style={styles.container}
@@ -280,7 +281,7 @@ const GroupDetailsScreen = ({route}: any) => {
               <Text style={styles.memberEmail}>{group?.admin?.email}</Text>
             </View>
           </View>
-
+          {/* group  members */}
           <Text style={styles.subTitle}>Members</Text>
           {members.map((item: any) => (
             <View key={item._id} style={styles.memberItem}>
@@ -291,6 +292,7 @@ const GroupDetailsScreen = ({route}: any) => {
               </View>
             </View>
           ))}
+          {/* group todo */}
 
           <Text style={styles.subTitle}>To-Do Tasks</Text>
           {group?.todo?.tasks?.map((task: any) => {
@@ -320,6 +322,9 @@ const GroupDetailsScreen = ({route}: any) => {
               </TouchableOpacity>
             );
           })}
+
+          {/* leader board */}
+          <Leaderboard groupId={groupId} />
         </>
       )}
 

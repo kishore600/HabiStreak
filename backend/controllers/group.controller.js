@@ -157,17 +157,43 @@ const updateGroup = asyncHandler(async (req, res) => {
 
     // Ensure members are converted to ObjectIds if members is provided
     if (req.body.members) {
-      // Check if members is a string (e.g., JSON string) and parse it
-      if (typeof req.body.members === 'string') {
+      if (typeof req.body.members === "string") {
         req.body.members = JSON.parse(req.body.members);
       }
-      
-      // Ensure members is an array before calling map
-      if (Array.isArray(req.body.members)) {
-        req.body.members = req.body.members.map((id) => new mongoose.Types.ObjectId(id));
-      } else {
-        return res.status(400).json({ message: 'Invalid members format' });
+    
+      if (!Array.isArray(req.body.members)) {
+        return res.status(400).json({ message: "Invalid members format" });
       }
+    
+      const newMemberIds = req.body.members.map((id: string) => new mongoose.Types.ObjectId(id));
+      const oldMemberIds = group.members.map((id) => id.toString());
+    
+      const newSet = new Set(newMemberIds.map((id) => id.toString()));
+    
+      // ✅ Users to remove: those in old but not in new
+      const removedMembers = oldMemberIds.filter((id) => !newSet.has(id));
+    
+      // ✅ Remove group from removed members' joinedGroups
+      for (const memberId of removedMembers) {
+        const user = await User.findById(memberId);
+        if (user) {
+          user.joinedGroups = user.joinedGroups.filter(
+            (gId) => gId.toString() !== group._id.toString()
+          );
+          await user.save();
+        }
+      }
+    
+      // ✅ Add group to new members' joinedGroups if not already present
+      for (const memberId of newMemberIds) {
+        const user = await User.findById(memberId);
+        if (user && !user.joinedGroups.includes(group._id)) {
+          user.joinedGroups.push(group._id);
+          await user.save();
+        }
+      }
+    
+      group.members = newMemberIds;
     }
 
     // Update the group document with the new data

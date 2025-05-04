@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema({
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   createdGroups: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],
+  joinedGroups: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],
   pendingRequest: [pendingRequestSchema],
   totalStreak: { type: Number, default: 0 },
   lastStreakDate: { type: Date },

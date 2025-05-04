@@ -35,6 +35,9 @@ interface GroupContextType {
   handleDeleteGroup: (groupId: string) => Promise<void>;
   setLoading: any;
   updateTodo:any;
+  leaderboard:any;
+  loadingLeaderboard:any;
+  fetchLeaderboard:any;
 }
 export type RootStackParamList = {
   Home: undefined;
@@ -48,6 +51,9 @@ export const GroupProvider = ({children}: any) => {
   const [loading, setLoading] = useState<boolean>(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [group, setGroup] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+
 
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
@@ -135,7 +141,22 @@ export const GroupProvider = ({children}: any) => {
       setLoading(false);
     }
   };
+  const fetchLeaderboard = async (groupId:any) => {
+    setLoadingLeaderboard(true);
+    const headers = await getAuthHeaders();
 
+    try {
+      const { data } = await axios.get(
+        `${API_URL}/groups/${groupId}/leaderboard`,
+        headers
+      );
+      setLeaderboard(data);
+    } catch (err) {
+      console.error("Error fetching leaderboard:", err);
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
   const deleteGroup = async (id: string) => {
     try {
       const headers = await getAuthHeaders();
@@ -349,7 +370,10 @@ export const GroupProvider = ({children}: any) => {
         group,
         fetchGroupById,
         setLoading,
-        updateTodo
+        updateTodo,
+        leaderboard,
+        loadingLeaderboard,
+        fetchLeaderboard,
       }}>
       {children}
     </GroupContext.Provider>
