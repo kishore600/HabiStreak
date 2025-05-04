@@ -1,16 +1,24 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native';
-import { Button } from 'react-native-paper';
+import React, {useEffect, useRef, useState} from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
+import {Button} from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { launchImageLibrary } from 'react-native-image-picker';
-import { useAuth } from '../context/AuthContext';
-import { useGroup } from '../context/GroupContext';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {useAuth} from '../context/AuthContext';
+import {useGroup} from '../context/GroupContext';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
-import { ScrollView } from 'react-native';
+import {ScrollView} from 'react-native';
 
-const GroupDetailsScreen = ({ route }: any) => {
-  const { user }: any = useAuth();
-  const { groupId }: any = route.params;
+const GroupDetailsScreen = ({route}: any) => {
+  const {user}: any = useAuth();
+  const {groupId}: any = route.params;
   const {
     group,
     fetchGroupById,
@@ -18,7 +26,8 @@ const GroupDetailsScreen = ({ route }: any) => {
     handleDeleteGroup,
     loading,
     setLoading,
-    updateTodo
+    updateTodo,
+    markTaskComplete,
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
@@ -40,7 +49,7 @@ const GroupDetailsScreen = ({ route }: any) => {
     if (groupId) {
       fetchData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId]);
 
   useEffect(() => {
@@ -51,10 +60,9 @@ const GroupDetailsScreen = ({ route }: any) => {
       setImage(group.image);
       setSelectedMembers(group.members?.map((m: any) => m._id) || []);
       setTasks(group.todo?.tasks || []);
-      }
+    }
   }, [group]);
-  
-  
+
   const validateText = (text: string) => {
     return text && text.trim().length > 0;
   };
@@ -75,7 +83,7 @@ const GroupDetailsScreen = ({ route }: any) => {
       prev.includes(id) ? prev.filter((mid: any) => mid !== id) : [...prev, id],
     );
   };
-  
+
   const saveGroupChanges = async () => {
     if (!validateText(title) || !validateText(goal)) {
       Dialog.show({
@@ -86,20 +94,19 @@ const GroupDetailsScreen = ({ route }: any) => {
       });
       return;
     }
-  
+
     try {
       setLoading(true);
       await handleUpdateGroup(groupId, title, goal, selectedMembers, image);
-  
-        await updateTodo(groupId, tasks);
 
+      await updateTodo(groupId, tasks);
     } catch (error) {
       console.log(error);
     } finally {
       setLoading(false);
     }
   };
-  
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -108,179 +115,244 @@ const GroupDetailsScreen = ({ route }: any) => {
     );
   }
 
-  const handleTaskChange = (index:any, newText:any) => {
+  const handleTaskChange = (index: any, newText: any) => {
     const updated = [...tasks];
     updated[index].title = newText;
     setTasks(updated);
   };
 
   const addNewTask = () => {
-    setTasks([...tasks, { title: '', completedBy: [] }]);
+    setTasks([...tasks, {title: '', completedBy: []}]);
   };
 
   const removeTask = (index: any) => {
-    const updated = tasks.filter((_:any, i:any) => i !== index);
+    const updated = tasks.filter((_: any, i: any) => i !== index);
     setTasks(updated);
   };
 
-const updateTaskChanges = async () => {
+  const updateTaskChanges = async () => {
+    try {
+      setLoading(true);
+      await updateTodo(groupId, tasks);
+      Dialog.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Updated',
+        textBody: 'Tasks updated successfully!',
+        button: 'OK',
+      });
+    } catch (error) {
+      console.log(error);
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Error',
+        textBody: 'Failed to update tasks.',
+        button: 'OK',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  try {
-    setLoading(true);
-    await updateTodo(groupId, tasks);
-    Dialog.show({
-      type: ALERT_TYPE.SUCCESS,
-      title: 'Updated',
-      textBody: 'Tasks updated successfully!',
-      button: 'OK',
-    });
-  } catch (error) {
-    console.log(error);
-    Dialog.show({
-      type: ALERT_TYPE.DANGER,
-      title: 'Error',
-      textBody: 'Failed to update tasks.',
-      button: 'OK',
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      setLoading(true);
+      const res = await markTaskComplete(groupId, taskId);
+
+      Dialog.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Success',
+        textBody: res.message || 'Task marked complete!',
+        button: 'OK',
+      });
+
+      await fetchGroupById(groupId); // Refresh group tasks
+    } catch (error: any) {
+      console.error('Error marking task complete:', error);
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Error',
+        textBody: error?.response?.data?.message || 'Failed to complete task',
+        button: 'OK',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
-    {editMode ? (
-      <>
-        <TextInput
-          style={styles.input}
-          placeholder="Group Title"
-          value={title}
-          onChangeText={setTitle}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Group Goal"
-          value={goal}
-          onChangeText={setGoal}
-        />
-        <TouchableOpacity onPress={pickImage}>
-          <Text style={{ color: 'blue', marginBottom: 10 }}>
-            Pick New Group Image
-          </Text>
-        </TouchableOpacity>
-        {image ? (
-          <Image
-            source={{ uri: image.uri || image }}
-            style={{ width: 100, height: 100, marginBottom: 10 }}
-          />
-        ) : (
-          <TouchableOpacity onPress={pickImage}>
-            <View style={{
-              width: 100, height: 100, marginBottom: 10,
-              justifyContent: 'center', alignItems: 'center',
-              backgroundColor: '#eee', borderRadius: 8
-            }}>
-              <Text style={{ color: '#888' }}>Pick Group Image</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-
-        <Text style={styles.subTitle}>Select Members:</Text>
-        {user.followers.map((item: { _id: any }) => (
-          <TouchableOpacity
-            key={item._id}
-            style={styles.memberItem}
-            onPress={() => toggleMemberSelection(item._id)}>
-            <Icon
-              name={selectedMembers.includes(item._id) ? 'check-circle' : 'circle-o'}
-              size={24}
-              color={selectedMembers.includes(item._id) ? 'green' : 'gray'}
-              style={{ marginRight: 10 }}
-            />
-            <View>
-              <Text style={styles.memberName}>{item.name}</Text>
-              <Text style={styles.memberEmail}>{item.email}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-
-        <Text style={styles.subTitle}>Edit Tasks</Text>
-        {tasks.map((task, index) => (
-          <View key={index} style={styles.taskItem}>
-            <TextInput
-              style={styles.input}
-              placeholder="Task Title"
-              value={task.title}
-              onChangeText={text => handleTaskChange(index, text)}
-            />
-            <TouchableOpacity onPress={() => removeTask(index)}>
-              <Text style={{ color: 'red' }}>Remove</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-        <Button onPress={addNewTask}>Add Task</Button>
-        <Button onPress={updateTaskChanges}>Update Tasks</Button>
-
-      </>
-    ) : (
-      <>
-        <Text style={styles.title}>{group?.title}</Text>
-        <Text style={styles.goal}>Goal: {group?.goal}</Text>
-        <Text style={styles.streak}>Group Streak: {group?.streak}</Text>
-
-        <Text style={styles.subTitle}>Admin</Text>
-        <View style={styles.adminContainer}>
-          <Image source={{ uri: group?.admin?.image }} style={styles.adminImage} />
-          <View>
-            <Text style={styles.memberName}>{group?.admin?.name}</Text>
-            <Text style={styles.memberEmail}>{group?.admin?.email}</Text>
-          </View>
-        </View>
-
-        <Text style={styles.subTitle}>Members</Text>
-        {members.map(item => (
-          <View key={item._id} style={styles.memberItem}>
-            <Image source={{ uri: item.image }} style={styles.memberImage} />
-            <View>
-              <Text style={styles.memberName}>{item.name}</Text>
-              <Text style={styles.memberEmail}>{item.email}</Text>
-            </View>
-          </View>
-        ))}
-
-        <Text style={styles.subTitle}>To-Do Tasks</Text>
-        {group?.todo?.tasks?.map(task => (
-          <View key={task._id} style={styles.taskItem}>
-            <Text>{task.title}</Text>
-          </View>
-        ))}
-      </>
-    )}
-
-    <View style={styles.buttonContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{paddingBottom: 50}}>
       {editMode ? (
         <>
-          <Button mode="contained" onPress={saveGroupChanges}>Save Changes</Button>
-          <Button mode="outlined" onPress={() => setEditMode(false)}>Cancel</Button>
+          <TextInput
+            style={styles.input}
+            placeholder="Group Title"
+            value={title}
+            onChangeText={setTitle}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Group Goal"
+            value={goal}
+            onChangeText={setGoal}
+          />
+          <TouchableOpacity onPress={pickImage}>
+            <Text style={{color: 'blue', marginBottom: 10}}>
+              Pick New Group Image
+            </Text>
+          </TouchableOpacity>
+          {image ? (
+            <Image
+              source={{uri: image.uri || image}}
+              style={{width: 100, height: 100, marginBottom: 10}}
+            />
+          ) : (
+            <TouchableOpacity onPress={pickImage}>
+              <View
+                style={{
+                  width: 100,
+                  height: 100,
+                  marginBottom: 10,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: '#eee',
+                  borderRadius: 8,
+                }}>
+                <Text style={{color: '#888'}}>Pick Group Image</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          <Text style={styles.subTitle}>Select Members:</Text>
+          {user.followers.map((item: {_id: any}) => (
+            <TouchableOpacity
+              key={item._id}
+              style={styles.memberItem}
+              onPress={() => toggleMemberSelection(item._id)}>
+              <Icon
+                name={
+                  selectedMembers.includes(item._id)
+                    ? 'check-circle'
+                    : 'circle-o'
+                }
+                size={24}
+                color={selectedMembers.includes(item._id) ? 'green' : 'gray'}
+                style={{marginRight: 10}}
+              />
+              <View>
+                <Text style={styles.memberName}>{item.name}</Text>
+                <Text style={styles.memberEmail}>{item.email}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+
+          <Text style={styles.subTitle}>Edit Tasks</Text>
+          {tasks.map((task, index) => (
+            <View key={index} style={styles.taskItem}>
+              <TextInput
+                style={styles.input}
+                placeholder="Task Title"
+                value={task.title}
+                onChangeText={text => handleTaskChange(index, text)}
+              />
+              <TouchableOpacity onPress={() => removeTask(index)}>
+                <Text style={{color: 'red'}}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          <Button onPress={addNewTask}>Add Task</Button>
+          <Button onPress={updateTaskChanges}>Update Tasks</Button>
         </>
       ) : (
         <>
-          <Button
-            mode="contained"
-            style={{ backgroundColor: 'tomato', marginBottom: 10 }}
-            onPress={() => setEditMode(true)}>
-            Edit Group
-          </Button>
-          <Button mode="outlined" onPress={handleDeleteGroup}>Delete Group</Button>
+          <Text style={styles.title}>{group?.title}</Text>
+          <Text style={styles.goal}>Goal: {group?.goal}</Text>
+          <Text style={styles.streak}>Group Streak: {group?.streak}</Text>
+
+          <Text style={styles.subTitle}>Admin</Text>
+          <View style={styles.adminContainer}>
+            <Image
+              source={{uri: group?.admin?.image}}
+              style={styles.adminImage}
+            />
+            <View>
+              <Text style={styles.memberName}>{group?.admin?.name}</Text>
+              <Text style={styles.memberEmail}>{group?.admin?.email}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.subTitle}>Members</Text>
+          {members.map((item: any) => (
+            <View key={item._id} style={styles.memberItem}>
+              <Image source={{uri: item.image}} style={styles.memberImage} />
+              <View>
+                <Text style={styles.memberName}>{item.name}</Text>
+                <Text style={styles.memberEmail}>{item.email}</Text>
+              </View>
+            </View>
+          ))}
+
+          <Text style={styles.subTitle}>To-Do Tasks</Text>
+          {group?.todo?.tasks?.map((task: any) => {
+            const isCompleted = task.completedBy.includes(user._id);
+            return (
+              <TouchableOpacity
+                key={task._id}
+                style={[
+                  styles.taskItemContainer,
+                  isCompleted && styles.taskItemCompleted,
+                ]}
+                onPress={() => handleCompleteTask(task._id)}
+                activeOpacity={0.7}>
+                <Icon
+                  name={isCompleted ? 'check-circle' : 'circle-o'}
+                  size={22}
+                  color={isCompleted ? 'green' : '#aaa'}
+                  style={{marginRight: 10}}
+                />
+                <Text
+                  style={[
+                    styles.taskText,
+                    isCompleted && styles.taskTextCompleted,
+                  ]}>
+                  {task.title}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </>
       )}
-    </View>
-  </ScrollView>
+
+      <View style={styles.buttonContainer}>
+        {editMode ? (
+          <>
+            <Button mode="contained" onPress={saveGroupChanges}>
+              Save Changes
+            </Button>
+            <Button mode="outlined" onPress={() => setEditMode(false)}>
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              mode="contained"
+              style={{backgroundColor: 'tomato', marginBottom: 10}}
+              onPress={() => setEditMode(true)}>
+              Edit Group
+            </Button>
+            <Button mode="outlined" onPress={handleDeleteGroup}>
+              Delete Group
+            </Button>
+          </>
+        )}
+      </View>
+    </ScrollView>
   );
 };
 
 export default GroupDetailsScreen;
-
 
 const styles = StyleSheet.create({
   container: {
@@ -288,6 +360,14 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 60,
     backgroundColor: '#f7f7f7',
+  },
+  taskItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
   },
   title: {
     fontSize: 26,
@@ -364,16 +444,31 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#fff',
   },
-  taskItem: {
+  taskItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
     backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowOffset: {width: 0, height: 1},
-    shadowRadius: 3,
   },
+
+  taskText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+  },
+
+  taskTextCompleted: {
+    textDecorationLine: 'line-through',
+    color: '#999',
+  },
+
+  taskItemCompleted: {
+    backgroundColor: '#f9f9f9',
+  },
+
   buttonContainer: {
     marginTop: 30,
     marginBottom: 20,

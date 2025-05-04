@@ -214,33 +214,53 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   const task = todo.tasks.id(taskId);
   if (!task) return res.status(404).json({ message: "Task not found" });
 
-  if (task.completedBy.includes(userId)) {
-    return res.status(400).json({ message: "Task already completed by user" });
+  const userGroupKey = userId.toString();
+  const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+  const groupStreakDateKey = `${userGroupKey}_${today}`;
+  const user = await User.findById(userId);
+
+  const isAlreadyCompleted = task.completedBy.includes(userId);
+
+  if (isAlreadyCompleted) {
+    // Undo task completion
+    task.completedBy = task.completedBy.filter(id => id.toString() !== userId.toString());
+    await todo.save();
+
+    // Remove today's streak record if it exists
+    if (group.completedDates?.includes(groupStreakDateKey)) {
+      group.completedDates = group.completedDates.filter(d => d !== groupStreakDateKey);
+    }
+
+    // Decrease streak if previously completed all tasks
+    const wasAllCompleted = todo.tasks.every(t => t.completedBy.includes(userId));
+    if (wasAllCompleted) {
+      user.totalStreak = Math.max(user.totalStreak - 1, 0);
+      user.lastStreakDate = null;
+
+      const currentStreak = group.userStreaks.get(userGroupKey) || 0;
+      group.userStreaks.set(userGroupKey, Math.max(currentStreak - 1, 0));
+
+      await user.save();
+      await group.save();
+    }
+
+    return res.json({
+      message: "Task unmarked as complete",
+      userCompletedAllTasks: false,
+      streak: group.userStreaks.get(userGroupKey) || 0,
+    });
   }
 
+  // ✅ Mark task as complete
   task.completedBy.push(userId);
   await todo.save();
 
-  const userCompletedAllTasks = todo.tasks.every((t) =>
-    t.completedBy.includes(userId)
-  );
-  const user = await User.findById(userId);
+  const userCompletedAllTasks = todo.tasks.every(t => t.completedBy.includes(userId));
 
-  const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-  const lastStreak = user.lastStreakDate?.toISOString().slice(0, 10);
-  const userGroupKey = userId.toString();
-
-  const groupStreakDateKey = `${userGroupKey}_${today}`;
   if (
-    group.completedDates &&
-    group.completedDates.includes(groupStreakDateKey)
+    userCompletedAllTasks &&
+    (!group.completedDates || !group.completedDates.includes(groupStreakDateKey))
   ) {
-    return res
-      .status(400)
-      .json({ message: "Already completed this group today" });
-  }
-
-  if (userCompletedAllTasks) {
     user.totalStreak += 1;
     user.lastStreakDate = new Date();
     await user.save();
@@ -253,10 +273,11 @@ const markTaskComplete = asyncHandler(async (req, res) => {
 
     await group.save();
   }
+
   res.json({
     message: "Task marked as complete",
     userCompletedAllTasks,
-    streak: group.userStreaks.get(userId.toString()) || 0,
+    streak: group.userStreaks.get(userGroupKey) || 0,
   });
 });
 

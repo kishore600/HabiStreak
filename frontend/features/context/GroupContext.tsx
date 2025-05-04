@@ -289,7 +289,6 @@ export const GroupProvider = ({children}: any) => {
     
   };
 
-
   const updateTodo = async (groupId:any, tasks:any) => {
     try {
       const headers = await getAuthHeaders();
