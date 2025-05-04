@@ -312,7 +312,16 @@ const markTaskComplete = asyncHandler(async (req, res) => {
 
     group.completedDates = group.completedDates || [];
     group.completedDates.push(groupStreakDateKey);
-
+    const allCompletedToday = group.members.every(memberId => {
+      const memberKey = memberId.toString();
+      return todo.tasks.every(task =>
+        task.completedBy.map(id => id.toString()).includes(memberKey)
+      );
+    });
+  
+    if (allCompletedToday) {
+      group.streak = (group.streak || 0) + 1;
+    }
     await group.save();
   }
 
