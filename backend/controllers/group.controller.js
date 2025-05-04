@@ -105,13 +105,20 @@ const getGroups = asyncHandler(async (req, res) => {
 });
 
 const getuserGroups = asyncHandler(async (req, res) => {
-  const usergroups = await Group.find({ admin: req.user._id }).populate(
+  const createdGroups = await Group.find({ admin: req.user._id }).populate(
     "members",
     "name email image"
   );
-  res.json({
-    usergroups,
-  });
+
+  const joinedGroups = await Group.find({ 
+    members: req.user._id, 
+    admin: { $ne: req.user._id } // Avoid duplicates if user is both admin and member
+  }).populate("members", "name email image");
+
+  // Combine using spread operator
+  const allGroups = [...createdGroups, ...joinedGroups];
+
+  res.json({ usergroups: allGroups });
 });
 
 const getGroupById = asyncHandler(async (req, res) => {

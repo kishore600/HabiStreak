@@ -197,7 +197,7 @@ export const GroupProvider = ({children}: any) => {
   const markTaskComplete = async (groupId: string, taskId: string) => {
     const headers = await getAuthHeaders();
     const response = await axios.put(
-      `http://192.168.1.6:8000/api/groups/${groupId}/todos/${taskId}/complete`,
+      `${API_URL}/groups/${groupId}/todos/${taskId}/complete`,
       {},
       headers
     );
@@ -317,7 +317,7 @@ export const GroupProvider = ({children}: any) => {
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Error',
-        textBody: 'Group update failed!',
+        textBody: 'Group update failed! asde',
         button: 'OK',
       });
     }
