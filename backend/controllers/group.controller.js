@@ -278,7 +278,7 @@ const updateTodoForGroup = asyncHandler(async (req, res) => {
   try {
     const { groupId } = req.params;
     const { tasks } = req.body;
-
+console.log(tasks)
     // Find the group and populate the todo
     const group = await Group.findById(groupId).populate('todo');
     if (!group) {

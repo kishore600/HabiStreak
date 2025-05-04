@@ -34,6 +34,7 @@ interface GroupContextType {
   fetchGroupById: any;
   handleDeleteGroup: (groupId: string) => Promise<void>;
   setLoading: any;
+  updateTodo:any;
 }
 export type RootStackParamList = {
   Home: undefined;
@@ -292,8 +293,8 @@ export const GroupProvider = ({children}: any) => {
   const updateTodo = async (groupId:any, tasks:any) => {
     try {
       const headers = await getAuthHeaders();
-
-      const response = await axios.put(`/api/todos/${groupId}`, { tasks },headers);
+      const response = await axios.put(`${API_URL}/groups/${groupId}/todo`, { tasks },headers);
+      console.log(response)
       // Refresh data
       fetchGroups();
       fetchUserGroups();
@@ -305,6 +306,7 @@ export const GroupProvider = ({children}: any) => {
       });
       navigation.goBack();
     } catch (error) {
+      console.log(error)
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Error',
@@ -313,7 +315,7 @@ export const GroupProvider = ({children}: any) => {
       });
     }
     }
-  };
+
   const handleDeleteGroup = async (groupId: string) => {
     try {
       const headers = await getAuthHeaders();
@@ -361,6 +363,7 @@ export const GroupProvider = ({children}: any) => {
         group,
         fetchGroupById,
         setLoading,
+        updateTodo
       }}>
       {children}
     </GroupContext.Provider>

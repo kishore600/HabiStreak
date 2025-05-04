@@ -27,6 +27,6 @@ router.delete('/:groupId', protect, deleteGroup);
 router.post('/:groupId/todo', protect, createTodoForGroup);
 router.put('/:groupId/task/:taskId/complete', protect, markTaskComplete);
 router.get('/:groupId/leaderboard', protect, getLeaderboard);
-router.put('/groups/:groupId/todo',protect, updateTodoForGroup);
+router.put('/:groupId/todo',protect, updateTodoForGroup);
 
 module.exports = router;

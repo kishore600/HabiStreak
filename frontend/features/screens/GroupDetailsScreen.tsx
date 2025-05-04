@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { Button } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { useGroup } from '../context/GroupContext';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
+import { ScrollView } from 'react-native';
 
 const GroupDetailsScreen = ({ route }: any) => {
   const { user }: any = useAuth();
@@ -17,15 +18,16 @@ const GroupDetailsScreen = ({ route }: any) => {
     handleDeleteGroup,
     loading,
     setLoading,
+    updateTodo
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState('');
   const [goal, setGoal] = useState('');
   const [members, setMembers] = useState([]);
-  const [selectedMembers, setSelectedMembers] = useState([]);
+  const [selectedMembers, setSelectedMembers] = useState<any>([]);
   const [image, setImage] = useState<any>(null);
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<any>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,9 +36,11 @@ const GroupDetailsScreen = ({ route }: any) => {
       setLoading(false);
     };
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     if (groupId) {
       fetchData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId]);
 
   useEffect(() => {
@@ -47,10 +51,11 @@ const GroupDetailsScreen = ({ route }: any) => {
       setImage(group.image);
       setSelectedMembers(group.members?.map((m: any) => m._id) || []);
       setTasks(group.todo?.tasks || []);
-    }
+      }
   }, [group]);
-
-  const validateText = text => {
+  
+  
+  const validateText = (text: string) => {
     return text && text.trim().length > 0;
   };
 
@@ -70,7 +75,7 @@ const GroupDetailsScreen = ({ route }: any) => {
       prev.includes(id) ? prev.filter((mid: any) => mid !== id) : [...prev, id],
     );
   };
-
+  
   const saveGroupChanges = async () => {
     if (!validateText(title) || !validateText(goal)) {
       Dialog.show({
@@ -81,17 +86,20 @@ const GroupDetailsScreen = ({ route }: any) => {
       });
       return;
     }
+  
     try {
       setLoading(true);
-      await handleUpdateGroup(groupId, title, goal, selectedMembers, image);      
-      // await updateTodo(groupId, tasks);
-    } catch (error: any) {
+      await handleUpdateGroup(groupId, title, goal, selectedMembers, image);
+  
+        await updateTodo(groupId, tasks);
+
+    } catch (error) {
       console.log(error);
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
-
+  
   if (loading) {
     return (
       <View style={styles.container}>
@@ -100,7 +108,7 @@ const GroupDetailsScreen = ({ route }: any) => {
     );
   }
 
-  const handleTaskChange = (index, newText) => {
+  const handleTaskChange = (index:any, newText:any) => {
     const updated = [...tasks];
     updated[index].title = newText;
     setTasks(updated);
@@ -110,154 +118,164 @@ const GroupDetailsScreen = ({ route }: any) => {
     setTasks([...tasks, { title: '', completedBy: [] }]);
   };
 
-  const removeTask = index => {
-    const updated = tasks.filter((_, i) => i !== index);
+  const removeTask = (index: any) => {
+    const updated = tasks.filter((_:any, i:any) => i !== index);
     setTasks(updated);
   };
 
+const updateTaskChanges = async () => {
+
+  try {
+    setLoading(true);
+    await updateTodo(groupId, tasks);
+    Dialog.show({
+      type: ALERT_TYPE.SUCCESS,
+      title: 'Updated',
+      textBody: 'Tasks updated successfully!',
+      button: 'OK',
+    });
+  } catch (error) {
+    console.log(error);
+    Dialog.show({
+      type: ALERT_TYPE.DANGER,
+      title: 'Error',
+      textBody: 'Failed to update tasks.',
+      button: 'OK',
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
   return (
-    <FlatList
-      style={styles.container}
-      data={[group]} // Pass your group data here for rendering
-      keyExtractor={(item: any) => item?._id}
-      ListHeaderComponent={<>
-        {editMode ? (
-          <>
-            <TextInput
-              style={styles.input}
-              placeholder="Group Title"
-              value={title}
-              onChangeText={setTitle} />
-            <TextInput
-              style={styles.input}
-              placeholder="Group Goal"
-              value={goal}
-              onChangeText={setGoal} />
-            <TouchableOpacity onPress={pickImage}>
-              <Text style={{ color: 'blue', marginBottom: 10 }}>
-                Pick New Group Image
-              </Text>
-            </TouchableOpacity>
-            {image ? (
-              <Image
-                source={{ uri: image.uri || image }}
-                style={{ width: 100, height: 100, marginBottom: 10 }} />
-            ) : (
-              <TouchableOpacity onPress={pickImage}>
-                <View
-                  style={{
-                    width: 100,
-                    height: 100,
-                    marginBottom: 10,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor: '#eee',
-                    borderRadius: 8,
-                  }}>
-                  <Text style={{ color: '#888' }}>Pick Group Image</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-
-            <Text style={styles.subTitle}>Select Members:</Text>
-            <FlatList
-              data={user.followers}
-              keyExtractor={item => item._id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.memberItem}
-                  onPress={() => toggleMemberSelection(item._id)}>
-                  <Icon
-                    name={selectedMembers.includes(item._id)
-                      ? 'check-circle'
-                      : 'circle-o'}
-                    size={24}
-                    color={selectedMembers.includes(item._id) ? 'green' : 'gray'}
-                    style={{ marginRight: 10 }} />
-                  <View>
-                    <Text style={styles.memberName}>{item.name}</Text>
-                    <Text style={styles.memberEmail}>{item.email}</Text>
-                  </View>
-                </TouchableOpacity>
-              )} />
-                 <Text style={styles.subTitle}>Edit Tasks</Text>
-              {tasks.map((task, index) => (
-                <View key={index} style={styles.taskItem}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Task Title"
-                    value={task.title}
-                    onChangeText={text => handleTaskChange(index, text)}
-                  />
-                  <TouchableOpacity onPress={() => removeTask(index)}>
-                    <Text style={{ color: 'red' }}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-              <Button onPress={addNewTask}>Add Task</Button>
-          </>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
+    {editMode ? (
+      <>
+        <TextInput
+          style={styles.input}
+          placeholder="Group Title"
+          value={title}
+          onChangeText={setTitle}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Group Goal"
+          value={goal}
+          onChangeText={setGoal}
+        />
+        <TouchableOpacity onPress={pickImage}>
+          <Text style={{ color: 'blue', marginBottom: 10 }}>
+            Pick New Group Image
+          </Text>
+        </TouchableOpacity>
+        {image ? (
+          <Image
+            source={{ uri: image.uri || image }}
+            style={{ width: 100, height: 100, marginBottom: 10 }}
+          />
         ) : (
-          <>
-            <Text style={styles.title}>{group?.title}</Text>
-            <Text style={styles.goal}>Goal: {group?.goal}</Text>
-            <Text style={styles.streak}>Group Streak: {group?.streak}</Text>
-
-            <Text style={styles.subTitle}>Admin</Text>
-            <View style={styles.adminContainer}>
-              <Image source={{ uri: group?.admin?.image }} style={styles.adminImage} />
-              <View>
-                <Text style={styles.memberName}>{group?.admin?.name}</Text>
-                <Text style={styles.memberEmail}>{group?.admin?.email}</Text>
-              </View>
+          <TouchableOpacity onPress={pickImage}>
+            <View style={{
+              width: 100, height: 100, marginBottom: 10,
+              justifyContent: 'center', alignItems: 'center',
+              backgroundColor: '#eee', borderRadius: 8
+            }}>
+              <Text style={{ color: '#888' }}>Pick Group Image</Text>
             </View>
-
-            <Text style={styles.subTitle}>Members</Text>
-            <FlatList
-              data={members}
-              keyExtractor={(item: any) => item?._id}
-              renderItem={({ item }) => (
-                <View style={styles.memberItem}>
-                  <Image source={{ uri: item?.image }} style={styles.memberImage} />
-                  <View>
-                    <Text style={styles.memberName}>{item?.name}</Text>
-                    <Text style={styles.memberEmail}>{item?.email}</Text>
-                  </View>
-                </View>
-              )} />
-
-            <Text style={styles.subTitle}>To-Do Tasks</Text>
-            {group?.todo?.tasks?.map((task: any) => (
-              <View key={task._id} style={styles.taskItem}>
-                <Text>{task.title}</Text>
-              </View>
-            ))}
-          </>
+          </TouchableOpacity>
         )}
-      </>}
-      ListFooterComponent={<View style={styles.buttonContainer}>
-        {editMode ? (
-          <>
-            <Button mode="contained" onPress={saveGroupChanges}>
-              Save Changes
-            </Button>
-            <Button mode="outlined" onPress={() => setEditMode(false)}>
-              Cancel
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              mode="contained"
-              style={{ backgroundColor: 'tomato', marginBottom: 10 }}
-              onPress={() => setEditMode(true)}>
-              Edit Group
-            </Button>
-            <Button mode="outlined" onPress={handleDeleteGroup}>
-              Delete Group
-            </Button>
-          </>
-        )}
-      </View>} renderItem={undefined}    />
+
+        <Text style={styles.subTitle}>Select Members:</Text>
+        {user.followers.map((item: { _id: any }) => (
+          <TouchableOpacity
+            key={item._id}
+            style={styles.memberItem}
+            onPress={() => toggleMemberSelection(item._id)}>
+            <Icon
+              name={selectedMembers.includes(item._id) ? 'check-circle' : 'circle-o'}
+              size={24}
+              color={selectedMembers.includes(item._id) ? 'green' : 'gray'}
+              style={{ marginRight: 10 }}
+            />
+            <View>
+              <Text style={styles.memberName}>{item.name}</Text>
+              <Text style={styles.memberEmail}>{item.email}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+
+        <Text style={styles.subTitle}>Edit Tasks</Text>
+        {tasks.map((task, index) => (
+          <View key={index} style={styles.taskItem}>
+            <TextInput
+              style={styles.input}
+              placeholder="Task Title"
+              value={task.title}
+              onChangeText={text => handleTaskChange(index, text)}
+            />
+            <TouchableOpacity onPress={() => removeTask(index)}>
+              <Text style={{ color: 'red' }}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+        <Button onPress={addNewTask}>Add Task</Button>
+        <Button onPress={updateTaskChanges}>Update Tasks</Button>
+
+      </>
+    ) : (
+      <>
+        <Text style={styles.title}>{group?.title}</Text>
+        <Text style={styles.goal}>Goal: {group?.goal}</Text>
+        <Text style={styles.streak}>Group Streak: {group?.streak}</Text>
+
+        <Text style={styles.subTitle}>Admin</Text>
+        <View style={styles.adminContainer}>
+          <Image source={{ uri: group?.admin?.image }} style={styles.adminImage} />
+          <View>
+            <Text style={styles.memberName}>{group?.admin?.name}</Text>
+            <Text style={styles.memberEmail}>{group?.admin?.email}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.subTitle}>Members</Text>
+        {members.map(item => (
+          <View key={item._id} style={styles.memberItem}>
+            <Image source={{ uri: item.image }} style={styles.memberImage} />
+            <View>
+              <Text style={styles.memberName}>{item.name}</Text>
+              <Text style={styles.memberEmail}>{item.email}</Text>
+            </View>
+          </View>
+        ))}
+
+        <Text style={styles.subTitle}>To-Do Tasks</Text>
+        {group?.todo?.tasks?.map(task => (
+          <View key={task._id} style={styles.taskItem}>
+            <Text>{task.title}</Text>
+          </View>
+        ))}
+      </>
+    )}
+
+    <View style={styles.buttonContainer}>
+      {editMode ? (
+        <>
+          <Button mode="contained" onPress={saveGroupChanges}>Save Changes</Button>
+          <Button mode="outlined" onPress={() => setEditMode(false)}>Cancel</Button>
+        </>
+      ) : (
+        <>
+          <Button
+            mode="contained"
+            style={{ backgroundColor: 'tomato', marginBottom: 10 }}
+            onPress={() => setEditMode(true)}>
+            Edit Group
+          </Button>
+          <Button mode="outlined" onPress={handleDeleteGroup}>Delete Group</Button>
+        </>
+      )}
+    </View>
+  </ScrollView>
   );
 };
 
