@@ -165,7 +165,7 @@ const updateGroup = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Invalid members format" });
       }
     
-      const newMemberIds = req.body.members.map((id: string) => new mongoose.Types.ObjectId(id));
+      const newMemberIds = req.body.members.map((id) => new mongoose.Types.ObjectId(id));
       const oldMemberIds = group.members.map((id) => id.toString());
     
       const newSet = new Set(newMemberIds.map((id) => id.toString()));
