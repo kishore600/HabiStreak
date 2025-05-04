@@ -268,7 +268,7 @@ const GroupDetailsScreen = ({route}: any) => {
         <>
           <Text style={styles.title}>{group?.title}</Text>
           <Text style={styles.goal}>Goal: {group?.goal}</Text>
-          <Text style={styles.streak}>Group Streak: {group?.streak}</Text>
+          <Text style={styles.streak}>Group Streak: {group?.streak} 🐦‍🔥</Text>
 
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>

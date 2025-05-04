@@ -279,7 +279,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
 
       const currentStreak = group.userStreaks.get(userGroupKey) || 0;
       group.userStreaks.set(userGroupKey, Math.max(currentStreak - 1, 0));
-
+      group.streak = (group.streak || 0) - 1;
       await user.save();
       await group.save();
     }
