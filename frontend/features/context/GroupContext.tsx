@@ -46,8 +46,7 @@ export const GroupProvider = ({children}: any) => {
   const [groups, setGroups] = useState<any[]>([]);
   const [userGroups, setUserGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [group, setGroup] = useState(null);
 
   const getAuthHeaders = async () => {
@@ -175,25 +174,13 @@ export const GroupProvider = ({children}: any) => {
   };
 
   const markTaskComplete = async (groupId: string, taskId: string) => {
-    try {
-      const headers = await getAuthHeaders();
-      await axios.patch(
-        `${API_URL}/groups/${groupId}/todos/${taskId}/complete`,
-        {},
-        headers,
-      );
-      Dialog.show({
-        type: ALERT_TYPE.SUCCESS,
-        title: 'Success',
-        textBody: 'Task marked as complete',
-      });
-    } catch (error) {
-      Dialog.show({
-        type: ALERT_TYPE.DANGER,
-        title: 'Error',
-        textBody: 'Failed to mark task as complete',
-      });
-    }
+    const headers = await getAuthHeaders();
+    const response = await axios.put(
+      `http://192.168.1.6:8000/api/groups/${groupId}/todos/${taskId}/complete`,
+      {},
+      headers
+    );
+    return response.data;
   };
 
   const getLeaderboard = async (groupId: string) => {

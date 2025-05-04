@@ -37,7 +37,7 @@ const GroupDetailsScreen = ({route}: any) => {
   const [selectedMembers, setSelectedMembers] = useState<any>([]);
   const [image, setImage] = useState<any>(null);
   const [tasks, setTasks] = useState<any>([]);
-
+  
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -157,17 +157,16 @@ const GroupDetailsScreen = ({route}: any) => {
     try {
       setLoading(true);
       const res = await markTaskComplete(groupId, taskId);
-
+  
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Success',
         textBody: res.message || 'Task marked complete!',
         button: 'OK',
       });
-
+  
       await fetchGroupById(groupId); // Refresh group tasks
     } catch (error: any) {
-      console.error('Error marking task complete:', error);
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Error',
@@ -178,7 +177,7 @@ const GroupDetailsScreen = ({route}: any) => {
       setLoading(false);
     }
   };
-
+  
   return (
     <ScrollView
       style={styles.container}
@@ -225,7 +224,7 @@ const GroupDetailsScreen = ({route}: any) => {
           )}
 
           <Text style={styles.subTitle}>Select Members:</Text>
-          {user.followers.map((item: {_id: any}) => (
+          {user.followers.map((item: any) => (
             <TouchableOpacity
               key={item._id}
               style={styles.memberItem}

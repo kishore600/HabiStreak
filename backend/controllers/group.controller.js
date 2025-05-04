@@ -204,7 +204,6 @@ const createTodoForGroup = asyncHandler(async (req, res) => {
 const markTaskComplete = asyncHandler(async (req, res) => {
   const { groupId, taskId } = req.params;
   const userId = req.user._id;
-
   const group = await Group.findById(groupId);
   if (!group) return res.status(404).json({ message: "Group not found" });
 
@@ -222,17 +221,25 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   const isAlreadyCompleted = task.completedBy.includes(userId);
 
   if (isAlreadyCompleted) {
-    // Undo task completion
-    task.completedBy = task.completedBy.filter(id => id.toString() !== userId.toString());
+    // ✅ Check if all tasks were completed BEFORE removing this one
+    const wasAllCompleted = todo.tasks.every(t =>
+      t.completedBy.map(id => id.toString()).includes(userId.toString())
+    );
+
+    // ❌ Undo task completion
+    task.completedBy = task.completedBy.filter(
+      id => id.toString() !== userId.toString()
+    );
     await todo.save();
 
-    // Remove today's streak record if it exists
+    // 🧹 Remove today's streak record
     if (group.completedDates?.includes(groupStreakDateKey)) {
-      group.completedDates = group.completedDates.filter(d => d !== groupStreakDateKey);
+      group.completedDates = group.completedDates.filter(
+        d => d !== groupStreakDateKey
+      );
     }
 
-    // Decrease streak if previously completed all tasks
-    const wasAllCompleted = todo.tasks.every(t => t.completedBy.includes(userId));
+    // 🔻 If previously all tasks were done, decrement streaks
     if (wasAllCompleted) {
       user.totalStreak = Math.max(user.totalStreak - 1, 0);
       user.lastStreakDate = null;
@@ -255,7 +262,9 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   task.completedBy.push(userId);
   await todo.save();
 
-  const userCompletedAllTasks = todo.tasks.every(t => t.completedBy.includes(userId));
+  const userCompletedAllTasks = todo.tasks.every(t =>
+    t.completedBy.map(id => id.toString()).includes(userId.toString())
+  );
 
   if (
     userCompletedAllTasks &&
