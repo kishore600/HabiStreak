@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const hobbies_enum = require('../constant');
 
 const groupSchema = new mongoose.Schema({
   title: String,
@@ -19,7 +20,14 @@ const groupSchema = new mongoose.Schema({
     default: [],
   },
   image: { type: String, required: true },
+  createdDate: { type: Date, default: Date.now },
+  endDate: { type: Date, required: true },
 
+  categories: [{
+    type: String,
+    enum: hobbies_enum,
+    required: true,
+  }],
 });
 
 module.exports = mongoose.model('Group', groupSchema);

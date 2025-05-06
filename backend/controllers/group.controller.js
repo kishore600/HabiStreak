@@ -5,10 +5,11 @@ const User = require("../models/user.Model");
 const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 const { default: mongoose } = require("mongoose");
+const hobbies_enum = require("../constant.js");
 
 const createGroup = asyncHandler(async (req, res) => {
   try {
-    const { title, members, goal, tasks } = req.body;
+    const { title, members, goal, tasks,endDate, categories } = req.body;
     console.log("Received Data (raw):", { title, members, goal, tasks });
 
     const userId = req.user._id;
@@ -20,6 +21,16 @@ const createGroup = asyncHandler(async (req, res) => {
         .status(400)
         .json({ message: "Group with this title already exists." });
     }
+
+    // Validate categories
+if (!Array.isArray(categories) || categories.some(cat => !hobbies_enum.includes(cat))) {
+  return res.status(400).json({ message: "Invalid categories provided" });
+}
+
+// Validate endDate
+if (!endDate || isNaN(Date.parse(endDate))) {
+  return res.status(400).json({ message: "Invalid endDate format" });
+}
     
     // Handle image upload
     let imageUrl;
@@ -72,6 +83,8 @@ const createGroup = asyncHandler(async (req, res) => {
       goal,
       image: imageUrl,
       userStreaks: {},
+      endDate,
+      categories,
     });
     await group.save();
 
