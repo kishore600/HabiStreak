@@ -4,6 +4,7 @@ const generateToken = require("../utils/generateToken.utils.js");
 const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 const { default: mongoose } = require("mongoose");
+const hobbies_enum = require("../constant.js");
 
 const getUserProfile = async (req, res) => {
   try {
@@ -227,7 +228,20 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
   user.name = req.body.name || user.name;
   user.email = req.body.email || user.email;
-  console.log(user.name, user.email);
+  if (req.body.hobbies && Array.isArray(req.body.hobbies)) {
+    const invalidHobbies = req.body.hobbies.filter(
+      hobby => !hobbies_enum.includes(hobby)
+    );
+  
+    if (invalidHobbies.length > 0) {
+      return res.status(400).json({
+        message: 'Invalid hobbies provided',
+        invalidHobbies,
+      });
+    }
+  
+    user.hobbies = req.body.hobbies;
+  }
   try {
     if (req.file) {
       const file = dataUri(req).content;

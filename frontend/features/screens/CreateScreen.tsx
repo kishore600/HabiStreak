@@ -12,6 +12,10 @@ import {
 import * as ImagePicker from 'react-native-image-picker';
 import {useGroup} from '../context/GroupContext';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
+import { hobbies_enum } from '../constant';
+import { MultiSelect } from 'react-native-element-dropdown';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Platform } from 'react-native';
 
 const CreateScreen = () => {
   const [groupTitle, setGroupTitle] = useState('');
@@ -19,6 +23,13 @@ const CreateScreen = () => {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [tasks, setTasks] = useState<string[]>(['']);
   const {createGroup, loading} = useGroup();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const categoryOptions = hobbies_enum.map(hobby => ({
+    label: hobby,
+    value: hobby,
+  }));
+  const [endDate, setEndDate] = useState('');
+const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   const handlePickImage = () => {
     ImagePicker.launchImageLibrary(
@@ -43,6 +54,14 @@ const CreateScreen = () => {
     const updatedTasks = [...tasks];
     updatedTasks.splice(index, 1);
     setTasks(updatedTasks);
+  };
+
+  const handleEndDateChange = (event: any, selectedDate?: Date) => {
+    setShowEndDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      setEndDate(formattedDate);
+    }
   };
 
   const handleTaskChange = (text: string, index: number) => {
@@ -153,6 +172,43 @@ const CreateScreen = () => {
       ))}
 
       <Button title="Add Another Task" onPress={handleAddTask} />
+      <TouchableOpacity
+  onPress={() => setShowEndDatePicker(true)}
+  style={styles.input}>
+  <Text style={{ color: endDate ? '#000' : '#888' }}>
+    {endDate || 'Select End Date'}
+  </Text>
+</TouchableOpacity>
+
+{showEndDatePicker && (
+  <DateTimePicker
+    value={endDate ? new Date(endDate) : new Date()}
+    mode="date"
+    display="default"
+    onChange={handleEndDateChange}
+    maximumDate={new Date(2100, 11, 31)} // optional
+  />
+)}
+
+<Text style={styles.subheading}>Select Categories</Text>
+<MultiSelect
+  style={[styles.input, { paddingHorizontal: 10 }]}
+  placeholderStyle={{ color: '#888' }}
+  selectedTextStyle={{ color: '#000' }}
+  inputSearchStyle={{ height: 40, fontSize: 16 }}
+  data={categoryOptions}
+  labelField="label"
+  valueField="value"
+  placeholder="Select Categories"
+  search
+  searchPlaceholder="Search..."
+  value={selectedCategories}
+  onChange={item => {
+    setSelectedCategories(item);
+  }}
+  selectedStyle={{ borderRadius: 12 }}
+  maxSelect={10}
+/>
 
       <View style={{marginVertical: 20}}>
         <Button
@@ -217,6 +273,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
+  input: {
+    height: 50,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    marginVertical: 10,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+  },
+  
 });
 
 export default CreateScreen;

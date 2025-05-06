@@ -212,9 +212,38 @@ const updateGroup = asyncHandler(async (req, res) => {
           await user.save();
         }
       }
+
+      const memberHobbiesList = [];
+      for (const memberId of newMemberIds) {
+        const user = await User.findById(memberId);
+        if (user?.hobbies?.length > 0) {
+          memberHobbiesList.push(new Set(user.hobbies));
+        }
+      }
+
+      let commonHobbies = [];
+      if (memberHobbiesList.length > 0) {
+        commonHobbies = [...memberHobbiesList.reduce((a, b) => {
+          return new Set([...a].filter(hobby => b.has(hobby)));
+        })];
+      }
+
+      group.categories = commonHobbies;
     
       group.members = newMemberIds;
+
+      
     }
+
+    if (req.body.endDate) {
+      group.endDate = req.body.endDate;
+    }
+
+    if (req.body.categories && Array.isArray(req.body.categories)) {
+      // Optional: merge with commonHobbies or override
+      group.categories = req.body.categories;
+    }
+
 
     // Update the group document with the new data
     const updatedGroup = await Group.findByIdAndUpdate(req.params.groupId, req.body, {

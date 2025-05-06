@@ -141,6 +141,7 @@ export const GroupProvider = ({children}: any) => {
       setLoading(false);
     }
   };
+
   const fetchLeaderboard = async (groupId:any) => {
     setLoadingLeaderboard(true);
     const headers = await getAuthHeaders();
@@ -157,6 +158,7 @@ export const GroupProvider = ({children}: any) => {
       setLoadingLeaderboard(false);
     }
   };
+  
   const deleteGroup = async (id: string) => {
     try {
       const headers = await getAuthHeaders();
