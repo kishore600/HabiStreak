@@ -292,10 +292,7 @@ const createTodoForGroup = asyncHandler(async (req, res) => {
 
 const markTaskComplete = asyncHandler(async (req, res) => {
   const { groupId, taskId } = req.params;
-  const userId = req.user._id.toString();
-  const today = new Date().toISOString().slice(0, 10); // e.g., '2025-05-07'
-  const userDateKey = `${userId}_${today}`;
-
+  const userId = req.user._id;
   const group = await Group.findById(groupId);
   if (!group) return res.status(404).json({ message: "Group not found" });
 
@@ -305,74 +302,89 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   const task = todo.tasks.id(taskId);
   if (!task) return res.status(404).json({ message: "Task not found" });
 
-  group.completedDates = group.completedDates || [];
+  const userGroupKey = userId.toString();
+  const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+  const groupStreakDateKey = `${userGroupKey}_${today}`;
+  const user = await User.findById(userId);
 
-  const hasUserCompleted = group.completedDates.includes(userDateKey);
+  const isAlreadyCompleted = task.completedBy.includes(userId);
 
-  if (hasUserCompleted) {
-    // Unmark task for today (remove entry)
-    group.completedDates = group.completedDates.filter(
-      d => d !== userDateKey
+  if (isAlreadyCompleted) {
+    // ✅ Check if all tasks were completed BEFORE removing this one
+    const wasAllCompleted = todo.tasks.every(t =>
+      t.completedBy.map(id => id.toString()).includes(userId.toString())
     );
 
-    const user = await User.findById(userId);
-    const wasAllTasksCompleted = todo.tasks.every(task =>
-      group.completedDates.includes(`${userId}_${today}`)
+    // ❌ Undo task completion
+    task.completedBy = task.completedBy.filter(
+      id => id.toString() !== userId.toString()
     );
+    await todo.save();
 
-    // If all were done before and now one is undone, reduce streak
-    if (wasAllTasksCompleted) {
+    // 🧹 Remove today's streak record
+    if (group.completedDates?.includes(groupStreakDateKey)) {
+      group.completedDates = group.completedDates.filter(
+        d => d !== groupStreakDateKey
+      );
+    }
+
+    // 🔻 If previously all tasks were done, decrement streaks
+    if (wasAllCompleted) {
       user.totalStreak = Math.max(user.totalStreak - 1, 0);
       user.lastStreakDate = null;
 
-      const prevStreak = group.userStreaks.get(userId) || 0;
-      group.userStreaks.set(userId, Math.max(prevStreak - 1, 0));
+      const currentStreak = group.userStreaks.get(userGroupKey) || 0;
+      group.userStreaks.set(userGroupKey, Math.max(currentStreak - 1, 0));
       group.streak = (group.streak || 0) - 1;
-
       await user.save();
+      await group.save();
     }
 
-    await group.save();
     return res.json({
       message: "Task unmarked as complete",
       userCompletedAllTasks: false,
-      streak: group.userStreaks.get(userId) || 0,
+      streak: group.userStreaks.get(userGroupKey) || 0,
     });
   }
 
-  // Mark task complete by adding entry
-  group.completedDates.push(userDateKey);
+  // ✅ Mark task as complete
+  task.completedBy.push(userId);
+  await todo.save();
 
-  // Check if user completed all tasks for today
-  const userCompletedAllTasks = todo.tasks.every(() =>
-    group.completedDates.includes(userDateKey)
+  const userCompletedAllTasks = todo.tasks.every(t =>
+    t.completedBy.map(id => id.toString()).includes(userId.toString())
   );
 
-  if (userCompletedAllTasks) {
-    const user = await User.findById(userId);
+  if (
+    userCompletedAllTasks &&
+    (!group.completedDates || !group.completedDates.includes(groupStreakDateKey))
+  ) {
     user.totalStreak += 1;
     user.lastStreakDate = new Date();
     await user.save();
 
-    const currentStreak = group.userStreaks.get(userId) || 0;
-    group.userStreaks.set(userId, currentStreak + 1);
+    const currentStreak = group.userStreaks.get(userGroupKey) || 0;
+    group.userStreaks.set(userGroupKey, currentStreak + 1);
 
-    const allMembersCompleted = group.members.every(member => {
-      const memberKey = `${member._id.toString()}_${today}`;
-      return group.completedDates.includes(memberKey);
+    group.completedDates = group.completedDates || [];
+    group.completedDates.push(groupStreakDateKey);
+    const allCompletedToday = group.members.every(memberId => {
+      const memberKey = memberId.toString();
+      return todo.tasks.every(task =>
+        task.completedBy.map(id => id.toString()).includes(memberKey)
+      );
     });
-
-    if (allMembersCompleted) {
+  
+    if (allCompletedToday) {
       group.streak = (group.streak || 0) + 1;
     }
+    await group.save();
   }
-
-  await group.save();
 
   res.json({
     message: "Task marked as complete",
-    userCompletedAllTasks: true,
-    streak: group.userStreaks.get(userId) || 0,
+    userCompletedAllTasks,
+    streak: group.userStreaks.get(userGroupKey) || 0,
   });
 });
 
