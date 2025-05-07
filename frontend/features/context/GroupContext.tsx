@@ -114,7 +114,7 @@ export const GroupProvider = ({children}: any) => {
       setLoading(true);
       console.log(formData, API_URL);
       const headers = await getAuthHeaders();
-      await axios.post(`${API_URL}/groups`, formData, {
+      await axios.post(`http://192.168.1.5:8000/api/groups`, formData, {
         ...headers,
         headers: {
           ...headers.headers,
@@ -130,12 +130,12 @@ export const GroupProvider = ({children}: any) => {
 
       fetchGroups();
       fetchUserGroups();
-    } catch (error) {
+    } catch (error:any) {
       console.error('Create group error:', error);
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Error',
-        textBody: 'Failed to create group',
+        textBody: error.data.message || 'Failed to create group',
       });
     } finally {
       setLoading(false);

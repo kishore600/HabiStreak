@@ -16,6 +16,7 @@ import {useGroup} from '../context/GroupContext';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import {ScrollView} from 'react-native';
 import Leaderboard from '../components/Leaderboard';
+import CategoryList from '../components/CategoryList';
 
 const GroupDetailsScreen = ({route}: any) => {
   const {user}: any = useAuth();
@@ -98,7 +99,7 @@ const GroupDetailsScreen = ({route}: any) => {
 
     try {
       setLoading(true);
-      await handleUpdateGroup(groupId, title, goal, selectedMembers, image);
+      await handleUpdateGroup(groupId, title, goal, selectedMembers, image,group?.endDate);
 
       await updateTodo(groupId, tasks);
     } catch (error) {
@@ -179,6 +180,13 @@ const GroupDetailsScreen = ({route}: any) => {
     }
   };
 
+  const formattedDate = new Date(group?.endDate).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  
+  console.log(group)
   return (
     <ScrollView
       style={styles.container}
@@ -268,7 +276,9 @@ const GroupDetailsScreen = ({route}: any) => {
         <>
           <Text style={styles.title}>{group?.title}</Text>
           <Text style={styles.goal}>Goal: {group?.goal}</Text>
+          <Text style={styles.goal}>End Date: {formattedDate}</Text>
           <Text style={styles.streak}>Group Streak: {group?.streak} 🐦‍🔥</Text>
+          <CategoryList categories={group.categories} />
 
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>

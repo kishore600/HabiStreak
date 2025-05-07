@@ -12,10 +12,10 @@ import {
 import * as ImagePicker from 'react-native-image-picker';
 import {useGroup} from '../context/GroupContext';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
-import { hobbies_enum } from '../constant';
-import { MultiSelect } from 'react-native-element-dropdown';
+import {hobbies_enum} from '../constant';
+import {MultiSelect} from 'react-native-element-dropdown';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Platform } from 'react-native';
+import {Platform} from 'react-native';
 
 const CreateScreen = () => {
   const [groupTitle, setGroupTitle] = useState('');
@@ -29,7 +29,7 @@ const CreateScreen = () => {
     value: hobby,
   }));
   const [endDate, setEndDate] = useState('');
-const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   const handlePickImage = () => {
     ImagePicker.launchImageLibrary(
@@ -80,9 +80,7 @@ const [showEndDatePicker, setShowEndDatePicker] = useState(false);
         return;
       }
   
-      // Filter out empty tasks
       const nonEmptyTasks = tasks.filter(task => task.trim() !== '');
-  
       if (nonEmptyTasks.length === 0) {
         Dialog.show({
           type: ALERT_TYPE.DANGER,
@@ -92,11 +90,32 @@ const [showEndDatePicker, setShowEndDatePicker] = useState(false);
         return;
       }
   
+      // Ensure categories and endDate exist
+      if (!selectedCategories || selectedCategories.length === 0) {
+        Dialog.show({
+          type: ALERT_TYPE.DANGER,
+          title: 'Error',
+          textBody: 'Please select at least one category.',
+        });
+        return;
+      }
+  
+      if (!endDate) {
+        Dialog.show({
+          type: ALERT_TYPE.DANGER,
+          title: 'Error',
+          textBody: 'Please select an end date.',
+        });
+        return;
+      }
+  
       const formData = new FormData();
       formData.append('title', groupTitle);
       formData.append('goal', goal);
-      formData.append('members', JSON.stringify([])); // Send members as JSON
-      formData.append('tasks', JSON.stringify(nonEmptyTasks)); // Send only non-empty tasks
+      formData.append('members', JSON.stringify([]));
+      formData.append('tasks', JSON.stringify(nonEmptyTasks));
+      formData.append('categories', JSON.stringify(selectedCategories));
+      formData.append('endDate', endDate); // Must be a valid ISO or 'YYYY-MM-DD' string
   
       if (imageUri) {
         const filename = imageUri.split('/').pop();
@@ -111,11 +130,13 @@ const [showEndDatePicker, setShowEndDatePicker] = useState(false);
       }
   
       await createGroup(formData);
-  setGroupTitle('');
-  setGoal('');
-  setTasks(['']); // assuming you want to reset to one empty task input
-  setImageUri(null);
-
+      setGroupTitle('');
+      setGoal('');
+      setTasks(['']);
+      setImageUri(null);
+      setSelectedCategories([]); // Reset categories
+      setEndDate('');  // Reset end date
+  
     } catch (error) {
       console.error('Error creating group:', error);
       Dialog.show({
@@ -123,10 +144,17 @@ const [showEndDatePicker, setShowEndDatePicker] = useState(false);
         title: 'Error',
         textBody: 'Something went wrong while creating the group.',
       });
+      setGroupTitle('');
+      setGoal('');
+      setTasks(['']);
+      setImageUri(null);
+      setSelectedCategories([]); // Reset categories
+      setEndDate('');  // Reset end date
     }
   };
   
-  console.log(loading)
+
+  console.log(loading);
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Create Group</Text>
@@ -149,7 +177,7 @@ const [showEndDatePicker, setShowEndDatePicker] = useState(false);
         {imageUri ? (
           <Image source={{uri: imageUri}} style={styles.image} />
         ) : (
-         <Text>Place Image</Text>
+          <Text>Place Image</Text>
         )}
       </TouchableOpacity>
 
@@ -173,46 +201,46 @@ const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
       <Button title="Add Another Task" onPress={handleAddTask} />
       <TouchableOpacity
-  onPress={() => setShowEndDatePicker(true)}
-  style={styles.input}>
-  <Text style={{ color: endDate ? '#000' : '#888' }}>
-    {endDate || 'Select End Date'}
-  </Text>
-</TouchableOpacity>
+        onPress={() => setShowEndDatePicker(true)}
+        style={styles.input}>
+        <Text style={{color: endDate ? '#000' : '#888'}}>
+          {endDate || 'Select End Date'}
+        </Text>
+      </TouchableOpacity>
 
-{showEndDatePicker && (
-  <DateTimePicker
-    value={endDate ? new Date(endDate) : new Date()}
-    mode="date"
-    display="default"
-    onChange={handleEndDateChange}
-    maximumDate={new Date(2100, 11, 31)} // optional
-  />
-)}
+      {showEndDatePicker && (
+        <DateTimePicker
+          value={endDate ? new Date(endDate) : new Date()}
+          mode="date"
+          display="default"
+          onChange={handleEndDateChange}
+          maximumDate={new Date(2100, 11, 31)} // optional
+        />
+      )}
 
-<Text style={styles.subheading}>Select Categories</Text>
-<MultiSelect
-  style={[styles.input, { paddingHorizontal: 10 }]}
-  placeholderStyle={{ color: '#888' }}
-  selectedTextStyle={{ color: '#000' }}
-  inputSearchStyle={{ height: 40, fontSize: 16 }}
-  data={categoryOptions}
-  labelField="label"
-  valueField="value"
-  placeholder="Select Categories"
-  search
-  searchPlaceholder="Search..."
-  value={selectedCategories}
-  onChange={item => {
-    setSelectedCategories(item);
-  }}
-  selectedStyle={{ borderRadius: 12 }}
-  maxSelect={10}
-/>
+      <Text style={styles.subheading}>Select Categories</Text>
+      <MultiSelect
+        style={[styles.input, {paddingHorizontal: 10}]}
+        placeholderStyle={{color: '#888'}}
+        selectedTextStyle={{color: '#000'}}
+        inputSearchStyle={{height: 40, fontSize: 16}}
+        data={categoryOptions}
+        labelField="label"
+        valueField="value"
+        placeholder="Select Categories"
+        search
+        searchPlaceholder="Search..."
+        value={selectedCategories}
+        onChange={item => {
+          setSelectedCategories(item);
+        }}
+        selectedStyle={{borderRadius: 12}}
+        maxSelect={10}
+      />
 
       <View style={{marginVertical: 20}}>
         <Button
-          title={ loading ? 'Laoding' : 'Create Group and Todo'}
+          title={loading ? 'Laoding' : 'Create Group and Todo'}
           onPress={handleSubmit}
           color="#4CAF50"
           disabled={loading}
@@ -282,7 +310,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     justifyContent: 'center',
   },
-  
 });
 
 export default CreateScreen;
