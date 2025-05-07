@@ -21,7 +21,7 @@ const groupSchema = new mongoose.Schema({
   },
   image: { type: String, required: true },
   createdDate: { type: Date, default: Date.now },
-  endDate: { type: Date, required: true },
+  endDate: { type: Date, required: false },
 
   categories: [{
     type: String,

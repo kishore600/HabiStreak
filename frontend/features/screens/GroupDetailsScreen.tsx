@@ -96,12 +96,12 @@ const GroupDetailsScreen = ({route}: any) => {
       });
       return;
     }
-
+const endDate = group?.endDate
     try {
       setLoading(true);
-      await handleUpdateGroup(groupId, title, goal, selectedMembers, image,group?.endDate);
+      await handleUpdateGroup(groupId, title, goal, selectedMembers, image,endDate);
 
-      await updateTodo(groupId, tasks);
+      await updateTodo(groupId, tasks,endDate);
     } catch (error) {
       console.log(error);
     } finally {
