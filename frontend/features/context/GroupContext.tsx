@@ -64,6 +64,7 @@ export const GroupProvider = ({children}: any) => {
     try {
       const headers = await getAuthHeaders();
       const res = await axios.get(`${API_URL}/groups/${groupId}`, headers);
+      console.log('sd')
       setGroup(res.data);
       setLoading(false);
     } catch (error: any) {
@@ -199,7 +200,7 @@ export const GroupProvider = ({children}: any) => {
   const markTaskComplete = async (groupId: string, taskId: string) => {
     const headers = await getAuthHeaders();
     const response = await axios.put(
-      `${API_URL}/groups/${groupId}/todos/${taskId}/complete`,
+      `http://192.168.1.5:8000/api/groups/${groupId}/todos/${taskId}/complete`,
       {},
       headers
     );

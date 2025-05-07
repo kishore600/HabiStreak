@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 const taskSchema = new mongoose.Schema({
   title: String,
-  completedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] 
+  completedBy: [{ type: String }] 
 });
 
 const todoSchema = new mongoose.Schema({

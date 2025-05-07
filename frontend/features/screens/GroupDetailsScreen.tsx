@@ -185,7 +185,7 @@ const endDate = group?.endDate
     month: 'short',
     year: 'numeric',
   });
-  
+  const today = new Date().toISOString().slice(0, 10);
   console.log(group)
   return (
     <ScrollView
@@ -278,7 +278,7 @@ const endDate = group?.endDate
           <Text style={styles.goal}>Goal: {group?.goal}</Text>
           <Text style={styles.goal}>End Date: {formattedDate}</Text>
           <Text style={styles.streak}>Group Streak: {group?.streak} 🐦‍🔥</Text>
-          <CategoryList categories={group.categories} />
+          <CategoryList categories={group?.categories} />
 
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>
@@ -306,32 +306,35 @@ const endDate = group?.endDate
 
           <Text style={styles.subTitle}>To-Do Tasks</Text>
           {group?.todo?.tasks?.map((task: any) => {
-            const isCompleted = task.completedBy.includes(user._id);
-            return (
-              <TouchableOpacity
-                key={task._id}
-                style={[
-                  styles.taskItemContainer,
-                  isCompleted && styles.taskItemCompleted,
-                ]}
-                onPress={() => handleCompleteTask(task._id)}
-                activeOpacity={0.7}>
-                <Icon
-                  name={isCompleted ? 'check-circle' : 'circle-o'}
-                  size={22}
-                  color={isCompleted ? 'green' : '#aaa'}
-                  style={{marginRight: 10}}
-                />
-                <Text
-                  style={[
-                    styles.taskText,
-                    isCompleted && styles.taskTextCompleted,
-                  ]}>
-                  {task.title}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+  const completionKey = `${user._id}_${today}`;
+  const isCompleted = task?.completedBy?.includes(completionKey);
+
+  return (
+    <TouchableOpacity
+      key={task._id}
+      style={[
+        styles.taskItemContainer,
+        isCompleted && styles.taskItemCompleted,
+      ]}
+      onPress={() => handleCompleteTask(task._id)}
+      activeOpacity={0.7}>
+      <Icon
+        name={isCompleted ? 'check-circle' : 'circle-o'}
+        size={22}
+        color={isCompleted ? 'green' : '#aaa'}
+        style={{ marginRight: 10 }}
+      />
+      <Text
+        style={[
+          styles.taskText,
+          isCompleted && styles.taskTextCompleted,
+        ]}>
+        {task.title}
+      </Text>
+    </TouchableOpacity>
+  );
+})}
+
 
           {/* leader board */}
           <Leaderboard groupId={groupId} />

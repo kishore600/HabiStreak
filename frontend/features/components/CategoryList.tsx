@@ -5,7 +5,7 @@ const CategoryList = ({ categories }:any) => {
   return (
     <View style={styles.container}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {categories.map((category:any, index:any) => (
+        {categories?.map((category:any, index:any) => (
           <View key={index} style={styles.badge}>
             <Text style={styles.badgeText}>{category}</Text>
           </View>
