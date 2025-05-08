@@ -57,11 +57,11 @@ const CreateScreen = () => {
   };
 
   const handleEndDateChange = (event: any, selectedDate?: Date) => {
-    setShowEndDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      const formattedDate = selectedDate.toISOString().split('T')[0];
-      setEndDate(formattedDate);
-    }
+      setShowEndDatePicker(Platform.OS === 'ios');
+      if (selectedDate) {
+        const formattedDate = selectedDate.toISOString().split('T')[0];
+        setEndDate(formattedDate);
+      }
   };
 
   const handleTaskChange = (text: string, index: number) => {
@@ -152,9 +152,7 @@ const CreateScreen = () => {
       setEndDate('');  // Reset end date
     }
   };
-  
 
-  console.log(loading);
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Create Group</Text>
@@ -266,14 +264,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginVertical: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 12,
   },
   imagePicker: {
     height: 150,

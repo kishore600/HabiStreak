@@ -200,6 +200,7 @@ const updateGroup = asyncHandler(async (req, res) => {
       }
     
       const newMemberIds = req.body.members.map((id) => new mongoose.Types.ObjectId(id));
+      console.log(newMemberIds)
       const oldMemberIds = group.members.map((id) => id.toString());
     
       const newSet = new Set(newMemberIds.map((id) => id.toString()));

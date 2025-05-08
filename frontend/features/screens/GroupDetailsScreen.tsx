@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,10 @@ import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import {ScrollView} from 'react-native';
 import Leaderboard from '../components/Leaderboard';
 import CategoryList from '../components/CategoryList';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import {hobbies_enum} from '../constant';
+import {MultiSelect} from 'react-native-element-dropdown';
+import {Platform} from 'react-native';
 
 const GroupDetailsScreen = ({route}: any) => {
   const {user}: any = useAuth();
@@ -39,7 +43,13 @@ const GroupDetailsScreen = ({route}: any) => {
   const [selectedMembers, setSelectedMembers] = useState<any>([]);
   const [image, setImage] = useState<any>(null);
   const [tasks, setTasks] = useState<any>([]);
-
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [endDate, setEndDate] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const categoryOptions = hobbies_enum.map(hobby => ({
+    label: hobby,
+    value: hobby,
+  }));
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -62,6 +72,8 @@ const GroupDetailsScreen = ({route}: any) => {
       setImage(group.image);
       setSelectedMembers(group.members?.map((m: any) => m._id) || []);
       setTasks(group.todo?.tasks || []);
+      setEndDate(group.endDate)
+      setSelectedCategories(group.categories)
     }
   }, [group]);
 
@@ -96,12 +108,19 @@ const GroupDetailsScreen = ({route}: any) => {
       });
       return;
     }
-const endDate = group?.endDate
     try {
       setLoading(true);
-      await handleUpdateGroup(groupId, title, goal, selectedMembers, image,endDate);
+      await handleUpdateGroup(
+        groupId,
+        title,
+        goal,
+        selectedMembers,
+        image,
+        endDate,
+        selectedCategories
+      );
 
-      await updateTodo(groupId, tasks,endDate);
+      await updateTodo(groupId, tasks, endDate);
     } catch (error) {
       console.log(error);
     } finally {
@@ -185,8 +204,22 @@ const endDate = group?.endDate
     month: 'short',
     year: 'numeric',
   });
+
+  const handleEndDateChange = (event: any, selectedDate?: Date) => {
+    setShowEndDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      setEndDate(formattedDate);
+    }
+  };
+
   const today = new Date().toISOString().slice(0, 10);
-  console.log(group)
+
+  const admin_id = group?.admin?._id;
+
+  const IsEditUser_id = user?._id == admin_id;
+
+  console.log(selectedCategories)
   return (
     <ScrollView
       style={styles.container}
@@ -256,7 +289,7 @@ const endDate = group?.endDate
           ))}
 
           <Text style={styles.subTitle}>Edit Tasks</Text>
-          {tasks.map((task, index) => (
+          {tasks.map((task: any, index: any) => (
             <View key={index} style={styles.taskItem}>
               <TextInput
                 style={styles.input}
@@ -271,6 +304,47 @@ const endDate = group?.endDate
           ))}
           <Button onPress={addNewTask}>Add Task</Button>
           <Button onPress={updateTaskChanges}>Update Tasks</Button>
+
+          <TouchableOpacity onPress={() => setShowEndDatePicker(true)}>
+            <Text style={{color: 'blue', marginVertical: 10}}>
+              Select End Date
+            </Text>
+          </TouchableOpacity>
+          <Text style={{marginBottom: 10}}>
+            Selected Date: {endDate ? new Date(endDate).toDateString() : 'None'}
+          </Text>
+
+          {showEndDatePicker && (
+            <DateTimePicker
+              value={endDate ? new Date(endDate) : new Date()}
+              mode="date"
+              display="default"
+              onChange={handleEndDateChange}
+              maximumDate={new Date(2100, 11, 31)}
+            />
+          )}
+
+          <Text style={styles.subheading}>Select Categories</Text>
+          <MultiSelect
+            style={[styles.input, {paddingHorizontal: 10}]}
+            placeholderStyle={{color: '#888'}}
+            selectedTextStyle={{color: '#000'}}
+            inputSearchStyle={{height: 40, fontSize: 16}}
+            data={categoryOptions}
+            labelField="label"
+            valueField="value"
+            placeholder="Select Categories"
+            search
+            searchPlaceholder="Search..."
+            value={selectedCategories}
+            onChange={item => {
+              setSelectedCategories(item);
+            }}
+            selectedStyle={{borderRadius: 12}}
+            maxSelect={10}
+          />
+          <CategoryList categories={selectedCategories} />
+
         </>
       ) : (
         <>
@@ -306,35 +380,34 @@ const endDate = group?.endDate
 
           <Text style={styles.subTitle}>To-Do Tasks</Text>
           {group?.todo?.tasks?.map((task: any) => {
-  const completionKey = `${user._id}_${today}`;
-  const isCompleted = task?.completedBy?.includes(completionKey);
+            const completionKey = `${user._id}_${today}`;
+            const isCompleted = task?.completedBy?.includes(completionKey);
 
-  return (
-    <TouchableOpacity
-      key={task._id}
-      style={[
-        styles.taskItemContainer,
-        isCompleted && styles.taskItemCompleted,
-      ]}
-      onPress={() => handleCompleteTask(task._id)}
-      activeOpacity={0.7}>
-      <Icon
-        name={isCompleted ? 'check-circle' : 'circle-o'}
-        size={22}
-        color={isCompleted ? 'green' : '#aaa'}
-        style={{ marginRight: 10 }}
-      />
-      <Text
-        style={[
-          styles.taskText,
-          isCompleted && styles.taskTextCompleted,
-        ]}>
-        {task.title}
-      </Text>
-    </TouchableOpacity>
-  );
-})}
-
+            return (
+              <TouchableOpacity
+                key={task._id}
+                style={[
+                  styles.taskItemContainer,
+                  isCompleted && styles.taskItemCompleted,
+                ]}
+                onPress={() => handleCompleteTask(task._id)}
+                activeOpacity={0.7}>
+                <Icon
+                  name={isCompleted ? 'check-circle' : 'circle-o'}
+                  size={22}
+                  color={isCompleted ? 'green' : '#aaa'}
+                  style={{marginRight: 10}}
+                />
+                <Text
+                  style={[
+                    styles.taskText,
+                    isCompleted && styles.taskTextCompleted,
+                  ]}>
+                  {task.title}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
 
           {/* leader board */}
           <Leaderboard groupId={groupId} />
@@ -353,15 +426,19 @@ const endDate = group?.endDate
           </>
         ) : (
           <>
-            <Button
-              mode="contained"
-              style={{backgroundColor: 'tomato', marginBottom: 10}}
-              onPress={() => setEditMode(true)}>
-              Edit Group
-            </Button>
-            <Button mode="outlined" onPress={handleDeleteGroup}>
-              Delete Group
-            </Button>
+            {IsEditUser_id && (
+              <>
+                <Button
+                  mode="contained"
+                  style={{backgroundColor: 'tomato', marginBottom: 10}}
+                  onPress={() => setEditMode(true)}>
+                  Edit Group
+                </Button>
+                <Button mode="outlined" onPress={handleDeleteGroup}>
+                  Delete Group
+                </Button>
+              </>
+            )}
           </>
         )}
       </View>
@@ -385,6 +462,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderColor: '#ddd',
+  },
+  subheading: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 10,
   },
   title: {
     fontSize: 26,

@@ -23,13 +23,7 @@ interface GroupContextType {
   createTodoForGroup: (groupId: string, tasks: string[]) => Promise<void>;
   markTaskComplete: (groupId: string, taskId: string) => Promise<void>;
   getLeaderboard: (groupId: string) => void;
-  handleUpdateGroup: (
-    groupId: string,
-    title: string,
-    goal: string,
-    members: any[],
-    image: any,
-  ) => Promise<void>;
+  handleUpdateGroup:any;
   group: any;
   fetchGroupById: any;
   handleDeleteGroup: (groupId: string) => Promise<void>;
@@ -54,7 +48,7 @@ export const GroupProvider = ({children}: any) => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
 
-
+  // 192.168.1.5
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
     return {headers: {Authorization: `Bearer ${token}`}};
@@ -115,7 +109,7 @@ export const GroupProvider = ({children}: any) => {
       setLoading(true);
       console.log(formData, API_URL);
       const headers = await getAuthHeaders();
-      await axios.post(`http://192.168.1.5:8000/api/groups`, formData, {
+      await axios.post(`${API_URL}/groups`, formData, {
         ...headers,
         headers: {
           ...headers.headers,
@@ -200,7 +194,7 @@ export const GroupProvider = ({children}: any) => {
   const markTaskComplete = async (groupId: string, taskId: string) => {
     const headers = await getAuthHeaders();
     const response = await axios.put(
-      `http://192.168.1.5:8000/api/groups/${groupId}/todos/${taskId}/complete`,
+      `${API_URL}/groups/${groupId}/todos/${taskId}/complete`,
       {},
       headers
     );
@@ -230,12 +224,16 @@ export const GroupProvider = ({children}: any) => {
     goal: string,
     members: any[],
     image: any,
+    endDate:any,
+    selectedCategories:any
   ) => {
     try {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('goal', goal);
       formData.append('members', JSON.stringify(members));
+      formData.append('endDate', endDate);
+      formData.append('categories', JSON.stringify(selectedCategories));
 
       if (image && image.uri) {
         const imageFile = {
