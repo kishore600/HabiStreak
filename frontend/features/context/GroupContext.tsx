@@ -48,7 +48,7 @@ export const GroupProvider = ({children}: any) => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
 
-  // 192.168.1.5
+  // 192.168.1.6
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
     return {headers: {Authorization: `Bearer ${token}`}};
@@ -233,7 +233,7 @@ export const GroupProvider = ({children}: any) => {
       formData.append('goal', goal);
       formData.append('members', JSON.stringify(members));
       formData.append('endDate', endDate);
-      formData.append('categories', JSON.stringify(selectedCategories));
+      formData.append('categories', selectedCategories);
 
       if (image && image.uri) {
         const imageFile = {

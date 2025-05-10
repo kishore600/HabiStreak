@@ -73,7 +73,8 @@ const GroupDetailsScreen = ({route}: any) => {
       setSelectedMembers(group.members?.map((m: any) => m._id) || []);
       setTasks(group.todo?.tasks || []);
       setEndDate(group.endDate)
-      setSelectedCategories(group.categories)
+      setSelectedCategories(group?.categories);
+      
     }
   }, [group]);
 
@@ -343,7 +344,7 @@ const GroupDetailsScreen = ({route}: any) => {
             selectedStyle={{borderRadius: 12}}
             maxSelect={10}
           />
-          <CategoryList categories={selectedCategories} />
+          <CategoryList selectedCategories={selectedCategories} setSelectedCategories={setSelectedCategories} />
 
         </>
       ) : (
@@ -352,7 +353,7 @@ const GroupDetailsScreen = ({route}: any) => {
           <Text style={styles.goal}>Goal: {group?.goal}</Text>
           <Text style={styles.goal}>End Date: {formattedDate}</Text>
           <Text style={styles.streak}>Group Streak: {group?.streak} 🐦‍🔥</Text>
-          <CategoryList categories={group?.categories} />
+          <CategoryList categories={group?.categories} setSelectedCategories={setSelectedCategories} />
 
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>

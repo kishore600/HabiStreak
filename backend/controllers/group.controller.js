@@ -9,8 +9,8 @@ const hobbies_enum = require("../constant.js");
 
 const createGroup = asyncHandler(async (req, res) => {
   try {
-    const { title, members, goal, tasks,endDate, categories } = req.body;
-   console.log(title, members, goal, tasks,endDate, categories)
+    const { title, members, goal, tasks, endDate, categories } = req.body;
+    console.log(title, members, goal, tasks, endDate, categories);
     const userId = req.user._id;
 
     // Check if a group with the same title exists
@@ -21,31 +21,30 @@ const createGroup = asyncHandler(async (req, res) => {
         .json({ message: "Group with this title already exists." });
     }
 
-// Safely parse categories
-let parsedCategories = categories;
-if (typeof categories === 'string') {
-  try {
-    parsedCategories = JSON.parse(categories);
-  } catch (error) {
-    console.error("Error parsing categories:", error.message);
-    return res.status(400).json({ message: "Invalid categories format" });
-  }
-}
+    // Safely parse categories
+    let parsedCategories = categories;
+    if (typeof categories === "string") {
+      try {
+        parsedCategories = JSON.parse(categories);
+      } catch (error) {
+        console.error("Error parsing categories:", error.message);
+        return res.status(400).json({ message: "Invalid categories format" });
+      }
+    }
 
-// Validate categories
-if (
-  !Array.isArray(parsedCategories) ||
-  parsedCategories.some(cat => !hobbies_enum.includes(cat))
-) {
-  return res.status(400).json({ message: "Invalid categories provided" });
-}
+    // Validate categories
+    if (
+      !Array.isArray(parsedCategories) ||
+      parsedCategories.some((cat) => !hobbies_enum.includes(cat))
+    ) {
+      return res.status(400).json({ message: "Invalid categories provided" });
+    }
 
+    // Validate endDate
+    if (!endDate || isNaN(Date.parse(endDate))) {
+      return res.status(400).json({ message: "Invalid endDate format" });
+    }
 
-// Validate endDate
-if (!endDate || isNaN(Date.parse(endDate))) {
-  return res.status(400).json({ message: "Invalid endDate format" });
-}
-    
     // Handle image upload
     let imageUrl;
     if (req.file) {
@@ -61,7 +60,7 @@ if (!endDate || isNaN(Date.parse(endDate))) {
 
     // Safely parse members
     let parsedMembers = members;
-    if (typeof members === 'string') {
+    if (typeof members === "string") {
       try {
         parsedMembers = JSON.parse(members);
       } catch (error) {
@@ -75,7 +74,7 @@ if (!endDate || isNaN(Date.parse(endDate))) {
 
     // Safely parse tasks
     let parsedTasks = tasks;
-    if (typeof tasks === 'string') {
+    if (typeof tasks === "string") {
       try {
         parsedTasks = JSON.parse(tasks);
       } catch (error) {
@@ -85,8 +84,8 @@ if (!endDate || isNaN(Date.parse(endDate))) {
     }
 
     // Format tasks for Todo
-    const formattedTasks = (parsedTasks || []).map(task => ({
-      title: task
+    const formattedTasks = (parsedTasks || []).map((task) => ({
+      title: task,
     }));
 
     // Step 1: Create Group
@@ -98,7 +97,7 @@ if (!endDate || isNaN(Date.parse(endDate))) {
       image: imageUrl,
       userStreaks: {},
       endDate,
-      categories:parsedCategories,
+      categories: parsedCategories,
     });
     await group.save();
 
@@ -119,7 +118,6 @@ if (!endDate || isNaN(Date.parse(endDate))) {
     });
 
     res.status(201).json({ group, todo });
-
   } catch (error) {
     console.error("Error in createGroup:", error);
     res.status(500).json({ message: error.message || "Server Error" });
@@ -137,9 +135,9 @@ const getuserGroups = asyncHandler(async (req, res) => {
     "name email image"
   );
 
-  const joinedGroups = await Group.find({ 
-    members: req.user._id, 
-    admin: { $ne: req.user._id } // Avoid duplicates if user is both admin and member
+  const joinedGroups = await Group.find({
+    members: req.user._id,
+    admin: { $ne: req.user._id }, // Avoid duplicates if user is both admin and member
   }).populate("members", "name email image");
 
   // Combine using spread operator
@@ -161,54 +159,45 @@ const getGroupById = asyncHandler(async (req, res) => {
 
 const updateGroup = asyncHandler(async (req, res) => {
   try {
-    // Find the existing group by groupId
     const group = await Group.findById(req.params.groupId);
     if (!group) {
-      return res.status(404).json({ message: 'Group not found' });
+      return res.status(404).json({ message: "Group not found" });
     }
 
-    // If there is an image file in the request, upload and update the image
     if (req.file) {
       const file = dataUri(req).content;
       console.log(req.file);
 
-      // If the group already has an image, remove the old image from Cloudinary
       if (group.image) {
         const publicId = group.image.split("/").slice(-1)[0].split(".")[0];
         console.log(publicId);
         await cloudinary.uploader.destroy(`uploads/${publicId}`);
       }
 
-      // Upload the new image to Cloudinary
       const result = await cloudinary.uploader.upload(file, {
         folder: "uploads",
         transformation: { width: 500, height: 500, crop: "limit" },
       });
 
-      // Update the group's image with the new URL
       group.image = result.secure_url;
     }
 
-    // Ensure members are converted to ObjectIds if members is provided
     if (req.body.members) {
       if (typeof req.body.members === "string") {
         req.body.members = JSON.parse(req.body.members);
       }
-    
+
       if (!Array.isArray(req.body.members)) {
         return res.status(400).json({ message: "Invalid members format" });
       }
-    
-      const newMemberIds = req.body.members.map((id) => new mongoose.Types.ObjectId(id));
-      console.log(newMemberIds)
+
+      const newMemberIds = req.body.members.map(
+        (id) => new mongoose.Types.ObjectId(id)
+      );
       const oldMemberIds = group.members.map((id) => id.toString());
-    
       const newSet = new Set(newMemberIds.map((id) => id.toString()));
-    
-      // ✅ Users to remove: those in old but not in new
+
       const removedMembers = oldMemberIds.filter((id) => !newSet.has(id));
-    
-      // ✅ Remove group from removed members' joinedGroups
       for (const memberId of removedMembers) {
         const user = await User.findById(memberId);
         if (user) {
@@ -218,8 +207,7 @@ const updateGroup = asyncHandler(async (req, res) => {
           await user.save();
         }
       }
-    
-      // ✅ Add group to new members' joinedGroups if not already present
+
       for (const memberId of newMemberIds) {
         const user = await User.findById(memberId);
         if (user && !user.joinedGroups.includes(group._id)) {
@@ -238,38 +226,38 @@ const updateGroup = asyncHandler(async (req, res) => {
 
       let commonHobbies = [];
       if (memberHobbiesList.length > 0) {
-        commonHobbies = [...memberHobbiesList.reduce((a, b) => {
-          return new Set([...a].filter(hobby => b.has(hobby)));
-        })];
+        commonHobbies = [
+          ...memberHobbiesList.reduce((a, b) => {
+            return new Set([...a].filter((hobby) => b.has(hobby)));
+          }),
+        ];
       }
 
       group.categories = commonHobbies;
-    
       group.members = newMemberIds;
-
-      
     }
 
     if (req.body.endDate) {
       group.endDate = req.body.endDate;
     }
 
-    if (req.body.categories && Array.isArray(req.body.categories)) {
-      // Optional: merge with commonHobbies or override
-      group.categories = req.body.categories;
+    // ✅ Parse comma-separated string into an array if needed
+    if (req.body.categories) {
+      if (typeof req.body.categories === "string") {
+        group.categories = req.body.categories.split(",").map((cat) => cat.trim());
+      } else if (Array.isArray(req.body.categories)) {
+        group.categories = req.body.categories;
+      }
     }
 
+    const updatedGroup = await group.save();
 
-    // Update the group document with the new data
-    const updatedGroup = await Group.findByIdAndUpdate(req.params.groupId, req.body, {
-      new: true,
-    });
-
-    // Respond with the updated group
-    res.status(200).json({ message: 'update successfully' });
+    res.status(200).json({ message: "update successfully", group: updatedGroup });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to update group', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to update group", error: error.message });
   }
 });
 
@@ -303,7 +291,6 @@ const markTaskComplete = asyncHandler(async (req, res) => {
 
   const task = todo.tasks.id(taskId);
   if (!task) return res.status(404).json({ message: "Task not found" });
-
   const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
   const userTodayKey = `${userId}_${today}`;
   const user = await User.findById(userId);
@@ -312,17 +299,19 @@ const markTaskComplete = asyncHandler(async (req, res) => {
 
   if (isAlreadyCompleted) {
     // ✅ Check if all tasks were completed TODAY before removing this one
-    const wasAllCompleted = todo.tasks.every(t =>
+    const wasAllCompleted = todo.tasks.every((t) =>
       t.completedBy.includes(userTodayKey)
     );
 
     // ❌ Undo task completion for today
-    task.completedBy = task.completedBy.filter(id => id !== userTodayKey);
+    task.completedBy = task.completedBy.filter((id) => id !== userTodayKey);
     await todo.save();
 
     // 🧹 Remove today's streak record
     if (group.completedDates?.includes(userTodayKey)) {
-      group.completedDates = group.completedDates.filter(d => d !== userTodayKey);
+      group.completedDates = group.completedDates.filter(
+        (d) => d !== userTodayKey
+      );
     }
 
     // 🔻 If previously all tasks were done today, decrement streaks
@@ -349,7 +338,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   task.completedBy.push(userTodayKey);
   await todo.save();
 
-  const userCompletedAllTasks = todo.tasks.every(t =>
+  const userCompletedAllTasks = todo.tasks.every((t) =>
     t.completedBy.includes(userTodayKey)
   );
 
@@ -367,10 +356,10 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     group.completedDates = group.completedDates || [];
     group.completedDates.push(userTodayKey);
 
-    const allCompletedToday = group.members.every(memberId => {
+    const allCompletedToday = group.members.every((memberId) => {
       const memberKey = memberId.toString();
       const memberDateKey = `${memberKey}_${today}`;
-      return todo.tasks.every(task =>
+      return todo.tasks.every((task) =>
         task.completedBy.includes(memberDateKey)
       );
     });
@@ -380,7 +369,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     }
 
     await group.save();
-    await todo.save()
+    await todo.save();
   }
 
   res.json({
@@ -408,11 +397,11 @@ const updateTodoForGroup = asyncHandler(async (req, res) => {
   try {
     const { groupId } = req.params;
     const { tasks } = req.body;
-console.log(tasks)
+    console.log(tasks);
     // Find the group and populate the todo
-    const group = await Group.findById(groupId).populate('todo');
+    const group = await Group.findById(groupId).populate("todo");
     if (!group) {
-      return res.status(404).json({ message: 'Group not found' });
+      return res.status(404).json({ message: "Group not found" });
     }
 
     // Check if the group has an existing todo
@@ -432,11 +421,12 @@ console.log(tasks)
       return res.status(201).json(newTodo);
     }
   } catch (error) {
-    console.error('Failed to update todo:', error);
-    res.status(500).json({ message: 'Failed to update todo', error: error.message });
+    console.error("Failed to update todo:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to update todo", error: error.message });
   }
 });
-
 
 module.exports = {
   createGroup,
@@ -448,5 +438,5 @@ module.exports = {
   createTodoForGroup,
   markTaskComplete,
   getLeaderboard,
-  updateTodoForGroup
+  updateTodoForGroup,
 };
