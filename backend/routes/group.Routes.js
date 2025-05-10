@@ -10,10 +10,12 @@ const {
   getLeaderboard,
   getuserGroups,
   updateTodoForGroup,
+  requestToJoinGroup,
+  acceptJoinRequest,
 } = require('../controllers/group.controller');
 const { protect } = require('../middleware/auth.middleware');
 const multer = require('multer');
-const storage = multer.memoryStorage(); // recommended for Cloudinary
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 const router = express.Router();
@@ -28,5 +30,7 @@ router.post('/:groupId/todo', protect, createTodoForGroup);
 router.put('/:groupId/todos/:taskId/complete', protect, markTaskComplete);
 router.get('/:groupId/leaderboard', protect, getLeaderboard);
 router.put('/:groupId/todo',protect, updateTodoForGroup);
+router.post('/:groupId/join-request', protect, requestToJoinGroup);
+router.post('/:groupId/accept-request', protect, acceptJoinRequest);
 
 module.exports = router;

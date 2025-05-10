@@ -72,9 +72,8 @@ const GroupDetailsScreen = ({route}: any) => {
       setImage(group.image);
       setSelectedMembers(group.members?.map((m: any) => m._id) || []);
       setTasks(group.todo?.tasks || []);
-      setEndDate(group.endDate)
+      setEndDate(group.endDate);
       setSelectedCategories(group?.categories);
-      
     }
   }, [group]);
 
@@ -118,7 +117,7 @@ const GroupDetailsScreen = ({route}: any) => {
         selectedMembers,
         image,
         endDate,
-        selectedCategories
+        selectedCategories,
       );
 
       await updateTodo(groupId, tasks, endDate);
@@ -214,13 +213,20 @@ const GroupDetailsScreen = ({route}: any) => {
     }
   };
 
+  const handleJoinGroup = () => {
+    // Your logic to send join request or add the user to the group
+    console.log('Joining group...');
+  };
+
   const today = new Date().toISOString().slice(0, 10);
 
   const admin_id = group?.admin?._id;
 
   const IsEditUser_id = user?._id == admin_id;
+  const isUserInGroup =
+    group?.members?.some((member: any) => member._id === user?._id) ?? false;
 
-  console.log(selectedCategories)
+  console.log(isUserInGroup);
   return (
     <ScrollView
       style={styles.container}
@@ -344,8 +350,10 @@ const GroupDetailsScreen = ({route}: any) => {
             selectedStyle={{borderRadius: 12}}
             maxSelect={10}
           />
-          <CategoryList selectedCategories={selectedCategories} setSelectedCategories={setSelectedCategories} />
-
+          <CategoryList
+            selectedCategories={selectedCategories}
+            setSelectedCategories={setSelectedCategories}
+          />
         </>
       ) : (
         <>
@@ -353,7 +361,10 @@ const GroupDetailsScreen = ({route}: any) => {
           <Text style={styles.goal}>Goal: {group?.goal}</Text>
           <Text style={styles.goal}>End Date: {formattedDate}</Text>
           <Text style={styles.streak}>Group Streak: {group?.streak} 🐦‍🔥</Text>
-          <CategoryList categories={group?.categories} setSelectedCategories={setSelectedCategories} />
+          <CategoryList
+            categories={group?.categories}
+            setSelectedCategories={setSelectedCategories}
+          />
 
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>
@@ -380,35 +391,53 @@ const GroupDetailsScreen = ({route}: any) => {
           {/* group todo */}
 
           <Text style={styles.subTitle}>To-Do Tasks</Text>
-          {group?.todo?.tasks?.map((task: any) => {
-            const completionKey = `${user._id}_${today}`;
-            const isCompleted = task?.completedBy?.includes(completionKey);
+          {isUserInGroup ? (
+            group?.todo?.tasks?.map((task: any) => {
+              const completionKey = `${user._id}_${today}`;
+              const isCompleted = task?.completedBy?.includes(completionKey);
 
-            return (
-              <TouchableOpacity
-                key={task._id}
-                style={[
-                  styles.taskItemContainer,
-                  isCompleted && styles.taskItemCompleted,
-                ]}
-                onPress={() => handleCompleteTask(task._id)}
-                activeOpacity={0.7}>
-                <Icon
-                  name={isCompleted ? 'check-circle' : 'circle-o'}
-                  size={22}
-                  color={isCompleted ? 'green' : '#aaa'}
-                  style={{marginRight: 10}}
-                />
-                <Text
+              return (
+                <TouchableOpacity
+                  key={task._id}
                   style={[
-                    styles.taskText,
-                    isCompleted && styles.taskTextCompleted,
-                  ]}>
-                  {task.title}
-                </Text>
+                    styles.taskItemContainer,
+                    isCompleted && styles.taskItemCompleted,
+                  ]}
+                  onPress={() => handleCompleteTask(task._id)}
+                  activeOpacity={0.7}>
+                  <Icon
+                    name={isCompleted ? 'check-circle' : 'circle-o'}
+                    size={22}
+                    color={isCompleted ? 'green' : '#aaa'}
+                    style={{marginRight: 10}}
+                  />
+                  <Text
+                    style={[
+                      styles.taskText,
+                      isCompleted && styles.taskTextCompleted,
+                    ]}>
+                    {task.title}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })
+          ) : (
+            <View>
+              {group?.todo?.tasks?.map((task: any) => {
+                return (
+                  <View key={task._id}>
+                    <Text style={styles.taskText}>{task.title}</Text>
+                  </View>
+                );
+              })}
+              <TouchableOpacity
+                style={styles.joinButton}
+                onPress={handleJoinGroup}
+                activeOpacity={0.7}>
+                <Text style={styles.joinButtonText}>Join Group</Text>
               </TouchableOpacity>
-            );
-          })}
+            </View>
+          )}
 
           {/* leader board */}
           <Leaderboard groupId={groupId} />
@@ -573,5 +602,15 @@ const styles = StyleSheet.create({
     marginTop: 30,
     marginBottom: 20,
     gap: 10,
+  },
+  joinButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  joinButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });

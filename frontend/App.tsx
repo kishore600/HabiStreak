@@ -29,7 +29,7 @@ const TabNavigator = () => {
           const icons = {
             Home: 'coffee',
             Profile: 'user',
-            Convo: 'plus',
+            Create: 'plus',
             Search:'search'
           };
           return (
@@ -43,7 +43,7 @@ const TabNavigator = () => {
       })}>
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Convo" component={CreateScreen} />
+      <Tab.Screen name="Create" component={CreateScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

@@ -11,13 +11,13 @@ import {
 import {useGroup} from '../context/GroupContext';
 import {Modal} from 'react-native';
 
-const HomeScreen = () => {
+const HomeScreen = ({navigation}: any) => {
   const {groups, loading, fetchGroups} = useGroup();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<any[]>([]);
   useEffect(() => {
     fetchGroups();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const renderItem = ({item}: any) => (
     <View style={styles.convoContainer}>
@@ -35,42 +35,45 @@ const HomeScreen = () => {
           <Text style={{color: 'red'}}>Admin not found</Text>
         </View>
       )}
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate('GroupDetails', {groupId: item._id})
+        }>
+        {/* Group Title, Goal, and Description */}
+        <Text style={styles.groupTitle}>{item.title}</Text>
+        <Text style={styles.groupGoal}>Goal: {item.goal}</Text>
 
-      {/* Group Title, Goal, and Description */}
-      <Text style={styles.groupTitle}>{item.title}</Text>
-      <Text style={styles.groupGoal}>Goal: {item.goal}</Text>
+        {/* Group Image */}
+        <Image source={{uri: item.image}} style={styles.convoImage} />
 
-      {/* Group Image */}
-      <Image source={{uri: item.image}} style={styles.convoImage} />
+        {/* Group Description */}
+        <Text style={styles.description}>{item.description}</Text>
 
-      {/* Group Description */}
-      <Text style={styles.description}>{item.description}</Text>
+        {/* Streak */}
+        <Text style={styles.streakText}>Streak: {item.streak}</Text>
 
-      {/* Streak */}
-      <Text style={styles.streakText}>Streak: {item.streak}</Text>
+        {item.todo && item.todo.tasks.length > 0 && (
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedTasks(item.todo.tasks);
+              setModalVisible(true);
+            }}>
+            <View style={styles.todoContainer}>
+              <Text style={styles.todoTitle}>Click to View Daily Todo</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
-      {item.todo && item.todo.tasks.length > 0 && (
-        <TouchableOpacity
-          onPress={() => {
-            setSelectedTasks(item.todo.tasks);
-            setModalVisible(true);
-          }}>
-          <View style={styles.todoContainer}>
-            <Text style={styles.todoTitle}>Click to View Daily Todo</Text>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      <Text>No of Members : {item.members.length}</Text>
-      {/* Timestamp */}
-      {item.createdAt && (
-        <Text style={styles.timestamp}>
-          {new Date(item.createdAt).toLocaleString()}
-        </Text>
-      )}
+        <Text>No of Members : {item.members.length}</Text>
+        {/* Timestamp */}
+        {item.createdAt && (
+          <Text style={styles.timestamp}>
+            {new Date(item.createdAt).toLocaleString()}
+          </Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
-
 
   return (
     <View style={styles.container}>

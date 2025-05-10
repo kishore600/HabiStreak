@@ -244,7 +244,9 @@ const updateGroup = asyncHandler(async (req, res) => {
     // ✅ Parse comma-separated string into an array if needed
     if (req.body.categories) {
       if (typeof req.body.categories === "string") {
-        group.categories = req.body.categories.split(",").map((cat) => cat.trim());
+        group.categories = req.body.categories
+          .split(",")
+          .map((cat) => cat.trim());
       } else if (Array.isArray(req.body.categories)) {
         group.categories = req.body.categories;
       }
@@ -252,7 +254,9 @@ const updateGroup = asyncHandler(async (req, res) => {
 
     const updatedGroup = await group.save();
 
-    res.status(200).json({ message: "update successfully", group: updatedGroup });
+    res
+      .status(200)
+      .json({ message: "update successfully", group: updatedGroup });
   } catch (error) {
     console.error(error);
     res
@@ -428,6 +432,66 @@ const updateTodoForGroup = asyncHandler(async (req, res) => {
   }
 });
 
+const requestToJoinGroup = asyncHandler(async (req, res) => {
+  const { groupId } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(400).json({ message: 'Group not found' });
+    }
+
+    if (group.members.includes(userId)) {
+      return res.status(400).json({ message: 'Already a member' });
+    }
+
+    const alreadyRequested = group.joinRequests.includes(userId);
+
+    if (alreadyRequested) {
+      // Pull user from joinRequests (cancel request)
+      group.joinRequests.pull(userId);
+      await group.save();
+      return res.status(200).json({ message: 'Join request cancelled' });
+    } else {
+      // Add user to joinRequests
+      group.joinRequests.push(userId);
+      await group.save();
+      return res.status(200).json({ message: 'Join request sent' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+
+const acceptJoinRequest = async (req, res) => {
+  const { groupId } = req.params;
+  const { userId } = req.body;
+  const adminId = req.user._id;
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
+    if (!group.admin.equals(adminId)) {
+      return res.status(403).json({ message: 'Only admin can accept requests' });
+    }
+
+    if (!group.joinRequests.includes(userId)) {
+      return res.status(400).json({ message: 'No such join request' });
+    }
+
+    group.joinRequests.pull(userId);
+    group.members.push(userId);
+    await group.save();
+
+    res.status(200).json({ message: 'User added to group' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
 module.exports = {
   createGroup,
   getGroupById,
@@ -439,4 +503,6 @@ module.exports = {
   markTaskComplete,
   getLeaderboard,
   updateTodoForGroup,
+  requestToJoinGroup,
+  acceptJoinRequest
 };

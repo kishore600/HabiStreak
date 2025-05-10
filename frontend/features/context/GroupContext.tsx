@@ -55,6 +55,7 @@ export const GroupProvider = ({children}: any) => {
   };
 
   const fetchGroupById = async (groupId: string) => {
+    console.log(`${API_URL}/groups/${groupId}`)
     try {
       const headers = await getAuthHeaders();
       const res = await axios.get(`${API_URL}/groups/${groupId}`, headers);
