@@ -397,14 +397,14 @@ const [pendingRequests, setPendingRequests] = useState([]);
     }
   };
 
-  const handleAcceptRequest = async (groupId: string) => {
+  const handleAcceptRequest = async (groupId: string,userId:string) => {
     setLoading(true);
     try {
       const headers = await getAuthHeaders(); // your function to get headers
-
+      console.log(groupId,userId )
      const res =  await axios.post(
         `${API_URL}/groups/${groupId}/accept-request`,
-        {},
+        {userId:userId},
         headers,
       );
 

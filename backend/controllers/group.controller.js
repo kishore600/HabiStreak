@@ -466,17 +466,17 @@ const requestToJoinGroup = asyncHandler(async (req, res) => {
 
 const acceptJoinRequest = async (req, res) => {
   const { groupId } = req.params;
-  const userId  = req.user._id;
+  const {userId}  = req.body;
   const adminId = req.user._id;
-
   try {
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: 'Group not found' });
-
+    
     if (!group.admin.equals(adminId)) {
       return res.status(403).json({ message: 'Only admin can accept requests' });
     }
-
+    
+    console.log(group.joinRequests)
     if (!group.joinRequests.includes(userId)) {
       return res.status(400).json({ message: 'No such join request' });
     }

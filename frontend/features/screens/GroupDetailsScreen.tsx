@@ -222,13 +222,13 @@ const GroupDetailsScreen = ({route}: any) => {
     }
   };
 
-  const handleJoinGroup = async (groupId: sting) => {
+  const handleJoinGroup = async (groupId: string) => {
     await handleJoinRequest(groupId);
     await fetchGroupById(groupId);
   };
 
-  const acceptJoinRequest = async (groupId: sting) => {
-    await handleAcceptRequest(groupId);
+  const acceptJoinRequest = async (userId:string) => {
+    await handleAcceptRequest(groupId,userId);
     await fetchGroupById(groupId);
   };
 
@@ -504,7 +504,7 @@ const GroupDetailsScreen = ({route}: any) => {
                       </View>
                       <TouchableOpacity
                         style={styles.acceptButton}
-                        onPress={() => acceptJoinRequest(groupId)}>
+                        onPress={() => acceptJoinRequest(user._id)}>
                         <Text style={{color: 'white'}}>Accept</Text>
                       </TouchableOpacity>
                     </View>

@@ -75,8 +75,14 @@ const SearchScreen = () => {
           keyExtractor={item => item._id}
           renderItem={({item}:any) => (
             <TouchableOpacity onPress={() => handlePress(item)}>
+              
               <View style={styles.resultItem}>
-                <View style={styles.align}>
+
+                      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate('GroupDetails', {groupId: item._id})
+        }>
+                  <View style={styles.align}>
                   <View  style={styles.resultText}>
 
                   <View>
@@ -104,6 +110,8 @@ const SearchScreen = () => {
                     </Text>
                   </View>
                 </View>
+        </TouchableOpacity>
+        
               </View>
             </TouchableOpacity>
           )}
