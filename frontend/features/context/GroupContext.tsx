@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {useAuth} from './AuthContext';
 
 interface GroupContextType {
   groups: any[];
@@ -23,15 +24,20 @@ interface GroupContextType {
   createTodoForGroup: (groupId: string, tasks: string[]) => Promise<void>;
   markTaskComplete: (groupId: string, taskId: string) => Promise<void>;
   getLeaderboard: (groupId: string) => void;
-  handleUpdateGroup:any;
+  handleUpdateGroup: any;
   group: any;
   fetchGroupById: any;
   handleDeleteGroup: (groupId: string) => Promise<void>;
   setLoading: any;
-  updateTodo:any;
-  leaderboard:any;
-  loadingLeaderboard:any;
-  fetchLeaderboard:any;
+  updateTodo: any;
+  leaderboard: any;
+  loadingLeaderboard: any;
+  fetchLeaderboard: any;
+  handleJoinRequest: any;
+  setHasRequested: any;
+  hasRequested: any;
+  handleAcceptRequest:any
+  pendingRequests:any
 }
 export type RootStackParamList = {
   Home: undefined;
@@ -43,23 +49,30 @@ export const GroupProvider = ({children}: any) => {
   const [groups, setGroups] = useState<any[]>([]);
   const [userGroups, setUserGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [group, setGroup] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [hasRequested, setHasRequested] = useState(false);
+  const {user}: any = useAuth();
+const [pendingRequests, setPendingRequests] = useState([]);
 
-  // 192.168.1.6
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
     return {headers: {Authorization: `Bearer ${token}`}};
   };
 
   const fetchGroupById = async (groupId: string) => {
-    console.log(`${API_URL}/groups/${groupId}`)
     try {
       const headers = await getAuthHeaders();
       const res = await axios.get(`${API_URL}/groups/${groupId}`, headers);
-      console.log('sd')
+      if (res?.data?.joinRequests?.includes(user._id)) {
+        setHasRequested(true);
+        setPendingRequests(res?.data?.joinRequests)
+      } else {
+        setHasRequested(false);
+      }
       setGroup(res.data);
       setLoading(false);
     } catch (error: any) {
@@ -126,7 +139,7 @@ export const GroupProvider = ({children}: any) => {
 
       fetchGroups();
       fetchUserGroups();
-    } catch (error:any) {
+    } catch (error: any) {
       console.error('Create group error:', error);
       Dialog.show({
         type: ALERT_TYPE.DANGER,
@@ -138,23 +151,23 @@ export const GroupProvider = ({children}: any) => {
     }
   };
 
-  const fetchLeaderboard = async (groupId:any) => {
+  const fetchLeaderboard = async (groupId: any) => {
     setLoadingLeaderboard(true);
     const headers = await getAuthHeaders();
 
     try {
-      const { data } = await axios.get(
+      const {data} = await axios.get(
         `${API_URL}/groups/${groupId}/leaderboard`,
-        headers
+        headers,
       );
       setLeaderboard(data);
     } catch (err) {
-      console.error("Error fetching leaderboard:", err);
+      console.error('Error fetching leaderboard:', err);
     } finally {
       setLoadingLeaderboard(false);
     }
   };
-  
+
   const deleteGroup = async (id: string) => {
     try {
       const headers = await getAuthHeaders();
@@ -197,7 +210,7 @@ export const GroupProvider = ({children}: any) => {
     const response = await axios.put(
       `${API_URL}/groups/${groupId}/todos/${taskId}/complete`,
       {},
-      headers
+      headers,
     );
     return response.data;
   };
@@ -225,8 +238,8 @@ export const GroupProvider = ({children}: any) => {
     goal: string,
     members: any[],
     image: any,
-    endDate:any,
-    selectedCategories:any
+    endDate: any,
+    selectedCategories: any,
   ) => {
     try {
       const formData = new FormData();
@@ -283,27 +296,33 @@ export const GroupProvider = ({children}: any) => {
     } catch (error: any) {
       console.error('❌ Error during group update:', error.message);
       console.error('❌ Full error object:', error);
-    
+
       if (error.response) {
         console.error('❌ error.response.data:', error.response.data);
         console.error('❌ error.response.status:', error.response.status);
       }
-    
+
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Update Failed',
-        textBody: error.response?.data?.message || error.message || 'Something went wrong',
+        textBody:
+          error.response?.data?.message ||
+          error.message ||
+          'Something went wrong',
         button: 'OK',
       });
     }
-    
   };
 
-  const updateTodo = async (groupId:any, tasks:any) => {
+  const updateTodo = async (groupId: any, tasks: any) => {
     try {
       const headers = await getAuthHeaders();
-      const response = await axios.put(`${API_URL}/groups/${groupId}/todo`, { tasks },headers);
-      console.log(response)
+      const response = await axios.put(
+        `${API_URL}/groups/${groupId}/todo`,
+        {tasks},
+        headers,
+      );
+      console.log(response);
       // Refresh data
       fetchGroups();
       fetchUserGroups();
@@ -315,7 +334,7 @@ export const GroupProvider = ({children}: any) => {
       });
       navigation.goBack();
     } catch (error) {
-      console.log(error)
+      console.log(error);
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Error',
@@ -323,7 +342,7 @@ export const GroupProvider = ({children}: any) => {
         button: 'OK',
       });
     }
-    }
+  };
 
   const handleDeleteGroup = async (groupId: string) => {
     try {
@@ -348,6 +367,65 @@ export const GroupProvider = ({children}: any) => {
       });
     }
   };
+
+  const handleJoinRequest = async (groupId: string) => {
+    setLoading(true);
+    try {
+      const headers = await getAuthHeaders(); // your function to get headers
+
+      const res = await axios.post(
+        `${API_URL}/groups/${groupId}/join-request`,
+        {},
+        headers,
+      );
+
+      Dialog.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Group Request',
+        textBody:   res?.data?.message || 'Group Request has send Sucessfully!',
+      });
+    } catch (error: any) {
+      console.error(error);
+      const errorMsg = error.response?.data?.message || 'Server error';
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Error',
+        textBody: errorMsg || 'Failed to delete group',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptRequest = async (groupId: string) => {
+    setLoading(true);
+    try {
+      const headers = await getAuthHeaders(); // your function to get headers
+
+     const res =  await axios.post(
+        `${API_URL}/groups/${groupId}/accept-request`,
+        {},
+        headers,
+      );
+
+      Dialog.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Group Request',
+        textBody:  res?.data?.message || 'Group Request has send Sucessfully!',
+      });
+    } catch (error: any) {
+      console.error(error);
+      const errorMsg = error.response?.data?.message || 'Server error';
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Error',
+        textBody: errorMsg || 'Failed to delete group',
+      });
+    } finally {
+      setLoading(false);
+    }
+};
+
 
   useEffect(() => {
     fetchGroups();
@@ -376,6 +454,11 @@ export const GroupProvider = ({children}: any) => {
         leaderboard,
         loadingLeaderboard,
         fetchLeaderboard,
+        handleJoinRequest,
+        setHasRequested,
+        hasRequested,
+        handleAcceptRequest,
+        pendingRequests
       }}>
       {children}
     </GroupContext.Provider>

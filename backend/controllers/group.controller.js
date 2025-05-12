@@ -148,7 +148,7 @@ const getuserGroups = asyncHandler(async (req, res) => {
 
 const getGroupById = asyncHandler(async (req, res) => {
   const group = await Group.findById(req.params.groupId).populate(
-    "members admin todo"
+    "members admin todo joinRequests"
   );
   if (!group) {
     res.status(404);
@@ -463,7 +463,6 @@ const requestToJoinGroup = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 });
-
 
 const acceptJoinRequest = async (req, res) => {
   const { groupId } = req.params;

@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useState} from 'react';
 import {
   View,
@@ -7,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   StyleSheet,
+  Modal,
 } from 'react-native';
 import {Button} from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -34,6 +36,10 @@ const GroupDetailsScreen = ({route}: any) => {
     setLoading,
     updateTodo,
     markTaskComplete,
+    handleJoinRequest,
+    hasRequested,
+    handleAcceptRequest,
+    pendingRequests,
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
@@ -50,14 +56,16 @@ const GroupDetailsScreen = ({route}: any) => {
     label: hobby,
     value: hobby,
   }));
+  const [showJoinRequests, setShowJoinRequests] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       await fetchGroupById(groupId);
+
       setLoading(false);
     };
 
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     if (groupId) {
       fetchData();
     }
@@ -208,25 +216,32 @@ const GroupDetailsScreen = ({route}: any) => {
   const handleEndDateChange = (event: any, selectedDate?: Date) => {
     setShowEndDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       const formattedDate = selectedDate.toISOString().split('T')[0];
       setEndDate(formattedDate);
     }
   };
 
-  const handleJoinGroup = () => {
-    // Your logic to send join request or add the user to the group
-    console.log('Joining group...');
+  const handleJoinGroup = async (groupId: sting) => {
+    await handleJoinRequest(groupId);
+    await fetchGroupById(groupId);
+  };
+
+  const acceptJoinRequest = async (groupId: sting) => {
+    await handleAcceptRequest(groupId);
+    await fetchGroupById(groupId);
   };
 
   const today = new Date().toISOString().slice(0, 10);
 
   const admin_id = group?.admin?._id;
 
-  const IsEditUser_id = user?._id == admin_id;
+  const IsEditUser_id = user?._id === admin_id;
+
   const isUserInGroup =
     group?.members?.some((member: any) => member._id === user?._id) ?? false;
 
-  console.log(isUserInGroup);
+console.log(pendingRequests)
   return (
     <ScrollView
       style={styles.container}
@@ -357,15 +372,33 @@ const GroupDetailsScreen = ({route}: any) => {
         </>
       ) : (
         <>
-          <Text style={styles.title}>{group?.title}</Text>
+          <Text style={styles.title}>{group?.title} </Text>
           <Text style={styles.goal}>Goal: {group?.goal}</Text>
           <Text style={styles.goal}>End Date: {formattedDate}</Text>
           <Text style={styles.streak}>Group Streak: {group?.streak} 🐦‍🔥</Text>
           <CategoryList
             categories={group?.categories}
             setSelectedCategories={setSelectedCategories}
-          />
-
+          />{' '}
+          <TouchableOpacity
+            onPress={() => {
+              setShowJoinRequests(true);
+            }}>
+            <Text
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                backgroundColor: 'red',
+                borderRadius: 10,
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+              }}>
+              <Text style={{color: 'white', fontSize: 12}}>
+                {pendingRequests.length}
+              </Text>
+            </Text>
+          </TouchableOpacity>
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>
             <Image
@@ -389,7 +422,6 @@ const GroupDetailsScreen = ({route}: any) => {
             </View>
           ))}
           {/* group todo */}
-
           <Text style={styles.subTitle}>To-Do Tasks</Text>
           {isUserInGroup ? (
             group?.todo?.tasks?.map((task: any) => {
@@ -430,20 +462,64 @@ const GroupDetailsScreen = ({route}: any) => {
                   </View>
                 );
               })}
-              <TouchableOpacity
-                style={styles.joinButton}
-                onPress={handleJoinGroup}
-                activeOpacity={0.7}>
-                <Text style={styles.joinButtonText}>Join Group</Text>
-              </TouchableOpacity>
+              <Button
+                style={[styles.joinButton]}
+                onPress={() => handleJoinGroup(groupId)}
+                disabled={loading}>
+                {loading
+                  ? 'Processing...'
+                  : hasRequested
+                  ? 'Cancel Join Request'
+                  : 'Request to Join'}
+              </Button>
             </View>
           )}
-
           {/* leader board */}
           <Leaderboard groupId={groupId} />
         </>
       )}
 
+      {admin_id && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showJoinRequests}
+          onRequestClose={() => setShowJoinRequests(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Pending Join Requests</Text>
+              <ScrollView>
+                {pendingRequests.length === 0 ? (
+                  <Text style={{textAlign: 'center'}}>
+                    No pending requests.
+                  </Text>
+                ) : (
+                  pendingRequests.map((user: any) => (
+                    <View key={user._id} style={styles.memberItem}>
+                      <Image
+                        source={{uri: user.image}}
+                        style={styles.memberImage}
+                      />
+                      <View>
+                        <Text style={styles.memberName}>{user.name}</Text>
+                        <Text style={styles.memberEmail}>{user.email}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.acceptButton}
+                        onPress={() => acceptJoinRequest(user._id)}>
+                        <Text style={{color: 'white'}}>Accept</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                )}
+                <Button onPress={() => setShowJoinRequests(false)}>
+                  Close
+                </Button>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
       <View style={styles.buttonContainer}>
         {editMode ? (
           <>
@@ -612,5 +688,29 @@ const styles = StyleSheet.create({
   joinButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  acceptButton: {
+    marginLeft: 'auto',
+    backgroundColor: 'green',
+    padding: 10,
+    borderRadius: 8,
   },
 });
