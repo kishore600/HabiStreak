@@ -241,7 +241,7 @@ const GroupDetailsScreen = ({route}: any) => {
   const isUserInGroup =
     group?.members?.some((member: any) => member._id === user?._id) ?? false;
 
-console.log(pendingRequests)
+  console.log(pendingRequests);
   return (
     <ScrollView
       style={styles.container}
@@ -393,10 +393,9 @@ console.log(pendingRequests)
                 borderRadius: 10,
                 paddingHorizontal: 6,
                 paddingVertical: 2,
+                color: 'white',
               }}>
-              <Text style={{color: 'white', fontSize: 12}}>
-                {pendingRequests.length}
-              </Text>
+              {pendingRequests.length}
             </Text>
           </TouchableOpacity>
           <Text style={styles.subTitle}>Admin</Text>
@@ -502,11 +501,10 @@ console.log(pendingRequests)
                       />
                       <View>
                         <Text style={styles.memberName}>{user.name}</Text>
-                        <Text style={styles.memberEmail}>{user.email}</Text>
                       </View>
                       <TouchableOpacity
                         style={styles.acceptButton}
-                        onPress={() => acceptJoinRequest(user._id)}>
+                        onPress={() => acceptJoinRequest(groupId)}>
                         <Text style={{color: 'white'}}>Accept</Text>
                       </TouchableOpacity>
                     </View>

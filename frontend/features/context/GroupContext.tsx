@@ -67,9 +67,9 @@ const [pendingRequests, setPendingRequests] = useState([]);
     try {
       const headers = await getAuthHeaders();
       const res = await axios.get(`${API_URL}/groups/${groupId}`, headers);
+      setPendingRequests(res?.data?.joinRequests)
       if (res?.data?.joinRequests?.includes(user._id)) {
         setHasRequested(true);
-        setPendingRequests(res?.data?.joinRequests)
       } else {
         setHasRequested(false);
       }

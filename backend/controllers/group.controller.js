@@ -466,7 +466,7 @@ const requestToJoinGroup = asyncHandler(async (req, res) => {
 
 const acceptJoinRequest = async (req, res) => {
   const { groupId } = req.params;
-  const { userId } = req.body;
+  const userId  = req.user._id;
   const adminId = req.user._id;
 
   try {
