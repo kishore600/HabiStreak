@@ -227,10 +227,15 @@ const GroupDetailsScreen = ({route}: any) => {
     await fetchGroupById(groupId);
   };
 
-  const acceptJoinRequest = async (userId:string) => {
-    await handleAcceptRequest(groupId,userId);
+  const acceptJoinRequest = async (userId: string) => {
+    await handleAcceptRequest(groupId, userId);
     await fetchGroupById(groupId);
   };
+
+    const handleDelete = async () => {
+    await handleDeleteGroup(groupId);
+  };
+
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -538,7 +543,7 @@ const GroupDetailsScreen = ({route}: any) => {
                   onPress={() => setEditMode(true)}>
                   Edit Group
                 </Button>
-                <Button mode="outlined" onPress={handleDeleteGroup}>
+                <Button mode="outlined" onPress={handleDelete}>
                   Delete Group
                 </Button>
               </>

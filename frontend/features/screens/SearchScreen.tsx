@@ -73,45 +73,46 @@ const SearchScreen = () => {
         <FlatList
           data={results}
           keyExtractor={item => item._id}
-          renderItem={({item}:any) => (
+          renderItem={({item}: any) => (
             <TouchableOpacity onPress={() => handlePress(item)}>
-              
               <View style={styles.resultItem}>
-
-                      <TouchableOpacity
-        onPress={() =>
-          navigation.navigate('GroupDetails', {groupId: item._id})
-        }>
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate('GroupDetails', {groupId: item._id})
+                  }>
                   <View style={styles.align}>
-                  <View  style={styles.resultText}>
+                    <View style={styles.resultText}>
+                      <View>
+                        {item.image && (
+                          <Image
+                            source={{uri: item.image}}
+                            style={styles.avatar}
+                          />
+                        )}
+                      </View>
 
-                  <View>
-                    {item.image && (
-                      <Image source={{uri: item.image}} style={styles.avatar} />
-                    )}
-                  </View>
-                  
-                  <View>
-                    <Text>
-                      {item.type === 'user' ? ` ${item.name}` : `${item.title}`}
-                    </Text>
-                  </View>
-                  </View>
+                      <View>
+                        <Text>
+                          {item.type === 'user'
+                            ? ` ${item.name}`
+                            : `${item.title}`}
+                        </Text>
+                      </View>
+                    </View>
 
-                  <View
-                    style={[
-                      styles.badge,
-                      item.type === 'user'
-                        ? styles.userBadge
-                        : styles.groupBadge,
-                    ]}>
-                    <Text style={styles.badgeText}>
-                      {item.type === 'user' ? 'User' : 'Group'}
-                    </Text>
+                    <View
+                      style={[
+                        styles.badge,
+                        item.type === 'user'
+                          ? styles.userBadge
+                          : styles.groupBadge,
+                      ]}>
+                      <Text style={styles.badgeText}>
+                        {item.type === 'user' ? 'User' : 'Group'}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-        </TouchableOpacity>
-        
+                </TouchableOpacity>
               </View>
             </TouchableOpacity>
           )}
@@ -124,11 +125,11 @@ const SearchScreen = () => {
 export default SearchScreen;
 
 const styles = StyleSheet.create({
-  align:{
-display:'flex',
-flexDirection:'row',
-justifyContent:'space-between',
-alignItems:'center'
+  align: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   badge: {
     paddingHorizontal: 8,

@@ -266,8 +266,18 @@ const updateGroup = asyncHandler(async (req, res) => {
 });
 
 const deleteGroup = asyncHandler(async (req, res) => {
+  const group = await Group.findById(req.params.groupId);
+
+  if (!group) {
+    res.status(404);
+    throw new Error("Group not found");
+  }
+  if (group.todo) {
+    await Todo.findByIdAndDelete(group.todo);
+  }
   await Group.findByIdAndDelete(req.params.groupId);
-  res.json({ message: "Group deleted" });
+
+  res.json({ message: "Group and associated todo deleted" });
 });
 
 const createTodoForGroup = asyncHandler(async (req, res) => {

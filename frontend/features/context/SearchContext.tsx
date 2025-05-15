@@ -36,7 +36,7 @@ type SearchProviderProps = {
 
 export const SearchProvider = ({ children }: SearchProviderProps) => {
   const [query, setQuery] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<"user" | "group" | null>(null);
+  const [selectedType, setSelectedType] = useState<any>(null);
   const [results, setResults] = useState<ResultType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 

@@ -177,7 +177,7 @@ const [pendingRequests, setPendingRequests] = useState([]);
         title: 'Deleted',
         textBody: 'Group deleted successfully!',
       });
-      fetchGroups();
+      fetchUserGroups()
     } catch (error) {
       Dialog.show({
         type: ALERT_TYPE.DANGER,
