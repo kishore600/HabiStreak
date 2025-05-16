@@ -12,11 +12,12 @@ import {useGroup} from '../context/GroupContext';
 import {Modal} from 'react-native';
 
 const HomeScreen = ({navigation}: any) => {
-  const {groups, loading, fetchGroups} = useGroup();
+  const {groups, loading, fetchGroups,fetchUserGroups} = useGroup();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<any[]>([]);
   useEffect(() => {
     fetchGroups();
+    fetchUserGroups()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const renderItem = ({item}: any) => (

@@ -40,6 +40,7 @@ const GroupDetailsScreen = ({route}: any) => {
     hasRequested,
     handleAcceptRequest,
     pendingRequests,
+    fetchUserGroup
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
@@ -232,8 +233,9 @@ const GroupDetailsScreen = ({route}: any) => {
     await fetchGroupById(groupId);
   };
 
-    const handleDelete = async () => {
+  const handleDelete = async () => {
     await handleDeleteGroup(groupId);
+    await fetchUserGroup()
   };
 
 
@@ -246,7 +248,6 @@ const GroupDetailsScreen = ({route}: any) => {
   const isUserInGroup =
     group?.members?.some((member: any) => member._id === user?._id) ?? false;
 
-  console.log(pendingRequests);
   return (
     <ScrollView
       style={styles.container}
@@ -329,8 +330,8 @@ const GroupDetailsScreen = ({route}: any) => {
               </TouchableOpacity>
             </View>
           ))}
-          <Button onPress={addNewTask}>Add Task</Button>
-          <Button onPress={updateTaskChanges}>Update Tasks</Button>
+          <Button onPress={addNewTask}><Text>Add Task</Text></Button>
+          <Button onPress={updateTaskChanges}><Text>Update Tasks</Text></Button>
 
           <TouchableOpacity onPress={() => setShowEndDatePicker(true)}>
             <Text style={{color: 'blue', marginVertical: 10}}>
@@ -470,11 +471,12 @@ const GroupDetailsScreen = ({route}: any) => {
                 style={[styles.joinButton]}
                 onPress={() => handleJoinGroup(groupId)}
                 disabled={loading}>
-                {loading
+                 <Text>
+ {loading
                   ? 'Processing...'
                   : hasRequested
                   ? 'Cancel Join Request'
-                  : 'Request to Join'}
+                  : 'Request to Join'}</Text>
               </Button>
             </View>
           )}
@@ -516,7 +518,7 @@ const GroupDetailsScreen = ({route}: any) => {
                   ))
                 )}
                 <Button onPress={() => setShowJoinRequests(false)}>
-                  Close
+                <Text>  Close</Text>
                 </Button>
               </ScrollView>
             </View>
@@ -527,10 +529,10 @@ const GroupDetailsScreen = ({route}: any) => {
         {editMode ? (
           <>
             <Button mode="contained" onPress={saveGroupChanges}>
-              Save Changes
+              <Text>Save Changes</Text>
             </Button>
             <Button mode="outlined" onPress={() => setEditMode(false)}>
-              Cancel
+             <Text> Cancel</Text>
             </Button>
           </>
         ) : (
@@ -541,10 +543,10 @@ const GroupDetailsScreen = ({route}: any) => {
                   mode="contained"
                   style={{backgroundColor: 'tomato', marginBottom: 10}}
                   onPress={() => setEditMode(true)}>
-                  Edit Group
+                 <Text> Edit Group</Text>
                 </Button>
                 <Button mode="outlined" onPress={handleDelete}>
-                  Delete Group
+  <Text>Delete Group</Text>
                 </Button>
               </>
             )}

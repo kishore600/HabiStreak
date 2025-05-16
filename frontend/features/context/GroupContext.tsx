@@ -36,8 +36,9 @@ interface GroupContextType {
   handleJoinRequest: any;
   setHasRequested: any;
   hasRequested: any;
-  handleAcceptRequest:any
-  pendingRequests:any
+  handleAcceptRequest: any;
+  pendingRequests: any;
+  isGroupUpdated: any;
 }
 export type RootStackParamList = {
   Home: undefined;
@@ -56,7 +57,8 @@ export const GroupProvider = ({children}: any) => {
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [hasRequested, setHasRequested] = useState(false);
   const {user}: any = useAuth();
-const [pendingRequests, setPendingRequests] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [isGroupUpdated, setIsGroupUpdated] = useState(false);
 
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
@@ -67,7 +69,7 @@ const [pendingRequests, setPendingRequests] = useState([]);
     try {
       const headers = await getAuthHeaders();
       const res = await axios.get(`${API_URL}/groups/${groupId}`, headers);
-      setPendingRequests(res?.data?.joinRequests)
+      setPendingRequests(res?.data?.joinRequests);
       if (res?.data?.joinRequests?.includes(user._id)) {
         setHasRequested(true);
       } else {
@@ -90,7 +92,12 @@ const [pendingRequests, setPendingRequests] = useState([]);
       const headers = await getAuthHeaders();
       const response = await axios.get(`${API_URL}/groups`, headers);
       setGroups(response.data);
+      setIsGroupUpdated(false);
+      setLoading(false)
+
     } catch (error) {
+      setLoading(false)
+
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Error',
@@ -106,8 +113,12 @@ const [pendingRequests, setPendingRequests] = useState([]);
     try {
       const headers = await getAuthHeaders();
       const response = await axios.get(`${API_URL}/groups/user`, headers);
+      console.log(response);
       setUserGroups(response.data.usergroups);
+      setIsGroupUpdated(false);
+      setLoading(false)
     } catch (error) {
+      setLoading(false)
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Error',
@@ -136,9 +147,8 @@ const [pendingRequests, setPendingRequests] = useState([]);
         textBody: 'Group created successfully!',
       });
       navigation.navigate('Home'); // <--- Make sure you have access to navigation prop
-
-      fetchGroups();
-      fetchUserGroups();
+      setIsGroupUpdated(true);
+      await fetchGroups();
     } catch (error: any) {
       console.error('Create group error:', error);
       Dialog.show({
@@ -172,12 +182,12 @@ const [pendingRequests, setPendingRequests] = useState([]);
     try {
       const headers = await getAuthHeaders();
       await axios.delete(`${API_URL}/groups/${id}`, headers);
+      setIsGroupUpdated(true);
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Deleted',
         textBody: 'Group deleted successfully!',
       });
-      fetchUserGroups()
     } catch (error) {
       Dialog.show({
         type: ALERT_TYPE.DANGER,
@@ -382,7 +392,7 @@ const [pendingRequests, setPendingRequests] = useState([]);
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Group Request',
-        textBody:   res?.data?.message || 'Group Request has send Sucessfully!',
+        textBody: res?.data?.message || 'Group Request has send Sucessfully!',
       });
     } catch (error: any) {
       console.error(error);
@@ -397,21 +407,21 @@ const [pendingRequests, setPendingRequests] = useState([]);
     }
   };
 
-  const handleAcceptRequest = async (groupId: string,userId:string) => {
+  const handleAcceptRequest = async (groupId: string, userId: string) => {
     setLoading(true);
     try {
       const headers = await getAuthHeaders(); // your function to get headers
-      console.log(groupId,userId )
-     const res =  await axios.post(
+      console.log(groupId, userId);
+      const res = await axios.post(
         `${API_URL}/groups/${groupId}/accept-request`,
-        {userId:userId},
+        {userId: userId},
         headers,
       );
 
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Group Request',
-        textBody:  res?.data?.message || 'Group Request has send Sucessfully!',
+        textBody: res?.data?.message || 'Group Request has send Sucessfully!',
       });
     } catch (error: any) {
       console.error(error);
@@ -424,8 +434,7 @@ const [pendingRequests, setPendingRequests] = useState([]);
     } finally {
       setLoading(false);
     }
-};
-
+  };
 
   useEffect(() => {
     fetchGroups();
@@ -458,7 +467,8 @@ const [pendingRequests, setPendingRequests] = useState([]);
         setHasRequested,
         hasRequested,
         handleAcceptRequest,
-        pendingRequests
+        pendingRequests,
+        isGroupUpdated,
       }}>
       {children}
     </GroupContext.Provider>

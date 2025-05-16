@@ -236,8 +236,7 @@ const fetchProfile = async () => {
         Authorization: `Bearer ${token}`,
       },
     });
-    console.log(res.data)
-setUser(res.data)
+    setUser(res.data)
   } catch (err) {
     console.error(err);
   }

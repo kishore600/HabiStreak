@@ -32,7 +32,8 @@ const ProfileScreen = ({route, navigation}: any) => {
     sendFollowRequest,
     unfollowUser,
     handleFollowRequest,
-    pendingRequest
+    pendingRequest,
+        isGroupUpdated
   }: any = useAuth();
   const {userGroups, loading: userGroupLoading, fetchUserGroups} = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -52,13 +53,20 @@ const ProfileScreen = ({route, navigation}: any) => {
   >(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    if (currentUser && user) {
-      fetchUserGroups();
+useFocusEffect(
+  useCallback(() => {
+    fetchUserGroups();
+    if (profileUser && !currentUser) {
+      setGroups(profileUser?.createdGroups);
+      console.log('in u')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser, user]);
+    if (currentUser) {
+      console.log('in')
+      setGroups(userGroups);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userGroups.length]) // optional dependency if you still want to trigger on update
+);
 
   useFocusEffect(
     useCallback(() => {
@@ -71,6 +79,7 @@ const ProfileScreen = ({route, navigation}: any) => {
       return () => {
         setIsCurrentUser(true);
         navigation.setParams({user: null});
+        fetchUserGroups()
         fetchProfile();
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,16 +92,17 @@ const ProfileScreen = ({route, navigation}: any) => {
       setEmail(profileUser.email || '');
       setImage(profileUser.image || '');
       setGroups(profileUser?.createdGroups);
+      console.log('in u')
     }
     if (currentUser) {
-      setGroups(userGroups);
       setName(user?.name);
       setEmail(user?.email);
       setImage(user?.image);
+      console.log('in')
       setGroups(userGroups);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileUser, currentUser]);
+  }, [profileUser, currentUser,isGroupUpdated]);
 
   const openEditModal = () => {
     setEditModalVisible(true);
@@ -151,7 +161,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     );
   };
 
-  if (loading) {
+  if (loading || userGroupLoading) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" color="tomato" />
@@ -164,7 +174,9 @@ const ProfileScreen = ({route, navigation}: any) => {
     setUserListType(type);
     setUserListModalVisible(true);
   };
-console.log(userGroups)
+
+  console.log(userGroupLoading,userGroups)
+
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
