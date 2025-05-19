@@ -10,7 +10,6 @@ import {API_URL} from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import {useNavigation} from '@react-navigation/native';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useAuth} from './AuthContext';
 
 interface GroupContextType {
@@ -50,8 +49,7 @@ export const GroupProvider = ({children}: any) => {
   const [groups, setGroups] = useState<any[]>([]);
   const [userGroups, setUserGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<any>();
   const [group, setGroup] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
@@ -70,11 +68,10 @@ export const GroupProvider = ({children}: any) => {
       const headers = await getAuthHeaders();
       const res = await axios.get(`${API_URL}/groups/${groupId}`, headers);
       setPendingRequests(res?.data?.joinRequests);
-      if (res?.data?.joinRequests?.includes(user._id)) {
-        setHasRequested(true);
-      } else {
-        setHasRequested(false);
-      }
+      const hasrequested_ingroup = res?.data?.joinRequests?.some(
+        (req: any) => req._id === user?._id,
+      );
+      setHasRequested(hasrequested_ingroup);
       setGroup(res.data);
       setLoading(false);
     } catch (error: any) {
@@ -93,10 +90,9 @@ export const GroupProvider = ({children}: any) => {
       const response = await axios.get(`${API_URL}/groups`, headers);
       setGroups(response.data);
       setIsGroupUpdated(false);
-      setLoading(false)
-
+      setLoading(false);
     } catch (error) {
-      setLoading(false)
+      setLoading(false);
 
       Dialog.show({
         type: ALERT_TYPE.DANGER,
@@ -116,9 +112,9 @@ export const GroupProvider = ({children}: any) => {
       console.log(response);
       setUserGroups(response.data.usergroups);
       setIsGroupUpdated(false);
-      setLoading(false)
+      setLoading(false);
     } catch (error) {
-      setLoading(false)
+      setLoading(false);
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Error',
@@ -242,87 +238,98 @@ export const GroupProvider = ({children}: any) => {
     }
   };
 
-  const handleUpdateGroup = async (
-    groupId: string,
-    title: string,
-    goal: string,
-    members: any[],
-    image: any,
-    endDate: any,
-    selectedCategories: any,
-  ) => {
-    try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('goal', goal);
-      formData.append('members', JSON.stringify(members));
-      formData.append('endDate', endDate);
-      formData.append('categories', selectedCategories);
+const handleUpdateGroup = async (
+  groupId: string,
+  title: string,
+  goal: string,
+  members: any[],
+  image: any,
+  endDate: any,
+  selectedCategories: any,
+) => {
+  try {
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('goal', goal);
+    formData.append('members', JSON.stringify(members));
+    formData.append('endDate', endDate);
+    formData.append('categories', selectedCategories);
 
-      if (image && image.uri) {
-        const imageFile = {
-          uri: image.uri,
-          name: image.fileName || 'photo.jpg',
-          type: image.type || 'image/jpeg',
-        };
+    if (image && image.uri) {
+      const imageFile = {
+        uri: image.uri,
+        name: image.fileName || 'photo.jpg',
+        type: image.type || 'image/jpeg',
+      };
 
-        formData.append('image', imageFile as any);
-      }
+      formData.append('image', imageFile as any);
+    }
 
-      const headers = await getAuthHeaders();
+    const headers = await getAuthHeaders();
 
-      const response = await axios.put(
-        `${API_URL}/groups/${groupId}`,
-        formData,
-        {
-          headers: {
-            ...headers.headers,
-            'Content-Type': 'multipart/form-data',
-          },
+    const response = await axios.put(
+      `${API_URL}/groups/${groupId}`,
+      formData,
+      {
+        headers: {
+          ...headers.headers,
+          'Content-Type': 'multipart/form-data',
         },
-      );
+      },
+    );
 
-      // Ensure the response message matches
-      if (response.data.message === 'update successfully') {
-        Dialog.show({
-          type: ALERT_TYPE.SUCCESS,
-          title: 'Success',
-          textBody: 'Group updated successfully!',
-          button: 'OK',
-        });
+    console.log('✅ Response message:', response.data.message);
 
-        // Refresh data
-        fetchGroups();
-        fetchUserGroups();
+    // Just show success if status is 200 or message contains "success"
+    if (
+      response.status === 200 &&
+      response.data.message?.toLowerCase().includes('success')
+    ) {
+      Dialog.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Success',
+        textBody: 'Group updated successfully!',
+        button: 'OK',
+      });
+
+      // Refresh data
+      fetchGroups();
+      fetchUserGroups();
+
+      if (navigation.canGoBack()) {
         navigation.goBack();
       } else {
-        Dialog.show({
-          type: ALERT_TYPE.DANGER,
-          title: 'Error',
-          textBody: 'Group update failed!',
-          button: 'OK',
-        });
+        navigation.navigate('Profile');
       }
-    } catch (error: any) {
-      console.error('❌ Error during group update:', error.message);
-      console.error('❌ Full error object:', error);
-
-      if (error.response) {
-        console.error('❌ error.response.data:', error.response.data);
-        console.error('❌ error.response.status:', error.response.status);
-      }
-
+    } else {
       Dialog.show({
         type: ALERT_TYPE.DANGER,
-        title: 'Update Failed',
-        textBody:
-          error.response?.data?.message ||
-          error.message ||
-          'Something went wrong',
+        title: 'Error',
+        textBody: response.data.message || 'Group update failed!',
         button: 'OK',
       });
     }
-  };
+  } catch (error: any) {
+    console.error('❌ Error during group update:', error.message);
+    console.error('❌ Full error object:', error);
+
+    if (error.response) {
+      console.error('❌ error.response.data:', error.response.data);
+      console.error('❌ error.response.status:', error.response.status);
+    }
+
+    Dialog.show({
+      type: ALERT_TYPE.DANGER,
+      title: 'Update Failed',
+      textBody:
+        error.response?.data?.message ||
+        error.message ||
+        'Something went wrong',
+      button: 'OK',
+    });
+  }
+};
+
 
   const updateTodo = async (groupId: any, tasks: any) => {
     try {
@@ -333,16 +340,20 @@ export const GroupProvider = ({children}: any) => {
         headers,
       );
       console.log(response);
-      // Refresh data
+
       fetchGroups();
       fetchUserGroups();
-      Dialog.show({
-        type: ALERT_TYPE.DANGER,
-        title: 'Error',
-        textBody: 'Group update failed!',
+     Dialog.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Success',
+        textBody: 'Group Todo updated successfully!',
         button: 'OK',
       });
-      navigation.goBack();
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('Profile'); // or do nothing
+      }
     } catch (error) {
       console.log(error);
       Dialog.show({
@@ -439,7 +450,7 @@ export const GroupProvider = ({children}: any) => {
   useEffect(() => {
     fetchGroups();
     fetchUserGroups();
-  }, [fetchGroups, fetchUserGroups]);
+  }, [fetchGroups, fetchUserGroups, hasRequested]);
 
   return (
     <GroupContext.Provider

@@ -9,6 +9,7 @@ import {
 import {useAuth} from '../context/AuthContext';
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { ActivityIndicator } from 'react-native-paper';
 
 const LoginScreen = ({navigation}: any) => {
   const {login}: any = useAuth(); // Get setUser function from context
@@ -16,7 +17,7 @@ const LoginScreen = ({navigation}: any) => {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<any>({});
   const [showPassword, setShowPassword] = useState(false);
-
+  const[loading,setLoading] = useState(false)
   const validateForm = () => {
     let newErrors: any = {};
     if (!email.trim()) {
@@ -38,6 +39,7 @@ const LoginScreen = ({navigation}: any) => {
     return emailRegex.test(email);
   };
   const handleLogin = async () => {
+    setLoading(true)
     if (!validateForm()) return;
     try {
       const userData = await login(email, password); // ✅ Call login function
@@ -47,6 +49,8 @@ const LoginScreen = ({navigation}: any) => {
     } catch (error) {
       // Handle the error (e.g., show a message to the user)
       console.error('Login failed:', error);
+    }finally{
+      setLoading(false)
     }
   };
 
@@ -91,11 +95,17 @@ const LoginScreen = ({navigation}: any) => {
           {errors.password}
         </Animatable.Text>
       )}
-
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Log In</Text>
+      <TouchableOpacity
+        style={[styles.button, loading && styles.disabledButton]}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color="#1c1c1e" />
+        ) : (
+          <Text style={styles.buttonText}>Login In</Text>
+        )}
       </TouchableOpacity>
-
       <Text style={styles.footerText}>
         Don't have an account?{' '}
         <Text
@@ -162,6 +172,10 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 10,
+  },
+    disabledButton: {
+    backgroundColor: '#999',
+    height: 59,
   },
 });
 

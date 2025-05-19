@@ -40,7 +40,7 @@ const GroupDetailsScreen = ({route}: any) => {
     hasRequested,
     handleAcceptRequest,
     pendingRequests,
-    fetchUserGroup
+    fetchUserGroup,
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
@@ -107,35 +107,49 @@ const GroupDetailsScreen = ({route}: any) => {
     );
   };
 
-  const saveGroupChanges = async () => {
-    if (!validateText(title) || !validateText(goal)) {
+const saveGroupChanges = async () => {
+  if (!validateText(title) || !validateText(goal)) {
+    Dialog.show({
+      type: ALERT_TYPE.DANGER,
+      title: 'Validation Error',
+      textBody: 'Please enter both title and goal for the group.',
+      button: 'OK',
+    });
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    await handleUpdateGroup(
+      groupId,
+      title,
+      goal,
+      selectedMembers,
+      image,
+      endDate,
+      selectedCategories,
+    );
+
+    try {
+      await updateTodo(groupId, tasks, endDate);
+    } catch (todoError) {
+      console.log('❌ Failed to update todo:', todoError);
       Dialog.show({
-        type: ALERT_TYPE.DANGER,
-        title: 'Error',
-        textBody: 'Group update failed!',
+        type: ALERT_TYPE.WARNING,
+        title: 'Partial Update',
+        textBody: 'Group updated, but tasks could not be saved.',
         button: 'OK',
       });
-      return;
     }
-    try {
-      setLoading(true);
-      await handleUpdateGroup(
-        groupId,
-        title,
-        goal,
-        selectedMembers,
-        image,
-        endDate,
-        selectedCategories,
-      );
 
-      await updateTodo(groupId, tasks, endDate);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error) {
+    console.log('❌ Group update error:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (loading) {
     return (
@@ -235,9 +249,8 @@ const GroupDetailsScreen = ({route}: any) => {
 
   const handleDelete = async () => {
     await handleDeleteGroup(groupId);
-    await fetchUserGroup()
+    await fetchUserGroup();
   };
-
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -330,8 +343,12 @@ const GroupDetailsScreen = ({route}: any) => {
               </TouchableOpacity>
             </View>
           ))}
-          <Button onPress={addNewTask}><Text>Add Task</Text></Button>
-          <Button onPress={updateTaskChanges}><Text>Update Tasks</Text></Button>
+          <Button onPress={addNewTask}>
+            <Text>Add Task</Text>
+          </Button>
+          <Button onPress={updateTaskChanges}>
+            <Text>Update Tasks</Text>
+          </Button>
 
           <TouchableOpacity onPress={() => setShowEndDatePicker(true)}>
             <Text style={{color: 'blue', marginVertical: 10}}>
@@ -471,12 +488,13 @@ const GroupDetailsScreen = ({route}: any) => {
                 style={[styles.joinButton]}
                 onPress={() => handleJoinGroup(groupId)}
                 disabled={loading}>
-                 <Text>
- {loading
-                  ? 'Processing...'
-                  : hasRequested
-                  ? 'Cancel Join Request'
-                  : 'Request to Join'}</Text>
+                <Text style = {styles.textColor}>
+                  {loading
+                    ? 'Processing...'
+                    : hasRequested
+                    ? 'Cancel Join Request'
+                    : 'Request to Join'}
+                </Text>
               </Button>
             </View>
           )}
@@ -518,7 +536,7 @@ const GroupDetailsScreen = ({route}: any) => {
                   ))
                 )}
                 <Button onPress={() => setShowJoinRequests(false)}>
-                <Text>  Close</Text>
+                  <Text> Close</Text>
                 </Button>
               </ScrollView>
             </View>
@@ -532,7 +550,7 @@ const GroupDetailsScreen = ({route}: any) => {
               <Text>Save Changes</Text>
             </Button>
             <Button mode="outlined" onPress={() => setEditMode(false)}>
-             <Text> Cancel</Text>
+              <Text> Cancel</Text>
             </Button>
           </>
         ) : (
@@ -543,10 +561,10 @@ const GroupDetailsScreen = ({route}: any) => {
                   mode="contained"
                   style={{backgroundColor: 'tomato', marginBottom: 10}}
                   onPress={() => setEditMode(true)}>
-                 <Text> Edit Group</Text>
+                  <Text> Edit Group</Text>
                 </Button>
                 <Button mode="outlined" onPress={handleDelete}>
-  <Text>Delete Group</Text>
+                  <Text>Delete Group</Text>
                 </Button>
               </>
             )}
@@ -565,6 +583,9 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 60,
     backgroundColor: '#f7f7f7',
+  },
+  textColor:{
+    color:'white',
   },
   taskItem: {
     flexDirection: 'row',
