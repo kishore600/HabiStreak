@@ -23,6 +23,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import {hobbies_enum} from '../constant';
 import {MultiSelect} from 'react-native-element-dropdown';
 import {Platform} from 'react-native';
+import {Picker} from '@react-native-picker/picker';
+import AnalyticsChart from '../components/AnalyticsChart';
 
 const GroupDetailsScreen = ({route}: any) => {
   const {user}: any = useAuth();
@@ -41,6 +43,8 @@ const GroupDetailsScreen = ({route}: any) => {
     handleAcceptRequest,
     pendingRequests,
     fetchUserGroup,
+    fetchAnalytics,
+    analytics,
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
@@ -58,7 +62,7 @@ const GroupDetailsScreen = ({route}: any) => {
     value: hobby,
   }));
   const [showJoinRequests, setShowJoinRequests] = useState(false);
-
+  const [type, setType] = useState('daily');
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -69,9 +73,10 @@ const GroupDetailsScreen = ({route}: any) => {
 
     if (groupId) {
       fetchData();
+      fetchAnalytics(type);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId]);
+  }, [groupId, type]);
 
   useEffect(() => {
     if (group) {
@@ -107,49 +112,47 @@ const GroupDetailsScreen = ({route}: any) => {
     );
   };
 
-const saveGroupChanges = async () => {
-  if (!validateText(title) || !validateText(goal)) {
-    Dialog.show({
-      type: ALERT_TYPE.DANGER,
-      title: 'Validation Error',
-      textBody: 'Please enter both title and goal for the group.',
-      button: 'OK',
-    });
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    await handleUpdateGroup(
-      groupId,
-      title,
-      goal,
-      selectedMembers,
-      image,
-      endDate,
-      selectedCategories,
-    );
-
-    try {
-      await updateTodo(groupId, tasks, endDate);
-    } catch (todoError) {
-      console.log('❌ Failed to update todo:', todoError);
+  const saveGroupChanges = async () => {
+    if (!validateText(title) || !validateText(goal)) {
       Dialog.show({
-        type: ALERT_TYPE.WARNING,
-        title: 'Partial Update',
-        textBody: 'Group updated, but tasks could not be saved.',
+        type: ALERT_TYPE.DANGER,
+        title: 'Validation Error',
+        textBody: 'Please enter both title and goal for the group.',
         button: 'OK',
       });
+      return;
     }
 
-  } catch (error) {
-    console.log('❌ Group update error:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
 
+      await handleUpdateGroup(
+        groupId,
+        title,
+        goal,
+        selectedMembers,
+        image,
+        endDate,
+        selectedCategories,
+      );
+
+      try {
+        await updateTodo(groupId, tasks, endDate);
+      } catch (todoError) {
+        console.log('❌ Failed to update todo:', todoError);
+        Dialog.show({
+          type: ALERT_TYPE.WARNING,
+          title: 'Partial Update',
+          textBody: 'Group updated, but tasks could not be saved.',
+          button: 'OK',
+        });
+      }
+    } catch (error) {
+      console.log('❌ Group update error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -260,7 +263,7 @@ const saveGroupChanges = async () => {
 
   const isUserInGroup =
     group?.members?.some((member: any) => member._id === user?._id) ?? false;
-
+console.log(analytics)
   return (
     <ScrollView
       style={styles.container}
@@ -421,6 +424,25 @@ const saveGroupChanges = async () => {
               {pendingRequests.length}
             </Text>
           </TouchableOpacity>
+          <View style={styles.pickerContainer}>
+            <Text style={styles.label1}>Analytics:</Text>
+
+            <Text style={styles.label}>Select Type:</Text>
+            <Picker
+              selectedValue={type}
+              style={styles.picker}
+              onValueChange={itemValue => setType(itemValue)}>
+              <Picker.Item label="Daily" value="daily" />
+              <Picker.Item label="Weekly" value="weekly" />
+              <Picker.Item label="Monthly" value="monthly" />
+              <Picker.Item label="Yearly" value="yearly" />
+            </Picker>
+            {loading ? (
+              <ActivityIndicator size="large" color="#007bff" />
+            ) : (
+              <AnalyticsChart analytics={analytics.data} />
+            )}
+          </View>
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>
             <Image
@@ -488,7 +510,7 @@ const saveGroupChanges = async () => {
                 style={[styles.joinButton]}
                 onPress={() => handleJoinGroup(groupId)}
                 disabled={loading}>
-                <Text style = {styles.textColor}>
+                <Text style={styles.textColor}>
                   {loading
                     ? 'Processing...'
                     : hasRequested
@@ -584,8 +606,8 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     backgroundColor: '#f7f7f7',
   },
-  textColor:{
-    color:'white',
+  textColor: {
+    color: 'white',
   },
   taskItem: {
     flexDirection: 'row',
@@ -738,5 +760,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'green',
     padding: 10,
     borderRadius: 8,
+  },
+  pickerContainer: {
+    marginVertical: 10,
+    paddingHorizontal: 10,
+  },
+  label: {
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  label1: {
+    fontWeight: 'bold',
+    marginVertical: 15,
+  },
+  picker: {
+    backgroundColor: '#eee',
+    borderRadius: 5,
   },
 });

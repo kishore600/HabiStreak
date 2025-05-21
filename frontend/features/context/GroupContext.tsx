@@ -38,6 +38,8 @@ interface GroupContextType {
   handleAcceptRequest: any;
   pendingRequests: any;
   isGroupUpdated: any;
+  fetchAnalytics:any;
+  analytics:any
 }
 export type RootStackParamList = {
   Home: undefined;
@@ -57,10 +59,32 @@ export const GroupProvider = ({children}: any) => {
   const {user}: any = useAuth();
   const [pendingRequests, setPendingRequests] = useState([]);
   const [isGroupUpdated, setIsGroupUpdated] = useState(false);
+  const [analytics, setAnalytics] = useState<any>([]);
 
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
     return {headers: {Authorization: `Bearer ${token}`}};
+  };
+  const fetchAnalytics = async (type: string) => {
+    try {
+      const headers = await getAuthHeaders();
+
+      const response = await axios.post(
+        `${API_URL}/users/type/analytics`,
+        {
+          type: type,
+        },
+        headers
+      );
+      const result = await response
+
+      console.log(result)
+      if (result) {
+        setAnalytics(result);
+      }
+    } catch (error) {
+      console.log('❌ Failed to fetch analytics:', error);
+    }
   };
 
   const fetchGroupById = async (groupId: string) => {
@@ -238,98 +262,97 @@ export const GroupProvider = ({children}: any) => {
     }
   };
 
-const handleUpdateGroup = async (
-  groupId: string,
-  title: string,
-  goal: string,
-  members: any[],
-  image: any,
-  endDate: any,
-  selectedCategories: any,
-) => {
-  try {
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('goal', goal);
-    formData.append('members', JSON.stringify(members));
-    formData.append('endDate', endDate);
-    formData.append('categories', selectedCategories);
+  const handleUpdateGroup = async (
+    groupId: string,
+    title: string,
+    goal: string,
+    members: any[],
+    image: any,
+    endDate: any,
+    selectedCategories: any,
+  ) => {
+    try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('goal', goal);
+      formData.append('members', JSON.stringify(members));
+      formData.append('endDate', endDate);
+      formData.append('categories', selectedCategories);
 
-    if (image && image.uri) {
-      const imageFile = {
-        uri: image.uri,
-        name: image.fileName || 'photo.jpg',
-        type: image.type || 'image/jpeg',
-      };
+      if (image && image.uri) {
+        const imageFile = {
+          uri: image.uri,
+          name: image.fileName || 'photo.jpg',
+          type: image.type || 'image/jpeg',
+        };
 
-      formData.append('image', imageFile as any);
-    }
-
-    const headers = await getAuthHeaders();
-
-    const response = await axios.put(
-      `${API_URL}/groups/${groupId}`,
-      formData,
-      {
-        headers: {
-          ...headers.headers,
-          'Content-Type': 'multipart/form-data',
-        },
-      },
-    );
-
-    console.log('✅ Response message:', response.data.message);
-
-    // Just show success if status is 200 or message contains "success"
-    if (
-      response.status === 200 &&
-      response.data.message?.toLowerCase().includes('success')
-    ) {
-      Dialog.show({
-        type: ALERT_TYPE.SUCCESS,
-        title: 'Success',
-        textBody: 'Group updated successfully!',
-        button: 'OK',
-      });
-
-      // Refresh data
-      fetchGroups();
-      fetchUserGroups();
-
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      } else {
-        navigation.navigate('Profile');
+        formData.append('image', imageFile as any);
       }
-    } else {
+
+      const headers = await getAuthHeaders();
+
+      const response = await axios.put(
+        `${API_URL}/groups/${groupId}`,
+        formData,
+        {
+          headers: {
+            ...headers.headers,
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
+
+      console.log('✅ Response message:', response.data.message);
+
+      // Just show success if status is 200 or message contains "success"
+      if (
+        response.status === 200 &&
+        response.data.message?.toLowerCase().includes('success')
+      ) {
+        Dialog.show({
+          type: ALERT_TYPE.SUCCESS,
+          title: 'Success',
+          textBody: 'Group updated successfully!',
+          button: 'OK',
+        });
+
+        // Refresh data
+        fetchGroups();
+        fetchUserGroups();
+
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('Profile');
+        }
+      } else {
+        Dialog.show({
+          type: ALERT_TYPE.DANGER,
+          title: 'Error',
+          textBody: response.data.message || 'Group update failed!',
+          button: 'OK',
+        });
+      }
+    } catch (error: any) {
+      console.error('❌ Error during group update:', error.message);
+      console.error('❌ Full error object:', error);
+
+      if (error.response) {
+        console.error('❌ error.response.data:', error.response.data);
+        console.error('❌ error.response.status:', error.response.status);
+      }
+
       Dialog.show({
         type: ALERT_TYPE.DANGER,
-        title: 'Error',
-        textBody: response.data.message || 'Group update failed!',
+        title: 'Update Failed',
+        textBody:
+          error.response?.data?.message ||
+          error.message ||
+          'Something went wrong',
         button: 'OK',
       });
     }
-  } catch (error: any) {
-    console.error('❌ Error during group update:', error.message);
-    console.error('❌ Full error object:', error);
-
-    if (error.response) {
-      console.error('❌ error.response.data:', error.response.data);
-      console.error('❌ error.response.status:', error.response.status);
-    }
-
-    Dialog.show({
-      type: ALERT_TYPE.DANGER,
-      title: 'Update Failed',
-      textBody:
-        error.response?.data?.message ||
-        error.message ||
-        'Something went wrong',
-      button: 'OK',
-    });
-  }
-};
-
+  };
 
   const updateTodo = async (groupId: any, tasks: any) => {
     try {
@@ -343,7 +366,7 @@ const handleUpdateGroup = async (
 
       fetchGroups();
       fetchUserGroups();
-     Dialog.show({
+      Dialog.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Success',
         textBody: 'Group Todo updated successfully!',
@@ -480,6 +503,8 @@ const handleUpdateGroup = async (
         handleAcceptRequest,
         pendingRequests,
         isGroupUpdated,
+        fetchAnalytics,
+        analytics
       }}>
       {children}
     </GroupContext.Provider>

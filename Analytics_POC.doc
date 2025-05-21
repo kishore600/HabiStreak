@@ -1,0 +1,149 @@
+🔹 1. Per Group Analytics (Group-wide completions per day/week/month/year)
+This tells you how many completions happened across all users in each group, aggregated by time unit.
+
+Aggregation Pipeline:
+js
+Copy
+Edit
+const groupAnalytics = await Group.aggregate([
+  { $project: { groupId: "$_id", completedDates: 1 } },
+  { $unwind: "$completedDates" },
+  {
+    $project: {
+      groupId: 1,
+      userId: { $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 0] },
+      dateString: { $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 1] }
+    }
+  },
+  {
+    $addFields: {
+      completedDate: { $dateFromString: { dateString: "$dateString" } }
+    }
+  },
+  {
+    $group: {
+      _id: {
+        groupId: "$groupId",
+        date: {
+          $dateToString: {
+            format: formatMap[type], // use "%Y-%m-%d", etc.
+            date: "$completedDate"
+          }
+        }
+      },
+      totalCompletions: { $sum: 1 }
+    }
+  },
+  { $sort: { "_id.date": 1 } }
+]);
+🔹 2. Per Member Within a Group (Each member’s completions in a group)
+This lets you see how active each member is, either total or per time period, within a single group.
+
+Aggregation Pipeline:
+js
+Copy
+Edit
+const groupId = req.params.groupId; // assuming you're passing it in URL
+
+const memberAnalytics = await Group.aggregate([
+  { $match: { _id: new mongoose.Types.ObjectId(groupId) } },
+  { $project: { completedDates: 1 } },
+  { $unwind: "$completedDates" },
+  {
+    $project: {
+      userId: { $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 0] },
+      dateString: { $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 1] }
+    }
+  },
+  {
+    $addFields: {
+      completedDate: { $dateFromString: { dateString: "$dateString" } }
+    }
+  },
+  {
+    $group: {
+      _id: {
+        userId: "$userId",
+        date: {
+          $dateToString: {
+            format: formatMap[type],
+            date: "$completedDate"
+          }
+        }
+      },
+      userCompletions: { $sum: 1 }
+    }
+  },
+  { $sort: { "_id.date": 1 } }
+]);
+🔹 3. Group vs. User Comparison (User’s completions vs. overall group activity)
+For this, get total completions per group (as in part 1) and also fetch the logged-in user’s completions in that group.
+
+You can run both pipelines and compare results on the frontend or combine them in a single pipeline (more complex).
+
+Option A: Backend comparison (combined result):
+js
+Copy
+Edit
+const userId = req.user._id.toString();
+const groupId = req.params.groupId;
+
+const comparisonAnalytics = await Group.aggregate([
+  { $match: { _id: new mongoose.Types.ObjectId(groupId) } },
+  { $project: { completedDates: 1 } },
+  { $unwind: "$completedDates" },
+  {
+    $project: {
+      isUser: {
+        $eq: [
+          { $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 0] },
+          userId
+        ]
+      },
+      userId: { $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 0] },
+      dateString: { $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 1] }
+    }
+  },
+  {
+    $addFields: {
+      completedDate: { $dateFromString: { dateString: "$dateString" } }
+    }
+  },
+  {
+    $group: {
+      _id: {
+        date: {
+          $dateToString: {
+            format: formatMap[type],
+            date: "$completedDate"
+          }
+        }
+      },
+      totalGroupCompletions: { $sum: 1 },
+      userCompletions: {
+        $sum: {
+          $cond: ["$isUser", 1, 0]
+        }
+      }
+    }
+  },
+  { $sort: { "_id.date": 1 } }
+]);
+Sample Output:
+json
+Copy
+Edit
+[
+  {
+    "_id": "2025-05-08",
+    "totalGroupCompletions": 2,
+    "userCompletions": 1
+  },
+  ...
+]
+✅ Summary Table:
+Analytics Type	Key Use	Pipeline Variable
+Group-wide completions	Overall activity trend	groupAnalytics
+Member-level per group	Member contributions to group	memberAnalytics
+Group vs. user comparison	Compare user’s effort vs group total	comparisonAnalytics
+

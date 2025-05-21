@@ -33,7 +33,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     unfollowUser,
     handleFollowRequest,
     pendingRequest,
-        isGroupUpdated
+    isGroupUpdated
   }: any = useAuth();
   const {userGroups, loading: userGroupLoading, fetchUserGroups} = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -351,7 +351,8 @@ useFocusEffect(
               {image && <Image source={{uri: image}} style={styles.avatar} />}
             </View>
             <View>
-              <Text style={styles.name}>{name || 'Guest User'}</Text>
+              <Text style={styles.name}>{name || 'Guest User'}  </Text>
+              <Text>{user?.totalStreak} 🐦‍🔥</Text>
             </View>
             <View>
               {currentUser && (

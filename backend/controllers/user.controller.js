@@ -5,6 +5,8 @@ const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 const { default: mongoose } = require("mongoose");
 const hobbies_enum = require("../constant.js");
+const Todo = require("../models/todo.model.js");
+const Group = require("../models/group.model.js");
 
 const getUserProfile = async (req, res) => {
   try {
@@ -18,31 +20,31 @@ const getUserProfile = async (req, res) => {
       userId = req.user._id;
     } else {
       // If neither, return an error response
-      return res.status(400).json({ message: 'User ID is required' });
+      return res.status(400).json({ message: "User ID is required" });
     }
 
     console.log(userId); // Debugging to ensure we have the correct userId
 
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+      return res.status(400).json({ message: "Invalid user ID" });
     }
 
     // Find user by userId
     const user = await User.findById(userId)
-      .select('-password -pendingRequest')
-      .populate('followers', 'name email image')
-      .populate('following', 'name email image')
-      .populate('createdGroups');
+      .select("-password -pendingRequest")
+      .populate("followers", "name email image")
+      .populate("following", "name email image")
+      .populate("createdGroups");
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.json(user);
   } catch (error) {
-    console.error('Error fetching user profile:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -55,38 +57,38 @@ const getUserProfile1 = async (req, res) => {
       userId = req.user._id;
     } else {
       // If neither, return an error response
-      return res.status(400).json({ message: 'User ID is required' });
+      return res.status(400).json({ message: "User ID is required" });
     }
 
     console.log(userId); // Debugging to ensure we have the correct userId
 
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+      return res.status(400).json({ message: "Invalid user ID" });
     }
 
     // Find user by userId
     const user = await User.findById(userId)
-      .select('-password')
-      .populate('followers', 'name email image')
-      .populate('following', 'name email image')
+      .select("-password")
+      .populate("followers", "name email image")
+      .populate("following", "name email image")
       .populate({
-        path: 'pendingRequest',
+        path: "pendingRequest",
         populate: {
-          path: 'user',
-          select: 'name email image _id',
+          path: "user",
+          select: "name email image _id",
         },
       })
-      .populate('createdGroups');
+      .populate("createdGroups");
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.json(user);
   } catch (error) {
-    console.error('Error fetching user profile:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -230,16 +232,16 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   user.email = req.body.email || user.email;
   if (req.body.hobbies && Array.isArray(req.body.hobbies)) {
     const invalidHobbies = req.body.hobbies.filter(
-      hobby => !hobbies_enum.includes(hobby)
+      (hobby) => !hobbies_enum.includes(hobby)
     );
-  
+
     if (invalidHobbies.length > 0) {
       return res.status(400).json({
-        message: 'Invalid hobbies provided',
+        message: "Invalid hobbies provided",
         invalidHobbies,
       });
     }
-  
+
     user.hobbies = req.body.hobbies;
   }
   try {
@@ -282,6 +284,82 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
+const getUserAnalytics = async (req, res) => {
+  try {
+    const userId = req.user._id.toString(); // assuming you use middleware like 'protect' to attach the user
+    const type = req.body.type || "daily";
+console.log(type)
+    const formatMap = {
+      daily: "%Y-%m-%d",
+      weekly: "%Y-%U",
+      monthly: "%Y-%m",
+      yearly: "%Y"
+    };
+
+    if (!formatMap[type]) {
+      return res.status(400).json({ message: "Invalid type. Use daily, weekly, monthly, or yearly." });
+    }
+
+    const data = await Group.aggregate([
+      {
+        $project: {
+          completedDates: 1
+        }
+      },
+      {
+        $unwind: "$completedDates"
+      },
+      {
+        $match: {
+          completedDates: { $regex: `^${userId}_` }
+        }
+      },
+      {
+        $project: {
+          dateString: {
+            $arrayElemAt: [
+              { $split: ["$completedDates", "_"] },
+              1
+            ]
+          }
+        }
+      },
+      {
+        $addFields: {
+          completedDate: {
+            $dateFromString: {
+              dateString: "$dateString"
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: formatMap[type],
+              date: "$completedDate"
+            }
+          },
+          completedCount: { $sum: 1 }
+        }
+      },
+      {
+        $sort: {
+          _id: 1
+        }
+      }
+    ]);
+
+    res.status(200).json(data);
+
+  } catch (error) {
+    console.error("Error fetching analytics:", error);
+    res.status(500).json({ success: false, message: "Server Error", error: error.message });
+  }
+};
+
+
 module.exports = {
   getUserProfile,
   sendFollowRequest,
@@ -289,5 +367,6 @@ module.exports = {
   getPendingRequests,
   handleFollowRequest,
   updateUserProfile,
-  getUserProfile1
+  getUserProfile1,
+  getUserAnalytics,
 };
