@@ -38,8 +38,12 @@ interface GroupContextType {
   handleAcceptRequest: any;
   pendingRequests: any;
   isGroupUpdated: any;
-  fetchAnalytics:any;
-  analytics:any
+  fetchAnalytics: any;
+  analytics: any;
+  MemberAnalytics: any;
+  memberData:any
+  comparisonData:any
+  ComparisonAnalytisc:any
 }
 export type RootStackParamList = {
   Home: undefined;
@@ -60,11 +64,14 @@ export const GroupProvider = ({children}: any) => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [isGroupUpdated, setIsGroupUpdated] = useState(false);
   const [analytics, setAnalytics] = useState<any>([]);
+  const [memberData, setMemberData] = useState([]);
+  const [comparisonData, setComparisonData] = useState([]);
 
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
     return {headers: {Authorization: `Bearer ${token}`}};
   };
+
   const fetchAnalytics = async (type: string) => {
     try {
       const headers = await getAuthHeaders();
@@ -74,13 +81,51 @@ export const GroupProvider = ({children}: any) => {
         {
           type: type,
         },
-        headers
+        headers,
       );
-      const result = await response
+      const result = await response;
 
-      console.log(result)
+      console.log(result);
       if (result) {
         setAnalytics(result);
+      }
+    } catch (error) {
+      console.log('❌ Failed to fetch analytics:', error);
+    }
+  };
+
+  const MemberAnalytics = async (id: string) => {
+    try {
+      const headers = await getAuthHeaders();
+
+      const response = await axios.get(
+        `${API_URL}/groups/${id}/members`,
+        headers,
+      );
+      const result = await response;
+
+      console.log(result);
+      if (result) {
+        setMemberData(result.data);
+      }
+    } catch (error) {
+      console.log('❌ Failed to fetch analytics:', error);
+    }
+  };
+
+  const ComparisonAnalytisc = async (id: string) => {
+    try {
+      const headers = await getAuthHeaders();
+
+      const response = await axios.get(
+        `${API_URL}/groups/${id}/comparison`,
+        headers,
+      );
+      const result = await response;
+
+      console.log(result);
+      if (result) {
+        setComparisonData(result.data);
       }
     } catch (error) {
       console.log('❌ Failed to fetch analytics:', error);
@@ -504,7 +549,11 @@ export const GroupProvider = ({children}: any) => {
         pendingRequests,
         isGroupUpdated,
         fetchAnalytics,
-        analytics
+        analytics,
+        MemberAnalytics,
+        memberData,
+        ComparisonAnalytisc,
+        comparisonData,
       }}>
       {children}
     </GroupContext.Provider>

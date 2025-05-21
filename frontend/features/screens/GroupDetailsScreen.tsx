@@ -45,6 +45,8 @@ const GroupDetailsScreen = ({route}: any) => {
     fetchUserGroup,
     fetchAnalytics,
     analytics,
+    MemberAnalytics,
+    ComparisonAnalytisc
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
@@ -74,6 +76,8 @@ const GroupDetailsScreen = ({route}: any) => {
     if (groupId) {
       fetchData();
       fetchAnalytics(type);
+      MemberAnalytics(groupId);
+      ComparisonAnalytisc(groupId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, type]);
@@ -437,12 +441,12 @@ console.log(analytics)
               <Picker.Item label="Monthly" value="monthly" />
               <Picker.Item label="Yearly" value="yearly" />
             </Picker>
+          </View>
             {loading ? (
               <ActivityIndicator size="large" color="#007bff" />
             ) : (
               <AnalyticsChart analytics={analytics.data} />
             )}
-          </View>
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>
             <Image

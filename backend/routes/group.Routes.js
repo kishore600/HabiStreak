@@ -12,6 +12,8 @@ const {
   updateTodoForGroup,
   requestToJoinGroup,
   acceptJoinRequest,
+  getMemberAnalytics,
+  getUserVsGroupAnalytics,
 } = require('../controllers/group.controller');
 const { protect } = require('../middleware/auth.middleware');
 const multer = require('multer');
@@ -32,5 +34,7 @@ router.get('/:groupId/leaderboard', protect, getLeaderboard);
 router.put('/:groupId/todo',protect, updateTodoForGroup);
 router.post('/:groupId/join-request', protect, requestToJoinGroup);
 router.post('/:groupId/accept-request', protect, acceptJoinRequest);
+router.get("/:groupId/members", getMemberAnalytics);
+router.get("/:groupId/comparison", protect, getUserVsGroupAnalytics);
 
 module.exports = router;

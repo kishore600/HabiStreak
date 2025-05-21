@@ -6,6 +6,12 @@ const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 const { default: mongoose } = require("mongoose");
 const hobbies_enum = require("../constant.js");
+const formatMap = {
+  day: "%Y-%m-%d",
+  week: "%Y-%U",
+  month: "%Y-%m",
+  year: "%Y",
+};
 
 const createGroup = asyncHandler(async (req, res) => {
   try {
@@ -449,11 +455,11 @@ const requestToJoinGroup = asyncHandler(async (req, res) => {
   try {
     const group = await Group.findById(groupId);
     if (!group) {
-      return res.status(400).json({ message: 'Group not found' });
+      return res.status(400).json({ message: "Group not found" });
     }
 
     if (group.members.includes(userId)) {
-      return res.status(400).json({ message: 'Already a member' });
+      return res.status(400).json({ message: "Already a member" });
     }
 
     const alreadyRequested = group.joinRequests.includes(userId);
@@ -462,46 +468,163 @@ const requestToJoinGroup = asyncHandler(async (req, res) => {
       // Pull user from joinRequests (cancel request)
       group.joinRequests.pull(userId);
       await group.save();
-      return res.status(200).json({ message: 'Join request cancelled' });
+      return res.status(200).json({ message: "Join request cancelled" });
     } else {
       // Add user to joinRequests
       group.joinRequests.push(userId);
       await group.save();
-      return res.status(200).json({ message: 'Join request sent' });
+      return res.status(200).json({ message: "Join request sent" });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    res.status(500).json({ message: "Server error", error });
   }
 });
 
-const acceptJoinRequest = async (req, res) => {
+const acceptJoinRequest = asyncHandler(async (req, res) => {
   const { groupId } = req.params;
-  const {userId}  = req.body;
+  const { userId } = req.body;
   const adminId = req.user._id;
   try {
     const group = await Group.findById(groupId);
-    if (!group) return res.status(404).json({ message: 'Group not found' });
-    
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
     if (!group.admin.equals(adminId)) {
-      return res.status(403).json({ message: 'Only admin can accept requests' });
+      return res
+        .status(403)
+        .json({ message: "Only admin can accept requests" });
     }
-    
-    console.log(group.joinRequests)
+
+    console.log(group.joinRequests);
     if (!group.joinRequests.includes(userId)) {
-      return res.status(400).json({ message: 'No such join request' });
+      return res.status(400).json({ message: "No such join request" });
     }
 
     group.joinRequests.pull(userId);
     group.members.push(userId);
     await group.save();
 
-    res.status(200).json({ message: 'User added to group' });
+    res.status(200).json({ message: "User added to group" });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    res.status(500).json({ message: "Server error", error });
   }
-};
+});
+
+const getMemberAnalytics = asyncHandler(async (req, res) => {
+  const groupId = req.params.groupId;
+  const { type = "day" } = req.query;
+
+  try {
+    const data = await Group.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(groupId) } },
+      { $project: { completedDates: 1 } },
+      { $unwind: "$completedDates" },
+      {
+        $project: {
+          userId: { $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 0] },
+          dateString: {
+            $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 1],
+          },
+        },
+      },
+      {
+        $addFields: {
+          completedDate: { $dateFromString: { dateString: "$dateString" } },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            userId: "$userId",
+            date: {
+              $dateToString: {
+                format: formatMap[type],
+                date: "$completedDate",
+              },
+            },
+          },
+          userCompletions: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.date": 1 } },
+    ]);
+
+    res.json(
+      data.map((d) => ({
+        _id: d._id.date,
+        userId: d._id.userId,
+        userCompletions: d.userCompletions,
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const getUserVsGroupAnalytics = asyncHandler(async (req, res) => {
+  const groupId = req.params.groupId;
+  const userId = req.user._id.toString();
+  const { type = "day" } = req.query;
+
+  try {
+    const data = await Group.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(groupId) } },
+      { $project: { completedDates: 1 } },
+      { $unwind: "$completedDates" },
+      {
+        $project: {
+          isUser: {
+            $eq: [
+              { $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 0] },
+              userId,
+            ],
+          },
+          userId: { $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 0] },
+          dateString: {
+            $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 1],
+          },
+        },
+      },
+      {
+        $addFields: {
+          completedDate: { $dateFromString: { dateString: "$dateString" } },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            date: {
+              $dateToString: {
+                format: formatMap[type],
+                date: "$completedDate",
+              },
+            },
+          },
+          totalGroupCompletions: { $sum: 1 },
+          userCompletions: {
+            $sum: {
+              $cond: ["$isUser", 1, 0],
+            },
+          },
+        },
+      },
+      { $sort: { "_id.date": 1 } },
+    ]);
+
+    res.json(
+      data.map((d) => ({
+        _id: d._id.date,
+        totalGroupCompletions: d.totalGroupCompletions,
+        userCompletions: d.userCompletions,
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = {
+  getMemberAnalytics,
+  getUserVsGroupAnalytics,
   createGroup,
   getGroupById,
   getGroups,
@@ -513,5 +636,5 @@ module.exports = {
   getLeaderboard,
   updateTodoForGroup,
   requestToJoinGroup,
-  acceptJoinRequest
+  acceptJoinRequest,
 };
