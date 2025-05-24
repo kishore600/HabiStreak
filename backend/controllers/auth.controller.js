@@ -1,14 +1,18 @@
-const asyncHandler = require('express-async-handler');
-const User = require('../models/user.Model.js');
-const { dataUri } = require('../middleware/upload.middleware.js');
+const asyncHandler = require("express-async-handler");
+const User = require("../models/user.Model.js");
+const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 const generateToken = require("../utils/generateToken.utils.js");
 
 const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
-console.log(name, email, password)
   if (!name || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
+  }
+
+  const userWithSameName = await User.findOne({ name });
+  if (userWithSameName) {
+    return res.status(400).json({ message: "Username already taken" });
   }
 
   try {
@@ -58,16 +62,17 @@ console.log(name, email, password)
 
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email }) .populate('followers', 'name email image')
-  .populate('following', 'name email image')
-  .populate({
-    path: 'pendingRequest',
-    populate: {
-      path: 'user',
-      select: 'name email image _id',
-    },
-  })
-  .populate('createdGroups');
+  const user = await User.findOne({ email })
+    .populate("followers", "name email image")
+    .populate("following", "name email image")
+    .populate({
+      path: "pendingRequest",
+      populate: {
+        path: "user",
+        select: "name email image _id",
+      },
+    })
+    .populate("createdGroups");
 
   if (user && (await user.matchPassword(password))) {
     res.json({ user: user, token: generateToken(user._id) });

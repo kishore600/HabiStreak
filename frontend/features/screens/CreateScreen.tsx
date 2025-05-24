@@ -16,12 +16,13 @@ import {hobbies_enum} from '../constant';
 import {MultiSelect} from 'react-native-element-dropdown';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {Platform} from 'react-native';
+import {Switch} from 'react-native-paper';
 
 const CreateScreen = () => {
   const [groupTitle, setGroupTitle] = useState('');
   const [goal, setGoal] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [tasks, setTasks] = useState<string[]>(['']);
+  const [tasks, setTasks] = useState<any>([]);
   const {createGroup, loading} = useGroup();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const categoryOptions = hobbies_enum.map(hobby => ({
@@ -47,7 +48,7 @@ const CreateScreen = () => {
   };
 
   const handleAddTask = () => {
-    setTasks([...tasks, '']);
+    setTasks([...tasks, {title: '', description: '', requireProof: false}]);
   };
 
   const handleRemoveTask = (index: number) => {
@@ -57,18 +58,25 @@ const CreateScreen = () => {
   };
 
   const handleEndDateChange = (event: any, selectedDate?: Date) => {
-      setShowEndDatePicker(Platform.OS === 'ios');
-      if (selectedDate) {
-        const formattedDate = selectedDate.toISOString().split('T')[0];
-        setEndDate(formattedDate);
-      }
+    setShowEndDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      setEndDate(formattedDate);
+    }
   };
 
-  const handleTaskChange = (text: string, index: number) => {
-    const updatedTasks = [...tasks];
-    updatedTasks[index] = text;
-    setTasks(updatedTasks);
+  const handleTaskChange = (index: number, field: string, value: any) => {
+    console.log(value);
+    setTasks((prevTasks:any) => {
+      const updatedTasks = [...prevTasks];
+      updatedTasks[index] = {
+        ...updatedTasks[index],
+        [field]: value,
+      };
+      return updatedTasks;
+    });
   };
+
   const handleSubmit = async () => {
     try {
       if (!imageUri) {
@@ -79,8 +87,10 @@ const CreateScreen = () => {
         });
         return;
       }
-  
-      const nonEmptyTasks = tasks.filter(task => task.trim() !== '');
+
+const nonEmptyTasks = tasks.filter((task: any) => 
+  task.title.trim() !== '' || task.description.trim() !== ''
+);
       if (nonEmptyTasks.length === 0) {
         Dialog.show({
           type: ALERT_TYPE.DANGER,
@@ -89,7 +99,7 @@ const CreateScreen = () => {
         });
         return;
       }
-  
+
       // Ensure categories and endDate exist
       if (!selectedCategories || selectedCategories.length === 0) {
         Dialog.show({
@@ -99,7 +109,7 @@ const CreateScreen = () => {
         });
         return;
       }
-  
+
       if (!endDate) {
         Dialog.show({
           type: ALERT_TYPE.DANGER,
@@ -108,7 +118,7 @@ const CreateScreen = () => {
         });
         return;
       }
-  
+
       const formData = new FormData();
       formData.append('title', groupTitle);
       formData.append('goal', goal);
@@ -116,27 +126,26 @@ const CreateScreen = () => {
       formData.append('tasks', JSON.stringify(nonEmptyTasks));
       formData.append('categories', JSON.stringify(selectedCategories));
       formData.append('endDate', endDate); // Must be a valid ISO or 'YYYY-MM-DD' string
-  
+
       if (imageUri) {
         const filename = imageUri.split('/').pop();
         const match = /\.(\w+)$/.exec(filename ?? '');
         const type = match ? `image/${match[1]}` : `image`;
-  
+
         formData.append('image', {
           uri: imageUri,
           name: filename,
           type,
         } as any);
       }
-  
+
       await createGroup(formData);
       setGroupTitle('');
       setGoal('');
       setTasks(['']);
       setImageUri(null);
       setSelectedCategories([]); // Reset categories
-      setEndDate('');  // Reset end date
-  
+      setEndDate(''); // Reset end date
     } catch (error) {
       console.error('Error creating group:', error);
       Dialog.show({
@@ -149,7 +158,7 @@ const CreateScreen = () => {
       setTasks(['']);
       setImageUri(null);
       setSelectedCategories([]); // Reset categories
-      setEndDate('');  // Reset end date
+      setEndDate(''); // Reset end date
     }
   };
 
@@ -180,24 +189,44 @@ const CreateScreen = () => {
       </TouchableOpacity>
 
       <Text style={styles.subheading}>Create Todo (Tasks)</Text>
-
-      {tasks.map((task, index) => (
+      {tasks.map((task: any, index: number) => (
         <View key={index} style={styles.taskContainer}>
           <TextInput
-            placeholder={`Task ${index + 1}`}
-            value={task}
-            onChangeText={text => handleTaskChange(text, index)}
-            style={[styles.input, {flex: 1}]}
+            placeholder={`Task ${index + 1} Title`}
+            value={task.title}
+            onChangeText={text => handleTaskChange(index, 'title', text)}
+            style={styles.input}
+            placeholderTextColor="#999"
           />
+
+          <TextInput
+            placeholder="Description (optional)"
+            value={task.description}
+            onChangeText={text => handleTaskChange(index, 'description', text)}
+            style={[styles.input, {marginTop: 6}]}
+            placeholderTextColor="#999"
+            multiline
+          />
+
+          <View style={styles.switchContainer}>
+            <Text style={styles.switchLabel}>Require Proof</Text>
+            <Switch
+              value={task.requireProof}
+              onValueChange={value =>
+                handleTaskChange(index, 'requireProof', value)
+              }
+            />
+          </View>
+
           <TouchableOpacity
             onPress={() => handleRemoveTask(index)}
             style={styles.removeButton}>
-            <Text style={{color: 'white'}}>X</Text>
+            <Text style={styles.removeButtonText}>X</Text>
           </TouchableOpacity>
         </View>
       ))}
 
-      <Button title="Add Another Task" onPress={handleAddTask} />
+      <Button title="Add Task" onPress={handleAddTask} />
       <TouchableOpacity
         onPress={() => setShowEndDatePicker(true)}
         style={styles.input}>
@@ -279,26 +308,41 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   taskContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  removeButton: {
-    backgroundColor: '#e53935',
-    padding: 10,
-    marginLeft: 10,
+    marginBottom: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
     borderRadius: 8,
-    marginBottom: 10,
+    backgroundColor: '#fff',
   },
   input: {
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginVertical: 10,
-    paddingHorizontal: 10,
-    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    paddingVertical: 6,
+    fontSize: 14,
+    color: '#333',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    justifyContent: 'space-between',
+  },
+  switchLabel: {
+    fontSize: 14,
+    color: '#444',
+  },
+  removeButton: {
+    marginTop: 10,
+    alignSelf: 'flex-end',
+    padding: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#f44',
+    borderRadius: 4,
+  },
+  removeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

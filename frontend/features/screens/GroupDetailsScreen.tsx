@@ -10,9 +10,9 @@ import {
   StyleSheet,
   Modal,
 } from 'react-native';
-import {Button} from 'react-native-paper';
+import {Button, Switch} from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import {launchImageLibrary} from 'react-native-image-picker';
+import {launchImageLibrary, Asset} from 'react-native-image-picker';
 import {useAuth} from '../context/AuthContext';
 import {useGroup} from '../context/GroupContext';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
@@ -46,7 +46,7 @@ const GroupDetailsScreen = ({route}: any) => {
     fetchAnalytics,
     analytics,
     MemberAnalytics,
-    ComparisonAnalytisc
+    ComparisonAnalytisc,
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
@@ -65,6 +65,8 @@ const GroupDetailsScreen = ({route}: any) => {
   }));
   const [showJoinRequests, setShowJoinRequests] = useState(false);
   const [type, setType] = useState('daily');
+  const [proofMap, setProofMap] = useState<any>({});
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -77,7 +79,7 @@ const GroupDetailsScreen = ({route}: any) => {
       fetchData();
       fetchAnalytics(type);
       MemberAnalytics(groupId);
-      ComparisonAnalytisc(groupId)
+      ComparisonAnalytisc(groupId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, type]);
@@ -94,6 +96,27 @@ const GroupDetailsScreen = ({route}: any) => {
       setSelectedCategories(group?.categories);
     }
   }, [group]);
+
+  const handleUploadProof = async (taskId: string) => {
+    const result = await launchImageLibrary({
+      mediaType: 'mixed',
+      selectionLimit: 0, // allows multiple selection
+    });
+
+    if (!result.didCancel && result.assets?.length) {
+      setProofMap((prev: any) => ({
+        ...prev,
+        [taskId]: [...(prev[taskId] || []), ...(result.assets ?? [])],
+      }));
+    }
+  };
+
+  const handleRemoveMedia = (taskId: string, uriToRemove: string) => {
+    setProofMap((prev: any) => ({
+      ...prev,
+      [taskId]: prev[taskId].filter((asset: any) => asset.uri !== uriToRemove),
+    }));
+  };
 
   const validateText = (text: string) => {
     return text && text.trim().length > 0;
@@ -166,14 +189,17 @@ const GroupDetailsScreen = ({route}: any) => {
     );
   }
 
-  const handleTaskChange = (index: any, newText: any) => {
-    const updated = [...tasks];
-    updated[index].title = newText;
-    setTasks(updated);
-  };
+  // const handleTaskChange = (index: any, newText: any) => {
+  //   const updated = [...tasks];
+  //   updated[index].title = newText;
+  //   setTasks(updated);
+  // };
 
   const addNewTask = () => {
-    setTasks([...tasks, {title: '', completedBy: []}]);
+    setTasks([
+      ...tasks,
+      {title: '', completedBy: [], requireProof: false, description: ''},
+    ]);
   };
 
   const removeTask = (index: any) => {
@@ -204,10 +230,11 @@ const GroupDetailsScreen = ({route}: any) => {
     }
   };
 
-  const handleCompleteTask = async (taskId: string) => {
+  const handleCompleteTask = async (taskId: string, images: File[]) => {
     try {
       setLoading(true);
-      const res = await markTaskComplete(groupId, taskId);
+      console.log(groupId, taskId, images)
+      const res = await markTaskComplete(groupId, taskId, images);
 
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
@@ -216,12 +243,12 @@ const GroupDetailsScreen = ({route}: any) => {
         button: 'OK',
       });
 
-      await fetchGroupById(groupId); // Refresh group tasks
+      await fetchGroupById(groupId);
     } catch (error: any) {
       Dialog.show({
         type: ALERT_TYPE.DANGER,
         title: 'Error',
-        textBody: error?.response?.data?.message || 'Failed to complete task',
+        textBody: error.message || 'Failed to complete task',
         button: 'OK',
       });
     } finally {
@@ -267,7 +294,7 @@ const GroupDetailsScreen = ({route}: any) => {
 
   const isUserInGroup =
     group?.members?.some((member: any) => member._id === user?._id) ?? false;
-console.log(analytics)
+  console.log(tasks);
   return (
     <ScrollView
       style={styles.container}
@@ -338,18 +365,55 @@ console.log(analytics)
 
           <Text style={styles.subTitle}>Edit Tasks</Text>
           {tasks.map((task: any, index: any) => (
-            <View key={index} style={styles.taskItem}>
+            <View key={index} style={styles.taskContainer}>
               <TextInput
-                style={styles.input}
-                placeholder="Task Title"
+                placeholder={`Task ${index + 1} Title`}
                 value={task.title}
-                onChangeText={text => handleTaskChange(index, text)}
+                onChangeText={text => {
+                  const updatedTasks = [...tasks];
+                  updatedTasks[index].title = text;
+                  setTasks(updatedTasks);
+                }}
+                style={[styles.input, {flex: 1}]}
               />
-              <TouchableOpacity onPress={() => removeTask(index)}>
-                <Text style={{color: 'red'}}>Remove</Text>
+
+              <TextInput
+                placeholder="Description (optional)"
+                value={task.description}
+                onChangeText={text => {
+                  const updatedTasks = [...tasks];
+                  updatedTasks[index].description = text;
+                  setTasks(updatedTasks);
+                }}
+                style={[styles.input, {flex: 1, marginTop: 8}]}
+                multiline
+              />
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginTop: 8,
+                }}>
+                <Text style={{marginRight: 8}}>Require Proof</Text>
+                <Switch
+                  value={task.requireProof}
+                  onValueChange={value => {
+                    const updatedTasks = [...tasks];
+                    updatedTasks[index].requireProof = value;
+                    setTasks(updatedTasks);
+                  }}
+                />
+              </View>
+
+              <TouchableOpacity
+                onPress={() => removeTask(index)}
+                style={styles.removeButton}>
+                <Text style={{color: 'white'}}>X</Text>
               </TouchableOpacity>
             </View>
           ))}
+
           <Button onPress={addNewTask}>
             <Text>Add Task</Text>
           </Button>
@@ -442,11 +506,11 @@ console.log(analytics)
               <Picker.Item label="Yearly" value="yearly" />
             </Picker>
           </View>
-            {loading ? (
-              <ActivityIndicator size="large" color="#007bff" />
-            ) : (
-              <AnalyticsChart analytics={analytics.data} />
-            )}
+          {loading ? (
+            <ActivityIndicator size="large" color="#007bff" />
+          ) : (
+            <AnalyticsChart analytics={analytics.data} />
+          )}
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>
             <Image
@@ -474,44 +538,229 @@ console.log(analytics)
           {isUserInGroup ? (
             group?.todo?.tasks?.map((task: any) => {
               const completionKey = `${user._id}_${today}`;
-              const isCompleted = task?.completedBy?.includes(completionKey);
-
+              const isCompleted = task?.completedBy?.some(
+                c => c.userDateKey === completionKey,
+              );
+              const requiresProof = task.requireProof;
+              const hasProvidedProof = proofMap[task._id]?.length > 0;
+              console.log(task);
               return (
-                <TouchableOpacity
+                <View
                   key={task._id}
                   style={[
-                    styles.taskItemContainer,
-                    isCompleted && styles.taskItemCompleted,
-                  ]}
-                  onPress={() => handleCompleteTask(task._id)}
-                  activeOpacity={0.7}>
-                  <Icon
-                    name={isCompleted ? 'check-circle' : 'circle-o'}
-                    size={22}
-                    color={isCompleted ? 'green' : '#aaa'}
-                    style={{marginRight: 10}}
-                  />
-                  <Text
-                    style={[
-                      styles.taskText,
-                      isCompleted && styles.taskTextCompleted,
-                    ]}>
-                    {task.title}
-                  </Text>
-                </TouchableOpacity>
+                    {
+                      backgroundColor: '#fff',
+                      padding: 14,
+                      borderRadius: 12,
+                      marginVertical: 8,
+                      shadowColor: '#000',
+                      shadowOffset: {width: 0, height: 1},
+                      shadowOpacity: 0.1,
+                      shadowRadius: 3,
+                      elevation: 2,
+                    },
+                    isCompleted && {backgroundColor: '#e6f5e6'},
+                  ]}>
+                  <TouchableOpacity
+                    style={{flexDirection: 'row', alignItems: 'flex-start'}}
+                    onPress={() => {
+                      if (requiresProof && !hasProvidedProof && !isCompleted) {
+                        Dialog.show({
+                          type: ALERT_TYPE.DANGER,
+                          title: 'Error',
+                          textBody: 'Please Upload the required fields',
+                        });
+                        return;
+                      }
+                      handleCompleteTask(task._id, proofMap[task._id] || []);
+                    }}
+                    activeOpacity={0.8}>
+                    <Icon
+                      name={isCompleted ? 'check-circle' : 'circle-o'}
+                      size={20}
+                      color={isCompleted ? '#34c759' : '#bbb'}
+                      style={{marginRight: 12, marginTop: 4}}
+                    />
+
+                    <View style={{flex: 1}}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: '600',
+                          color: isCompleted ? '#34c759' : '#333',
+                        }}>
+                        {task.title}
+                      </Text>
+
+                      {task.description ? (
+                        <Text
+                          style={{fontSize: 14, color: '#666', marginTop: 4}}>
+                          {task.description}
+                        </Text>
+                      ) : null}
+
+                      {requiresProof && !isCompleted && (
+                        <View style={{marginTop: 10}}>
+                          <Text
+                            style={{
+                              color: '#d9534f',
+                              fontSize: 13,
+                              marginBottom: 6,
+                            }}>
+                            * Proof required (image or video)
+                          </Text>
+
+                          <Button onPress={() => handleUploadProof(task._id)}>
+                            <Text>Upload Proof</Text>
+                          </Button>
+
+                          <ScrollView>
+                            {group?.todo?.tasks?.map((task: any) => (
+                              <View key={task._id} style={{marginBottom: 20}}>
+                                {/* Show proof images */}
+                                {task.completedBy?.map((entry: any) => (
+                                  <View
+                                    key={entry._id}
+                                    style={{
+                                      flexDirection: 'row',
+                                      flexWrap: 'wrap',
+                                      marginTop: 10,
+                                    }}>
+                                    {entry.proof?.map((proofItem: any) =>
+                                      proofItem.type === 'image' ? (
+                                        <Image
+                                          key={proofItem._id}
+                                          source={{uri: proofItem.url}}
+                                          style={{
+                                            width: 100,
+                                            height: 100,
+                                            margin: 5,
+                                            borderRadius: 8,
+                                            backgroundColor: '#ccc', // to see if image fails
+                                          }}
+                                          resizeMode="cover"
+                                        />
+                                      ) : null,
+                                    )}
+                                  </View>
+                                ))}
+                              </View>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+
+                      {isCompleted && (
+                               <ScrollView>
+                            {group?.todo?.tasks?.map((task: any) => (
+                              <View key={task._id} style={{marginBottom: 20}}>
+                                {/* Show proof images */}
+                                {task.completedBy?.map((entry: any) => (
+                                  <View
+                                    key={entry._id}
+                                    style={{
+                                      flexDirection: 'row',
+                                      flexWrap: 'wrap',
+                                      marginTop: 10,
+                                    }}>
+                                    {entry.proof?.map((proofItem: any) =>
+                                      proofItem.type === 'image' ? (
+                                        <Image
+                                          key={proofItem._id}
+                                          source={{uri: proofItem.url}}
+                                          style={{
+                                            width: 100,
+                                            height: 100,
+                                            margin: 5,
+                                            borderRadius: 8,
+                                            backgroundColor: '#ccc', // to see if image fails
+                                          }}
+                                          resizeMode="cover"
+                                        />
+                                      ) : null,
+                                    )}
+                                  </View>
+                                ))}
+                              </View>
+                            ))}
+                          </ScrollView>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </View>
               );
             })
           ) : (
             <View>
-              {group?.todo?.tasks?.map((task: any) => {
-                return (
-                  <View key={task._id}>
-                    <Text style={styles.taskText}>{task.title}</Text>
-                  </View>
-                );
-              })}
+              {group?.todo?.tasks?.map((task: any) => (
+                <View key={task._id} style={{marginBottom: 20}}>
+                  <Text style={styles.taskText}>{task.title}</Text>
+
+                  {task.description && (
+                    <Text style={styles.taskDescription}>
+                      {task.description}
+                    </Text>
+                  )}
+
+                  {task.requireProof && (
+                    <Text style={{color: 'red'}}>
+                      Requires proof to complete
+                    </Text>
+                  )}
+
+                  {/* Display proof images if available */}
+                  <ScrollView>
+                    {group?.todo?.tasks?.map((task: any) => (
+                      <View key={task._id} style={{marginBottom: 20}}>
+                        <Text style={styles.taskText}>{task.title}</Text>
+
+                        {task.description && (
+                          <Text style={styles.taskDescription}>
+                            {task.description}
+                          </Text>
+                        )}
+
+                        {task.requireProof && (
+                          <Text style={{color: 'red'}}>
+                            Requires proof to complete
+                          </Text>
+                        )}
+
+                        {/* Show proof images */}
+                        {task.completedBy?.map((entry: any) => (
+                          <View
+                            key={entry._id}
+                            style={{
+                              flexDirection: 'row',
+                              flexWrap: 'wrap',
+                              marginTop: 10,
+                            }}>
+                            {entry.proof?.map((proofItem: any) =>
+                              proofItem.type === 'image' ? (
+                                <Image
+                                  key={proofItem._id}
+                                  source={{uri: proofItem.url}}
+                                  style={{
+                                    width: 100,
+                                    height: 100,
+                                    margin: 5,
+                                    borderRadius: 8,
+                                    backgroundColor: '#ccc', // to see if image fails
+                                  }}
+                                  resizeMode="cover"
+                                />
+                              ) : null,
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              ))}
+
               <Button
-                style={[styles.joinButton]}
+                style={styles.joinButton}
                 onPress={() => handleJoinGroup(groupId)}
                 disabled={loading}>
                 <Text style={styles.textColor}>
@@ -604,6 +853,33 @@ console.log(analytics)
 export default GroupDetailsScreen;
 
 const styles = StyleSheet.create({
+  taskItemContainer: {
+    backgroundColor: '#fff',
+    padding: 14,
+    borderRadius: 12,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  taskItemCompleted: {
+    backgroundColor: '#e6f5e6',
+  },
+  taskText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  taskTextCompleted: {
+    color: '#34c759',
+  },
+  taskDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
   container: {
     flex: 1,
     padding: 20,
@@ -780,5 +1056,23 @@ const styles = StyleSheet.create({
   picker: {
     backgroundColor: '#eee',
     borderRadius: 5,
+  },
+  taskContainer: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+  },
+  removeButton: {
+    marginTop: 10,
+    backgroundColor: 'red',
+    padding: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  taskDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
   },
 });

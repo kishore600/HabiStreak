@@ -12,14 +12,18 @@ const formatMap = {
   month: "%Y-%m",
   year: "%Y",
 };
+const DataUriParser = require("datauri/parser");
+const path = require("path");
+const parser = new DataUriParser();
+const dataUriFromFile = (file) =>
+  parser.format(path.extname(file.originalname).toString(), file.buffer);
 
 const createGroup = asyncHandler(async (req, res) => {
   try {
     const { title, members, goal, tasks, endDate, categories } = req.body;
-    console.log(title, members, goal, tasks, endDate, categories);
+
     const userId = req.user._id;
 
-    // Check if a group with the same title exists
     const existingGroup = await Group.findOne({ title });
     if (existingGroup) {
       return res
@@ -27,7 +31,6 @@ const createGroup = asyncHandler(async (req, res) => {
         .json({ message: "Group with this title already exists." });
     }
 
-    // Safely parse categories
     let parsedCategories = categories;
     if (typeof categories === "string") {
       try {
@@ -38,7 +41,6 @@ const createGroup = asyncHandler(async (req, res) => {
       }
     }
 
-    // Validate categories
     if (
       !Array.isArray(parsedCategories) ||
       parsedCategories.some((cat) => !hobbies_enum.includes(cat))
@@ -46,12 +48,10 @@ const createGroup = asyncHandler(async (req, res) => {
       return res.status(400).json({ message: "Invalid categories provided" });
     }
 
-    // Validate endDate
     if (!endDate || isNaN(Date.parse(endDate))) {
       return res.status(400).json({ message: "Invalid endDate format" });
     }
 
-    // Handle image upload
     let imageUrl;
     if (req.file) {
       const file = dataUri(req).content;
@@ -64,7 +64,6 @@ const createGroup = asyncHandler(async (req, res) => {
       return res.status(400).json({ message: "Image is required" });
     }
 
-    // Safely parse members
     let parsedMembers = members;
     if (typeof members === "string") {
       try {
@@ -75,10 +74,8 @@ const createGroup = asyncHandler(async (req, res) => {
       }
     }
 
-    // Add current user to members
     const updatedMembers = [...(parsedMembers || []), userId];
 
-    // Safely parse tasks
     let parsedTasks = tasks;
     if (typeof tasks === "string") {
       try {
@@ -89,12 +86,12 @@ const createGroup = asyncHandler(async (req, res) => {
       }
     }
 
-    // Format tasks for Todo
     const formattedTasks = (parsedTasks || []).map((task) => ({
-      title: task,
+      title: task.title,
+      description: task.description || "",
+      requireProof: task.requireProof || false,
     }));
 
-    // Step 1: Create Group
     const group = new Group({
       title,
       members: updatedMembers,
@@ -107,18 +104,15 @@ const createGroup = asyncHandler(async (req, res) => {
     });
     await group.save();
 
-    // Step 2: Create Todo linked to Group
     const todo = new Todo({
       tasks: formattedTasks,
       group: group._id,
     });
     await todo.save();
 
-    // Step 3: Link Todo back to Group
     group.todo = todo._id;
     await group.save();
 
-    // Step 4: Update User createdGroups
     await User.findByIdAndUpdate(userId, {
       $push: { createdGroups: group._id },
     });
@@ -139,7 +133,7 @@ const getuserGroups = asyncHandler(async (req, res) => {
   const createdGroups = await Group.find({ admin: req.user._id }).populate(
     "members",
     "name email image"
-  );
+  ).populate("todo");
 
   const joinedGroups = await Group.find({
     members: req.user._id,
@@ -155,7 +149,8 @@ const getuserGroups = asyncHandler(async (req, res) => {
 const getGroupById = asyncHandler(async (req, res) => {
   const group = await Group.findById(req.params.groupId).populate(
     "members admin todo joinRequests"
-  );
+  ).populate("todo");
+
   if (!group) {
     res.status(404);
     throw new Error("Group not found");
@@ -302,43 +297,56 @@ const createTodoForGroup = asyncHandler(async (req, res) => {
 const markTaskComplete = asyncHandler(async (req, res) => {
   const { groupId, taskId } = req.params;
   const userId = req.user._id.toString();
-
+console.log('sdsdin')
+  // Find group
   const group = await Group.findById(groupId);
   if (!group) return res.status(404).json({ message: "Group not found" });
 
+  // Find todo associated with group
   const todo = await Todo.findById(group.todo);
   if (!todo) return res.status(404).json({ message: "Todo not found" });
 
+  // Find task within todo
   const task = todo.tasks.id(taskId);
   if (!task) return res.status(404).json({ message: "Task not found" });
-  const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-  const userTodayKey = `${userId}_${today}`;
+
+  // Construct userDateKey (userId + date)
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const userDateKey = `${userId}_${today}`;
+
+  // Fetch user for updating streaks
   const user = await User.findById(userId);
 
-  const isAlreadyCompleted = task.completedBy.includes(userTodayKey);
+  // Check if user already marked this task complete today
+  const isAlreadyCompleted = task.completedBy.some(
+    (c) => c.userDateKey === userDateKey
+  );
 
   if (isAlreadyCompleted) {
-    // ✅ Check if all tasks were completed TODAY before removing this one
-    const wasAllCompleted = todo.tasks.every((t) =>
-      t.completedBy.includes(userTodayKey)
+    // Undo task completion
+    task.completedBy = task.completedBy.filter(
+      (c) => c.userDateKey !== userDateKey
     );
-
-    // ❌ Undo task completion for today
-    task.completedBy = task.completedBy.filter((id) => id !== userTodayKey);
     await todo.save();
 
-    // 🧹 Remove today's streak record
-    if (group.completedDates?.includes(userTodayKey)) {
+    // Remove today's streak date if present
+    if (group.completedDates?.includes(userDateKey)) {
       group.completedDates = group.completedDates.filter(
-        (d) => d !== userTodayKey
+        (d) => d !== userDateKey
       );
     }
 
-    // 🔻 If previously all tasks were done today, decrement streaks
+    // Check if previously all tasks were completed by user today
+    const wasAllCompleted = todo.tasks.every((t) =>
+      t.completedBy.some((c) => c.userDateKey === userDateKey)
+    );
+
     if (wasAllCompleted) {
+      // Decrement user's total streak and reset last streak date
       user.totalStreak = Math.max(user.totalStreak - 1, 0);
       user.lastStreakDate = null;
 
+      // Update group's streak counters
       const currentStreak = group.userStreaks.get(userId) || 0;
       group.userStreaks.set(userId, Math.max(currentStreak - 1, 0));
       group.streak = Math.max((group.streak || 0) - 1, 0);
@@ -354,17 +362,40 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     });
   }
 
-  // ✅ Mark task as complete for today
-  task.completedBy.push(userTodayKey);
+  // Handle proofs (image uploads)
+  let proofs = [];
+  if (req.files && req.files.length > 0) {
+    for (const file of req.files) {
+      const fileDataUri = dataUriFromFile(file).content; // convert file to data URI
+      const result = await cloudinary.uploader.upload(fileDataUri, {
+        folder: "uploads",
+        transformation: { width: 500, height: 500, crop: "limit" },
+      });
+      proofs.push({ type: "image", url: result.secure_url });
+    }
+  } else if (task.requireProof) {
+    return res
+      .status(400)
+      .json({ message: "At least one image is required for proof" });
+  }
+
+  // Add completion record for userDateKey with optional proofs
+  task.completedBy.push({
+    userDateKey,
+    proof: proofs.length ? proofs : undefined,
+  });
+
   await todo.save();
 
+  // Check if user completed all tasks today
   const userCompletedAllTasks = todo.tasks.every((t) =>
-    t.completedBy.includes(userTodayKey)
+    t.completedBy.some((c) => c.userDateKey === userDateKey)
   );
 
+  // If user completed all tasks and this date is new for group
   if (
     userCompletedAllTasks &&
-    (!group.completedDates || !group.completedDates.includes(userTodayKey))
+    (!group.completedDates || !group.completedDates.includes(userDateKey))
   ) {
     user.totalStreak += 1;
     user.lastStreakDate = new Date();
@@ -374,13 +405,14 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     group.userStreaks.set(userId, currentStreak + 1);
 
     group.completedDates = group.completedDates || [];
-    group.completedDates.push(userTodayKey);
+    group.completedDates.push(userDateKey);
 
+    // Check if all group members completed all tasks today
     const allCompletedToday = group.members.every((memberId) => {
       const memberKey = memberId.toString();
       const memberDateKey = `${memberKey}_${today}`;
       return todo.tasks.every((task) =>
-        task.completedBy.includes(memberDateKey)
+        task.completedBy.some((c) => c.userDateKey === memberDateKey)
       );
     });
 
@@ -389,7 +421,6 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     }
 
     await group.save();
-    await todo.save();
   }
 
   res.json({

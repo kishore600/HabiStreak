@@ -1,9 +1,21 @@
 const mongoose = require('mongoose');
 
+const proofSchema = new mongoose.Schema({
+  type: { type: String, required: true },
+  url: String,     
+  content: String  
+});
 
 const taskSchema = new mongoose.Schema({
-  title: String,
-  completedBy: [{ type: String }] 
+  title: { type: String, required: true },
+  description: String,
+  requireProof: { type: Boolean, default: false },
+  completedBy: [
+    {
+      userDateKey: String,
+      proof:  [proofSchema]
+    }
+  ]
 });
 
 const todoSchema = new mongoose.Schema({

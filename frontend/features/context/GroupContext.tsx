@@ -21,7 +21,11 @@ interface GroupContextType {
   fetchGroups: () => void;
   fetchUserGroups: () => void;
   createTodoForGroup: (groupId: string, tasks: string[]) => Promise<void>;
-  markTaskComplete: (groupId: string, taskId: string) => Promise<void>;
+  markTaskComplete: (
+    groupId: string,
+    taskId: string,
+    images: any,
+  ) => Promise<void>;
   getLeaderboard: (groupId: string) => void;
   handleUpdateGroup: any;
   group: any;
@@ -41,9 +45,9 @@ interface GroupContextType {
   fetchAnalytics: any;
   analytics: any;
   MemberAnalytics: any;
-  memberData:any
-  comparisonData:any
-  ComparisonAnalytisc:any
+  memberData: any;
+  comparisonData: any;
+  ComparisonAnalytisc: any;
 }
 export type RootStackParamList = {
   Home: undefined;
@@ -135,7 +139,10 @@ export const GroupProvider = ({children}: any) => {
   const fetchGroupById = async (groupId: string) => {
     try {
       const headers = await getAuthHeaders();
-      const res = await axios.get(`${API_URL}/groups/${groupId}`, headers);
+      const res = await axios.get(
+        `http://192.168.148.68:8000/api/groups/${groupId}`,
+        headers,
+      );
       setPendingRequests(res?.data?.joinRequests);
       const hasrequested_ingroup = res?.data?.joinRequests?.some(
         (req: any) => req._id === user?._id,
@@ -199,7 +206,7 @@ export const GroupProvider = ({children}: any) => {
       setLoading(true);
       console.log(formData, API_URL);
       const headers = await getAuthHeaders();
-      await axios.post(`${API_URL}/groups`, formData, {
+      await axios.post(`http://192.168.148.68:8000/api/groups`, formData, {
         ...headers,
         headers: {
           ...headers.headers,
@@ -280,13 +287,39 @@ export const GroupProvider = ({children}: any) => {
     }
   };
 
-  const markTaskComplete = async (groupId: string, taskId: string) => {
-    const headers = await getAuthHeaders();
+  const getAuthHeaders1 = async () => {
+    const token = await AsyncStorage.getItem('token');
+    return {Authorization: `Bearer ${token}`};
+  };
+
+  const markTaskComplete = async (
+    groupId: string,
+    taskId: string,
+    images: any,
+  ) => {
+    const formData = new FormData();
+
+    images.forEach((image: any, index: any) => {
+      formData.append('images', {
+        uri: image.uri,
+        name: image.fileName || `image_${index}.jpg`,
+        type: image.type || 'image/jpeg',
+      });
+    });
+    const authHeaders = await getAuthHeaders1();
+console.log(`${`http://192.168.148.68:8000/api/groups/${groupId}/todos/${taskId}/complete`}`)
+
     const response = await axios.put(
-      `${API_URL}/groups/${groupId}/todos/${taskId}/complete`,
-      {},
-      headers,
+      `http://192.168.148.68:8000/api/groups/${groupId}/todos/${taskId}/complete`,
+      formData,
+      {
+        headers: {
+          ...authHeaders,
+          'Content-Type': 'multipart/form-data',
+        },
+      },
     );
+
     return response.data;
   };
 
