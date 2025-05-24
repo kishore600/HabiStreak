@@ -29,7 +29,7 @@ router.get('/:groupId', protect, getGroupById);
 router.put('/:groupId', protect,upload.single("image"), updateGroup);
 router.delete('/:groupId', protect, deleteGroup);
 router.post('/:groupId/todo', protect, createTodoForGroup);
-router.put('/:groupId/todos/:taskId/complete', protect, upload.array("images", 5), markTaskComplete);
+router.put('/:groupId/todos/:taskId/complete', protect, upload.array("images"), markTaskComplete);
 router.get('/:groupId/leaderboard', protect, getLeaderboard);
 router.put('/:groupId/todo',protect, updateTodoForGroup);
 router.post('/:groupId/join-request', protect, requestToJoinGroup);

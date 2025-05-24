@@ -66,6 +66,7 @@ const GroupDetailsScreen = ({route}: any) => {
   const [showJoinRequests, setShowJoinRequests] = useState(false);
   const [type, setType] = useState('daily');
   const [proofMap, setProofMap] = useState<any>({});
+const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -98,25 +99,30 @@ const GroupDetailsScreen = ({route}: any) => {
   }, [group]);
 
   const handleUploadProof = async (taskId: string) => {
-    const result = await launchImageLibrary({
-      mediaType: 'mixed',
-      selectionLimit: 0, // allows multiple selection
+    const result:any = await launchImageLibrary({
+      mediaType: 'photo',
+      selectionLimit: 0, // 0 = unlimited
     });
 
     if (!result.didCancel && result.assets?.length) {
       setProofMap((prev: any) => ({
         ...prev,
-        [taskId]: [...(prev[taskId] || []), ...(result.assets ?? [])],
+        [taskId]: [...(prev[taskId] || []), ...result.assets],
       }));
     }
   };
 
-  const handleRemoveMedia = (taskId: string, uriToRemove: string) => {
-    setProofMap((prev: any) => ({
+const handleRemoveProof = (taskId: string, index: number) => {
+  setProofMap((prev:any) => {
+    const updatedProofs = [...(prev[taskId] || [])];
+    updatedProofs.splice(index, 1); // remove image at index
+    return {
       ...prev,
-      [taskId]: prev[taskId].filter((asset: any) => asset.uri !== uriToRemove),
-    }));
-  };
+      [taskId]: updatedProofs,
+    };
+  });
+};
+
 
   const validateText = (text: string) => {
     return text && text.trim().length > 0;
@@ -231,9 +237,10 @@ const GroupDetailsScreen = ({route}: any) => {
   };
 
   const handleCompleteTask = async (taskId: string, images: File[]) => {
+    console.log(images);
     try {
       setLoading(true);
-      console.log(groupId, taskId, images)
+      console.log(groupId, taskId, images);
       const res = await markTaskComplete(groupId, taskId, images);
 
       Dialog.show({
@@ -294,7 +301,24 @@ const GroupDetailsScreen = ({route}: any) => {
 
   const isUserInGroup =
     group?.members?.some((member: any) => member._id === user?._id) ?? false;
-  console.log(tasks);
+
+  const getProof = (taskId: string) => {
+    if (proofMap[taskId]?.length > 0) {
+      return proofMap[taskId];
+    }
+
+    const task = group?.todo?.tasks?.find((t: any) => t._id === taskId);
+    const completedEntry = task?.completedBy?.find(
+      (entry: any) => entry.userDateKey === `${user._id}_${today}`,
+    );
+
+    return completedEntry?.proof || [];
+  };
+
+  // console.log(getProof(),tasks.map(e => {
+  //   return e.completedBy
+  // } ))
+  console.log(proofMap);
   return (
     <ScrollView
       style={styles.container}
@@ -492,9 +516,28 @@ const GroupDetailsScreen = ({route}: any) => {
               {pendingRequests.length}
             </Text>
           </TouchableOpacity>
+      <View>
+    <TouchableOpacity onPress={() => setModalVisible(true)}>
+      <Text style={styles.openButton}>Open Analytics</Text>
+    </TouchableOpacity>
+
+    <Modal
+      visible={modalVisible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+
+          {/* Close Button */}
+          <TouchableOpacity onPress={() => setModalVisible(false)}>
+            <Text style={styles.closeButton}>Close</Text>
+          </TouchableOpacity>
+
+          {/* Your existing content */}
           <View style={styles.pickerContainer}>
             <Text style={styles.label1}>Analytics:</Text>
-
             <Text style={styles.label}>Select Type:</Text>
             <Picker
               selectedValue={type}
@@ -506,11 +549,17 @@ const GroupDetailsScreen = ({route}: any) => {
               <Picker.Item label="Yearly" value="yearly" />
             </Picker>
           </View>
+
           {loading ? (
             <ActivityIndicator size="large" color="#007bff" />
           ) : (
             <AnalyticsChart analytics={analytics.data} />
           )}
+
+        </View>
+      </View>
+    </Modal>
+  </View>
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>
             <Image
@@ -543,7 +592,12 @@ const GroupDetailsScreen = ({route}: any) => {
               );
               const requiresProof = task.requireProof;
               const hasProvidedProof = proofMap[task._id]?.length > 0;
-              console.log(task);
+
+              const handleImagePress = (taskId: string, imageUrl: string) => {
+                console.log('Task ID:', taskId);
+                console.log('Image URL:', imageUrl);
+              };
+
               return (
                 <View
                   key={task._id}
@@ -572,7 +626,7 @@ const GroupDetailsScreen = ({route}: any) => {
                         });
                         return;
                       }
-                      handleCompleteTask(task._id, proofMap[task._id] || []);
+                      handleCompleteTask(task._id, getProof(task._id));
                     }}
                     activeOpacity={0.8}>
                     <Icon
@@ -613,77 +667,68 @@ const GroupDetailsScreen = ({route}: any) => {
                           <Button onPress={() => handleUploadProof(task._id)}>
                             <Text>Upload Proof</Text>
                           </Button>
+         <ScrollView horizontal>
+  {proofMap[task._id]?.map((proofItem: any, index: number) => (
+    <View key={index} style={{ position: 'relative', margin: 5 }}>
+      <Image
+        source={{ uri: proofItem.uri }}
+        style={{
+          width: 100,
+          height: 100,
+          borderRadius: 8,
+          backgroundColor: '#ccc',
+        }}
+        resizeMode="cover"
+      />
+      <TouchableOpacity
+        onPress={() => handleRemoveProof(task._id, index)}
+        style={{
+          position: 'absolute',
+          top: -8,
+          right: -8,
+          backgroundColor: '#f00',
+          borderRadius: 12,
+          width: 24,
+          height: 24,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ color: '#fff', fontWeight: 'bold' }}>–</Text>
+      </TouchableOpacity>
+    </View>
+  ))}
+</ScrollView>
 
-                          <ScrollView>
-                            {group?.todo?.tasks?.map((task: any) => (
-                              <View key={task._id} style={{marginBottom: 20}}>
-                                {/* Show proof images */}
-                                {task.completedBy?.map((entry: any) => (
-                                  <View
-                                    key={entry._id}
-                                    style={{
-                                      flexDirection: 'row',
-                                      flexWrap: 'wrap',
-                                      marginTop: 10,
-                                    }}>
-                                    {entry.proof?.map((proofItem: any) =>
-                                      proofItem.type === 'image' ? (
-                                        <Image
-                                          key={proofItem._id}
-                                          source={{uri: proofItem.url}}
-                                          style={{
-                                            width: 100,
-                                            height: 100,
-                                            margin: 5,
-                                            borderRadius: 8,
-                                            backgroundColor: '#ccc', // to see if image fails
-                                          }}
-                                          resizeMode="cover"
-                                        />
-                                      ) : null,
-                                    )}
-                                  </View>
-                                ))}
-                              </View>
-                            ))}
-                          </ScrollView>
                         </View>
                       )}
 
                       {isCompleted && (
-                               <ScrollView>
-                            {group?.todo?.tasks?.map((task: any) => (
-                              <View key={task._id} style={{marginBottom: 20}}>
-                                {/* Show proof images */}
-                                {task.completedBy?.map((entry: any) => (
-                                  <View
-                                    key={entry._id}
+                        <ScrollView horizontal>
+                          {task.completedBy?.map((entry: any) =>
+                            entry.proof?.map((proofItem: any) =>
+                              proofItem.type === 'image' ? (
+                                <TouchableOpacity
+                                  key={proofItem._id}
+                                  onPress={() =>
+                                    handleImagePress(task._id, proofItem.url)
+                                  }>
+                                  <Image
+                                    source={{uri: proofItem.url}}
                                     style={{
-                                      flexDirection: 'row',
-                                      flexWrap: 'wrap',
-                                      marginTop: 10,
-                                    }}>
-                                    {entry.proof?.map((proofItem: any) =>
-                                      proofItem.type === 'image' ? (
-                                        <Image
-                                          key={proofItem._id}
-                                          source={{uri: proofItem.url}}
-                                          style={{
-                                            width: 100,
-                                            height: 100,
-                                            margin: 5,
-                                            borderRadius: 8,
-                                            backgroundColor: '#ccc', // to see if image fails
-                                          }}
-                                          resizeMode="cover"
-                                        />
-                                      ) : null,
-                                    )}
-                                  </View>
-                                ))}
-                              </View>
-                            ))}
-                          </ScrollView>
+                                      width: 100,
+                                      height: 100,
+                                      margin: 5,
+                                      borderRadius: 8,
+                                      backgroundColor: '#ccc',
+                                    }}
+                                    resizeMode="cover"
+                                  />
+                                </TouchableOpacity>
+                              ) : null,
+                            ),
+                          )}
+                        </ScrollView>
                       )}
                     </View>
                   </TouchableOpacity>
@@ -710,7 +755,7 @@ const GroupDetailsScreen = ({route}: any) => {
 
                   {/* Display proof images if available */}
                   <ScrollView>
-                    {group?.todo?.tasks?.map((task: any) => (
+                    {getProof(task._id).map((task: any) => (
                       <View key={task._id} style={{marginBottom: 20}}>
                         <Text style={styles.taskText}>{task.title}</Text>
 
@@ -977,30 +1022,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#fff',
   },
-  taskItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-  },
 
-  taskText: {
-    fontSize: 16,
-    color: '#333',
-    flex: 1,
-  },
-
-  taskTextCompleted: {
-    textDecorationLine: 'line-through',
-    color: '#999',
-  },
-
-  taskItemCompleted: {
-    backgroundColor: '#f9f9f9',
-  },
 
   buttonContainer: {
     marginTop: 30,
@@ -1074,5 +1096,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 4,
+  },
+  openButton: {
+    padding: 10,
+    backgroundColor: '#007bff',
+    color: 'white',
+    textAlign: 'center',
+    borderRadius: 5,
+    margin: 10,
+    width:'50%'
+  },
+  closeButton: {
+    color: '#007bff',
+    textAlign: 'right',
+    marginBottom: 10,
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    width: '100%',
+    borderRadius: 10,
+    padding: 20,
+    // elevation: 5,
+    marginTop:40
   },
 });

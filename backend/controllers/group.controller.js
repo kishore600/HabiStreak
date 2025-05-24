@@ -130,10 +130,9 @@ const getGroups = asyncHandler(async (req, res) => {
 });
 
 const getuserGroups = asyncHandler(async (req, res) => {
-  const createdGroups = await Group.find({ admin: req.user._id }).populate(
-    "members",
-    "name email image"
-  ).populate("todo");
+  const createdGroups = await Group.find({ admin: req.user._id })
+    .populate("members", "name email image")
+    .populate("todo");
 
   const joinedGroups = await Group.find({
     members: req.user._id,
@@ -147,9 +146,9 @@ const getuserGroups = asyncHandler(async (req, res) => {
 });
 
 const getGroupById = asyncHandler(async (req, res) => {
-  const group = await Group.findById(req.params.groupId).populate(
-    "members admin todo joinRequests"
-  ).populate("todo");
+  const group = await Group.findById(req.params.groupId)
+    .populate("members admin todo joinRequests")
+    .populate("todo");
 
   if (!group) {
     res.status(404);
@@ -297,8 +296,8 @@ const createTodoForGroup = asyncHandler(async (req, res) => {
 const markTaskComplete = asyncHandler(async (req, res) => {
   const { groupId, taskId } = req.params;
   const userId = req.user._id.toString();
-console.log('sdsdin')
-  // Find group
+  const { proofUrls } = req.body; // Find group
+
   const group = await Group.findById(groupId);
   if (!group) return res.status(404).json({ message: "Group not found" });
 
@@ -317,40 +316,30 @@ console.log('sdsdin')
   // Fetch user for updating streaks
   const user = await User.findById(userId);
 
-  // Check if user already marked this task complete today
   const isAlreadyCompleted = task.completedBy.some(
     (c) => c.userDateKey === userDateKey
   );
 
   if (isAlreadyCompleted) {
-    // Undo task completion
+    const wasAllCompleted = todo.tasks.every((t) =>
+      t.completedBy.some((c) => c.userDateKey === userDateKey)
+    );
     task.completedBy = task.completedBy.filter(
       (c) => c.userDateKey !== userDateKey
     );
     await todo.save();
-
-    // Remove today's streak date if present
     if (group.completedDates?.includes(userDateKey)) {
       group.completedDates = group.completedDates.filter(
         (d) => d !== userDateKey
       );
     }
-
-    // Check if previously all tasks were completed by user today
-    const wasAllCompleted = todo.tasks.every((t) =>
-      t.completedBy.some((c) => c.userDateKey === userDateKey)
-    );
-
     if (wasAllCompleted) {
-      // Decrement user's total streak and reset last streak date
       user.totalStreak = Math.max(user.totalStreak - 1, 0);
       user.lastStreakDate = null;
 
-      // Update group's streak counters
       const currentStreak = group.userStreaks.get(userId) || 0;
       group.userStreaks.set(userId, Math.max(currentStreak - 1, 0));
       group.streak = Math.max((group.streak || 0) - 1, 0);
-
       await user.save();
       await group.save();
     }
@@ -361,10 +350,15 @@ console.log('sdsdin')
       streak: group.userStreaks.get(userId) || 0,
     });
   }
-
   // Handle proofs (image uploads)
   let proofs = [];
-  if (req.files && req.files.length > 0) {
+
+  if (Array.isArray(proofUrls) && proofUrls.length > 0) {
+    proofs = proofUrls.map((proof) => ({
+      type: "image",
+      url: typeof proof === "string" ? proof : proof.uri,
+    }));
+  } else if (req.files && req.files.length > 0) {
     for (const file of req.files) {
       const fileDataUri = dataUriFromFile(file).content; // convert file to data URI
       const result = await cloudinary.uploader.upload(fileDataUri, {

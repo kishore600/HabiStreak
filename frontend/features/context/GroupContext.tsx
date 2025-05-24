@@ -140,7 +140,7 @@ export const GroupProvider = ({children}: any) => {
     try {
       const headers = await getAuthHeaders();
       const res = await axios.get(
-        `http://192.168.148.68:8000/api/groups/${groupId}`,
+        `${API_URL}/groups/${groupId}`,
         headers,
       );
       setPendingRequests(res?.data?.joinRequests);
@@ -206,7 +206,7 @@ export const GroupProvider = ({children}: any) => {
       setLoading(true);
       console.log(formData, API_URL);
       const headers = await getAuthHeaders();
-      await axios.post(`http://192.168.148.68:8000/api/groups`, formData, {
+      await axios.post(`${API_URL}/groups`, formData, {
         ...headers,
         headers: {
           ...headers.headers,
@@ -292,36 +292,22 @@ export const GroupProvider = ({children}: any) => {
     return {Authorization: `Bearer ${token}`};
   };
 
-  const markTaskComplete = async (
-    groupId: string,
-    taskId: string,
-    images: any,
-  ) => {
-    const formData = new FormData();
+const markTaskComplete = async (groupId:any, taskId:any, imageUrls:any) => {
+  const authHeaders = await getAuthHeaders1();
 
-    images.forEach((image: any, index: any) => {
-      formData.append('images', {
-        uri: image.uri,
-        name: image.fileName || `image_${index}.jpg`,
-        type: image.type || 'image/jpeg',
-      });
-    });
-    const authHeaders = await getAuthHeaders1();
-console.log(`${`http://192.168.148.68:8000/api/groups/${groupId}/todos/${taskId}/complete`}`)
-
+  try {
     const response = await axios.put(
       `http://192.168.148.68:8000/api/groups/${groupId}/todos/${taskId}/complete`,
-      formData,
-      {
-        headers: {
-          ...authHeaders,
-          'Content-Type': 'multipart/form-data',
-        },
-      },
+      { proofUrls: imageUrls },
+      { headers: authHeaders }
     );
 
+    console.log('Success:', response.data);
     return response.data;
-  };
+  } catch (error) {
+    console.error('Failed to mark complete:', error);
+  }
+};
 
   const getLeaderboard = async (groupId: string) => {
     try {

@@ -175,8 +175,6 @@ useFocusEffect(
     setUserListModalVisible(true);
   };
 
-  console.log(userGroupLoading,userGroups)
-
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
@@ -359,10 +357,10 @@ useFocusEffect(
                 <View>
                   <View style={{marginTop: 20}}>
                     <Button onPress={() => openUserListModal('followers')}>
-                      {user?.followers.length}Followers
+                      {user?.followers?.length}Followers
                     </Button>
                     <Button onPress={() => openUserListModal('following')}>
-                      {user?.following.length}Fllowing
+                      {user?.following?.length}Fllowing
                     </Button>
                   </View>
                 </View>

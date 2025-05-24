@@ -9,7 +9,6 @@ const pendingRequestSchema = mongoose.Schema(
       ref: "User",
       required: true,
       unique: true, 
-      trim: true,
     },
     receiver: {
       type: mongoose.Schema.Types.ObjectId,
