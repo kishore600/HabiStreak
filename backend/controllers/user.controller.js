@@ -123,9 +123,6 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
       user: requestingUserId,
       receiver: targetUserId,
     });
-    await targetUser.save();
-    return res.status(200).json({ message: "Follow request sent" });
-  } else {
     targetUser.followers.push(requestingUserId);
     requestingUser.following.push(targetUserId);
     await Promise.all([targetUser.save(), requestingUser.save()]);

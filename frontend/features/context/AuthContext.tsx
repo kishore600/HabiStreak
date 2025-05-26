@@ -245,7 +245,7 @@ const fetchProfile = async () => {
 const sendFollowRequest = async (targetUserId: string ) => {
 
     const response = await axios.post(
-      `http://192.168.22.68:8000/api/users/follow`,
+      `${API_URL}/users/follow`,
       { targetUserId:targetUserId },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -290,7 +290,7 @@ const handleFollowRequest = async (requesterId: string, action: string ) => {
 
   return (
     <AuthContext.Provider
-      value={{user, isAuthenticated, login, signup, logout, updateUser,fetchUserProfile,currentUser,profileUser,token,setIsCurrentUser,setProfileUser,loadUserData,sendFollowRequest,unfollowUser,getPendingRequests,handleFollowRequest,fetchProfile,pendingRequest}}>
+      value={{user,getPendingRequests, isAuthenticated, login, signup, logout, updateUser,fetchUserProfile,currentUser,profileUser,token,setIsCurrentUser,setProfileUser,loadUserData,sendFollowRequest,unfollowUser,handleFollowRequest,fetchProfile,pendingRequest,}}>
       {children}
     </AuthContext.Provider>
   );

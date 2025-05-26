@@ -33,7 +33,8 @@ const ProfileScreen = ({route, navigation}: any) => {
     unfollowUser,
     handleFollowRequest,
     pendingRequest,
-    isGroupUpdated
+    isGroupUpdated,
+    getPendingRequests
   }: any = useAuth();
   const {userGroups, loading: userGroupLoading, fetchUserGroups} = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -58,6 +59,7 @@ useFocusEffect(
     fetchUserGroups();
     if (profileUser && !currentUser) {
       setGroups(profileUser?.createdGroups);
+      getPendingRequests()
       console.log('in u')
     }
     if (currentUser) {
@@ -175,12 +177,14 @@ useFocusEffect(
   };
 
 
-  console.log(profileUser)
+  console.log(pendingRequest)
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
       <View style={styles.menuContainer}>
+  
         {currentUser && (
+          
           <Menu
             visible={menuVisible}
             onDismiss={closeMenu}
@@ -207,6 +211,7 @@ useFocusEffect(
           </Menu>
         )}
       </View>
+      
       <Modal
         visible={showPendingModal}
         animationType="slide"
@@ -352,6 +357,7 @@ useFocusEffect(
             <View>
               <Text style={styles.name}>{name || 'Guest User'}  </Text>
               <Text>{user?.totalStreak} 🐦‍🔥</Text>
+            
             </View>
             <View>
               {currentUser && (
@@ -394,6 +400,10 @@ useFocusEffect(
                     Unfollow
                   </Button>
                 ) : (
+               profileUser?.followers.some(
+                  (f: {_id: {toString: () => any}}) =>
+                    f._id.toString() === user._id.toString(),
+                ) ? <Text>Following</Text> :
                   <Button
                     onPress={async () => {
                       try {
