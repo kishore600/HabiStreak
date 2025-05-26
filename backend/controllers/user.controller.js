@@ -5,7 +5,6 @@ const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 const { default: mongoose } = require("mongoose");
 const hobbies_enum = require("../constant.js");
-const Todo = require("../models/todo.model.js");
 const Group = require("../models/group.model.js");
 
 const getUserProfile = async (req, res) => {
@@ -118,7 +117,7 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Already following or requested" });
   }
 
-  if (targetUser.isPrivate) {
+  if (targetUser) {
     // Send follow request
     targetUser.pendingRequest.push({
       user: requestingUserId,
@@ -127,7 +126,6 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
     await targetUser.save();
     return res.status(200).json({ message: "Follow request sent" });
   } else {
-    // Public account – follow directly
     targetUser.followers.push(requestingUserId);
     requestingUser.following.push(targetUserId);
     await Promise.all([targetUser.save(), requestingUser.save()]);
@@ -359,6 +357,14 @@ console.log(type)
   }
 };
 
+const updateFmcToken = asyncHandler(async(req,res) => {
+  const {token} = req.body
+  const userId = req.user_id
+
+  await User.findByIdAndUpdate(userId,{
+    fcmToken:token
+  })
+})
 
 module.exports = {
   getUserProfile,
@@ -369,4 +375,5 @@ module.exports = {
   updateUserProfile,
   getUserProfile1,
   getUserAnalytics,
+  updateFmcToken
 };

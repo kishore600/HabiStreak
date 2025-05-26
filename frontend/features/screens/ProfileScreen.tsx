@@ -71,7 +71,6 @@ useFocusEffect(
   useFocusEffect(
     useCallback(() => {
       let uid = route?.params?.user?._id;
-
       if (uid && uid !== user?._id) {
         fetchUserProfile(uid);
         setIsCurrentUser(false);
@@ -175,6 +174,8 @@ useFocusEffect(
     setUserListModalVisible(true);
   };
 
+
+  console.log(profileUser)
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
@@ -368,7 +369,7 @@ useFocusEffect(
             </View>
             {!currentUser && (
               <View style={{marginTop: 20}}>
-                {profileUser?.followers.some(
+                {profileUser?.following.some(
                   (f: {_id: {toString: () => any}}) =>
                     f._id.toString() === user._id.toString(),
                 ) ? (
@@ -496,7 +497,7 @@ useFocusEffect(
             <View>
               {/* User Groups */}
               <View style={styles.groupContainer}>
-                <Text style={styles.sectionTitle}>Your Groups:</Text>
+                <Text style={styles.sectionTitle}>Groups:</Text>
 
                 {groups?.length > 0 ? (
                   <FlatList

@@ -245,7 +245,7 @@ const fetchProfile = async () => {
 const sendFollowRequest = async (targetUserId: string ) => {
 
     const response = await axios.post(
-      `${API_URL}/users/follow`,
+      `http://192.168.22.68:8000/api/users/follow`,
       { targetUserId:targetUserId },
       { headers: { Authorization: `Bearer ${token}` } }
     );

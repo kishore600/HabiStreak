@@ -32,6 +32,8 @@ const SearchScreen = () => {
   const handlePress = (item: any) => {
     if (item.type === 'user') {
       navigation.navigate('Profile', {user: item});
+    }else{
+         navigation.navigate('GroupDetails', {groupId: item._id})
     }
     // You can add similar logic for "group" later
   };
@@ -74,12 +76,9 @@ const SearchScreen = () => {
           data={results}
           keyExtractor={item => item._id}
           renderItem={({item}: any) => (
-            <TouchableOpacity onPress={() => handlePress(item)}>
+            <TouchableOpacity>
               <View style={styles.resultItem}>
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate('GroupDetails', {groupId: item._id})
-                  }>
+                <TouchableOpacity onPress={() => handlePress(item)}>
                   <View style={styles.align}>
                     <View style={styles.resultText}>
                       <View>
