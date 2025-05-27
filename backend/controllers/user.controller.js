@@ -141,11 +141,11 @@ const unfollowUser = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User not found");
   }
-
-  targetUser.followers = targetUser.followers.filter(
+console.log(targetUser,requestingUser)
+  targetUser.following = targetUser.followers.filter(
     (id) => id.toString() !== requestingUserId.toString()
   );
-  requestingUser.following = requestingUser.following.filter(
+  requestingUser.followers = requestingUser.following.filter(
     (id) => id.toString() !== targetUserId.toString()
   );
 
@@ -175,7 +175,7 @@ const getPendingRequests = asyncHandler(async (req, res) => {
 });
 
 const handleFollowRequest = asyncHandler(async (req, res) => {
-  const { requesterId, action } = req.body; // requesterId = user who requested
+  const { requesterId, action } = req.body;
   const receiverId = req.user._id;
 
   const receiver = await User.findById(receiverId);
@@ -199,16 +199,32 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
     throw new Error("Requester user not found");
   }
 
-  if (action === "accept") {
+if (action === "accept") {
+  // Add requester to receiver's followers if not already present
+  if (!receiver.followers.includes(requesterId)) {
     receiver.followers.push(requesterId);
-    requester.following.push(receiverId);
-    receiver.pendingRequest.splice(requestIndex, 1);
-
-    await Promise.all([receiver.save(), requester.save()]);
-    return res.status(200).json({ message: "Follow request accepted" });
   }
 
+  // Remove receiverId from requester's following if exists
+  requester.following = requester.following.filter(
+    (id) => id.toString() !== receiverId.toString()
+  );
+
+  // Add receiverId to requester's followers if mutual follow required
+  if (!requester.followers.includes(receiverId)) {
+    requester.followers.push(receiverId);
+  }
+
+  // Remove from pending requests
+  receiver.pendingRequest.splice(requestIndex, 1);
+
+  await Promise.all([receiver.save(), requester.save()]);
+  return res.status(200).json({ message: "Follow request accepted" });
+}
+
+
   if (action === "reject") {
+    // Remove from pending requests only
     receiver.pendingRequest.splice(requestIndex, 1);
     await receiver.save();
     return res.status(200).json({ message: "Follow request rejected" });

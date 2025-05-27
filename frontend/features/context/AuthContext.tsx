@@ -254,16 +254,28 @@ const sendFollowRequest = async (targetUserId: string ) => {
   };
 
 const unfollowUser = async (targetUserId: string) => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+
     const response = await axios.post(
       `${API_URL}/users/unfollow`,
       { targetUserId },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    console.log(response)
-    fetchProfile()
+    console.log('Unfollow response:', response.data);
+    fetchProfile();
 
     return response.data;
+  } catch (error: any) {
+    console.error('Unfollow error:', error.response?.data || error.message);
+    // Optionally, show an alert or return an error object
+    // Alert.alert('Error', error.response?.data?.message || 'Something went wrong');
+    return null;
+  }
 };
 
 const getPendingRequests = async () => {
@@ -277,16 +289,30 @@ const getPendingRequests = async () => {
   };
 
 const handleFollowRequest = async (requesterId: string, action: string ) => {
+  try {
     const token = await AsyncStorage.getItem('token');
+    console.log(action);
 
     const response = await axios.post(
       `${API_URL}/users/follow/handle`,
       { requesterId, action },
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    fetchProfile()
+
+    console.log('in 1');
+    fetchProfile();
     return response.data;
+  } catch (error:any) {
+    console.error('Follow request error:', error.response?.data || error.message);
+          Dialog.show({
+            type: ALERT_TYPE.DANGER,
+            title: 'Handle Failed',
+            textBody: 'Follow request error:'+ error.response?.data.message,
+            button: 'OK',
+          });
+  }
 };
+
 
   return (
     <AuthContext.Provider

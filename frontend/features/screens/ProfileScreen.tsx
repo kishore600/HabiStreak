@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useState} from 'react';
 import {
   View,
@@ -34,7 +35,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     handleFollowRequest,
     pendingRequest,
     isGroupUpdated,
-    getPendingRequests
+    getPendingRequests,
   }: any = useAuth();
   const {userGroups, loading: userGroupLoading, fetchUserGroups} = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -54,21 +55,20 @@ const ProfileScreen = ({route, navigation}: any) => {
   >(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
 
-useFocusEffect(
-  useCallback(() => {
-    fetchUserGroups();
-    if (profileUser && !currentUser) {
-      setGroups(profileUser?.createdGroups);
-      getPendingRequests()
-      console.log('in u')
-    }
-    if (currentUser) {
-      console.log('in')
-      setGroups(userGroups);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userGroups.length]) // optional dependency if you still want to trigger on update
-);
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserGroups();
+      if (profileUser && !currentUser) {
+        setGroups(profileUser?.createdGroups);
+        console.log('in u');
+      }
+      if (currentUser) {
+        getPendingRequests();
+        setGroups(userGroups);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userGroups.length]), // optional dependency if you still want to trigger on update
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -80,7 +80,7 @@ useFocusEffect(
       return () => {
         setIsCurrentUser(true);
         navigation.setParams({user: null});
-        fetchUserGroups()
+        fetchUserGroups();
         fetchProfile();
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,17 +93,17 @@ useFocusEffect(
       setEmail(profileUser.email || '');
       setImage(profileUser.image || '');
       setGroups(profileUser?.createdGroups);
-      console.log('in u')
+      console.log('in u');
     }
     if (currentUser) {
       setName(user?.name);
       setEmail(user?.email);
       setImage(user?.image);
-      console.log('in')
+      console.log('in');
       setGroups(userGroups);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileUser, currentUser,isGroupUpdated]);
+  }, [profileUser, currentUser, isGroupUpdated]);
 
   const openEditModal = () => {
     setEditModalVisible(true);
@@ -176,15 +176,12 @@ useFocusEffect(
     setUserListModalVisible(true);
   };
 
-
-  console.log(pendingRequest)
+  console.log(profileUser);
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
       <View style={styles.menuContainer}>
-  
         {currentUser && (
-          
           <Menu
             visible={menuVisible}
             onDismiss={closeMenu}
@@ -211,7 +208,7 @@ useFocusEffect(
           </Menu>
         )}
       </View>
-      
+
       <Modal
         visible={showPendingModal}
         animationType="slide"
@@ -245,20 +242,44 @@ useFocusEffect(
                 <Text>{item?.user.name}</Text>
                 <View style={{flexDirection: 'row', gap: 10}}>
                   <Button
-                    onPress={() =>{
-
-                      handleFollowRequest(item?.user._id, 'accepted');
-                      setUserListModalVisible(false)
-                    }
-                    }>
+                    onPress={async () => {
+                      try {
+                        setLoading(true)
+                        await handleFollowRequest(item?.user._id, 'accept');
+                        Dialog.show({
+                          type: ALERT_TYPE.SUCCESS,
+                          title: 'Accepted',
+                          textBody: 'You have accepted the follow request.',
+                          button: 'OK',
+                        });
+                        setUserListModalVisible(false);
+                      } catch (error) {
+                        // The error dialog is already handled inside handleFollowRequest
+                      }
+                      finally{
+                        setLoading(false)
+                      }
+                    }}>
                     Accept
                   </Button>
                   <Button
-                    onPress={() =>{
-                      handleFollowRequest(item?.user._id, 'rejected');
-                      setUserListModalVisible(false)
-                    }
-                    }>
+                    onPress={async () => {
+                      try {
+                        await handleFollowRequest(item?.user._id, 'reject');
+                        Dialog.show({
+                          type: ALERT_TYPE.SUCCESS,
+                          title: 'Rejected',
+                          textBody: 'You have rejected the follow request.',
+                          button: 'OK',
+                        });
+                        setUserListModalVisible(false);
+                      } catch (error) {
+                        // The error dialog is already handled inside handleFollowRequest
+                      }
+                      finally{
+                        setLoading(false)
+                      }
+                    }}>
                     Reject
                   </Button>
                 </View>
@@ -324,7 +345,7 @@ useFocusEffect(
                             Dialog.show({
                               type: ALERT_TYPE.DANGER,
                               title: 'Error',
-                              textBody: err.message,
+                              textBody: err.response.data.message,
                             });
                           }
                         }}>
@@ -355,9 +376,8 @@ useFocusEffect(
               {image && <Image source={{uri: image}} style={styles.avatar} />}
             </View>
             <View>
-              <Text style={styles.name}>{name || 'Guest User'}  </Text>
-              <Text>{user?.totalStreak} 🐦‍🔥</Text>
-            
+              <Text style={styles.name}>{name || 'Guest User'} </Text>
+              {currentUser && <Text>{user?.totalStreak} 🐦‍🔥</Text> }
             </View>
             <View>
               {currentUser && (
@@ -399,11 +419,12 @@ useFocusEffect(
                     }}>
                     Unfollow
                   </Button>
+                ) : profileUser?.followers.some(
+                    (f: {_id: {toString: () => any}}) =>
+                      f._id.toString() === user._id.toString(),
+                  ) ? (
+                  <Text>Following</Text>
                 ) : (
-               profileUser?.followers.some(
-                  (f: {_id: {toString: () => any}}) =>
-                    f._id.toString() === user._id.toString(),
-                ) ? <Text>Following</Text> :
                   <Button
                     onPress={async () => {
                       try {
@@ -518,7 +539,9 @@ useFocusEffect(
                       <TouchableOpacity
                         style={styles.gridItem}
                         onPress={() =>
-                          navigation.navigate('GroupDetails', {groupId: item._id})
+                          navigation.navigate('GroupDetails', {
+                            groupId: item._id,
+                          })
                         }>
                         <Image
                           source={{uri: item.image}} // Assuming you have group.imageUrl
