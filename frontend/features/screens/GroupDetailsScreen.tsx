@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import {Button, Switch} from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import {launchImageLibrary, Asset} from 'react-native-image-picker';
+import {launchImageLibrary} from 'react-native-image-picker';
 import {useAuth} from '../context/AuthContext';
 import {useGroup} from '../context/GroupContext';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
@@ -66,7 +66,7 @@ const GroupDetailsScreen = ({route}: any) => {
   const [showJoinRequests, setShowJoinRequests] = useState(false);
   const [type, setType] = useState('daily');
   const [proofMap, setProofMap] = useState<any>({});
-const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,7 +99,7 @@ const [modalVisible, setModalVisible] = useState(false);
   }, [group]);
 
   const handleUploadProof = async (taskId: string) => {
-    const result:any = await launchImageLibrary({
+    const result: any = await launchImageLibrary({
       mediaType: 'photo',
       selectionLimit: 0, // 0 = unlimited
     });
@@ -112,17 +112,16 @@ const [modalVisible, setModalVisible] = useState(false);
     }
   };
 
-const handleRemoveProof = (taskId: string, index: number) => {
-  setProofMap((prev:any) => {
-    const updatedProofs = [...(prev[taskId] || [])];
-    updatedProofs.splice(index, 1); // remove image at index
-    return {
-      ...prev,
-      [taskId]: updatedProofs,
-    };
-  });
-};
-
+  const handleRemoveProof = (taskId: string, index: number) => {
+    setProofMap((prev: any) => {
+      const updatedProofs = [...(prev[taskId] || [])];
+      updatedProofs.splice(index, 1); // remove image at index
+      return {
+        ...prev,
+        [taskId]: updatedProofs,
+      };
+    });
+  };
 
   const validateText = (text: string) => {
     return text && text.trim().length > 0;
@@ -194,12 +193,6 @@ const handleRemoveProof = (taskId: string, index: number) => {
       </View>
     );
   }
-
-  // const handleTaskChange = (index: any, newText: any) => {
-  //   const updated = [...tasks];
-  //   updated[index].title = newText;
-  //   setTasks(updated);
-  // };
 
   const addNewTask = () => {
     setTasks([
@@ -315,10 +308,6 @@ const handleRemoveProof = (taskId: string, index: number) => {
     return completedEntry?.proof || [];
   };
 
-  // console.log(getProof(),tasks.map(e => {
-  //   return e.completedBy
-  // } ))
-  console.log(proofMap);
   return (
     <ScrollView
       style={styles.container}
@@ -516,50 +505,47 @@ const handleRemoveProof = (taskId: string, index: number) => {
               {pendingRequests.length}
             </Text>
           </TouchableOpacity>
-      <View>
-    <TouchableOpacity onPress={() => setModalVisible(true)}>
-      <Text style={styles.openButton}>Open Analytics</Text>
-    </TouchableOpacity>
+          <View>
+            <TouchableOpacity onPress={() => setModalVisible(true)}>
+              <Text style={styles.openButton}>Open Analytics</Text>
+            </TouchableOpacity>
 
-    <Modal
-      visible={modalVisible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setModalVisible(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
+            <Modal
+              visible={modalVisible}
+              animationType="slide"
+              transparent={true}
+              onRequestClose={() => setModalVisible(false)}>
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                  {/* Close Button */}
+                  <TouchableOpacity onPress={() => setModalVisible(false)}>
+                    <Text style={styles.closeButton}>Close</Text>
+                  </TouchableOpacity>
 
-          {/* Close Button */}
-          <TouchableOpacity onPress={() => setModalVisible(false)}>
-            <Text style={styles.closeButton}>Close</Text>
-          </TouchableOpacity>
+                  {/* Your existing content */}
+                  <View style={styles.pickerContainer}>
+                    <Text style={styles.label1}>Analytics:</Text>
+                    <Text style={styles.label}>Select Type:</Text>
+                    <Picker
+                      selectedValue={type}
+                      style={styles.picker}
+                      onValueChange={itemValue => setType(itemValue)}>
+                      <Picker.Item label="Daily" value="daily" />
+                      <Picker.Item label="Weekly" value="weekly" />
+                      <Picker.Item label="Monthly" value="monthly" />
+                      <Picker.Item label="Yearly" value="yearly" />
+                    </Picker>
+                  </View>
 
-          {/* Your existing content */}
-          <View style={styles.pickerContainer}>
-            <Text style={styles.label1}>Analytics:</Text>
-            <Text style={styles.label}>Select Type:</Text>
-            <Picker
-              selectedValue={type}
-              style={styles.picker}
-              onValueChange={itemValue => setType(itemValue)}>
-              <Picker.Item label="Daily" value="daily" />
-              <Picker.Item label="Weekly" value="weekly" />
-              <Picker.Item label="Monthly" value="monthly" />
-              <Picker.Item label="Yearly" value="yearly" />
-            </Picker>
+                  {loading ? (
+                    <ActivityIndicator size="large" color="#007bff" />
+                  ) : (
+                    <AnalyticsChart analytics={analytics.data} />
+                  )}
+                </View>
+              </View>
+            </Modal>
           </View>
-
-          {loading ? (
-            <ActivityIndicator size="large" color="#007bff" />
-          ) : (
-            <AnalyticsChart analytics={analytics.data} />
-          )}
-
-        </View>
-      </View>
-    </Modal>
-  </View>
           <Text style={styles.subTitle}>Admin</Text>
           <View style={styles.adminContainer}>
             <Image
@@ -588,7 +574,7 @@ const handleRemoveProof = (taskId: string, index: number) => {
             group?.todo?.tasks?.map((task: any) => {
               const completionKey = `${user._id}_${today}`;
               const isCompleted = task?.completedBy?.some(
-                c => c.userDateKey === completionKey,
+                (c: any) => c.userDateKey === completionKey,
               );
               const requiresProof = task.requireProof;
               const hasProvidedProof = proofMap[task._id]?.length > 0;
@@ -667,67 +653,76 @@ const handleRemoveProof = (taskId: string, index: number) => {
                           <Button onPress={() => handleUploadProof(task._id)}>
                             <Text>Upload Proof</Text>
                           </Button>
-         <ScrollView horizontal>
-  {proofMap[task._id]?.map((proofItem: any, index: number) => (
-    <View key={index} style={{ position: 'relative', margin: 5 }}>
-      <Image
-        source={{ uri: proofItem.uri }}
-        style={{
-          width: 100,
-          height: 100,
-          borderRadius: 8,
-          backgroundColor: '#ccc',
-        }}
-        resizeMode="cover"
-      />
-      <TouchableOpacity
-        onPress={() => handleRemoveProof(task._id, index)}
-        style={{
-          position: 'absolute',
-          top: -8,
-          right: -8,
-          backgroundColor: '#f00',
-          borderRadius: 12,
-          width: 24,
-          height: 24,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Text style={{ color: '#fff', fontWeight: 'bold' }}>–</Text>
-      </TouchableOpacity>
-    </View>
-  ))}
-</ScrollView>
-
-                        </View>
-                      )}
-
-                      {isCompleted && (
-                        <ScrollView horizontal>
-                          {task.completedBy?.map((entry: any) =>
-                            entry.proof?.map((proofItem: any) =>
-                              proofItem.type === 'image' ? (
-                                <TouchableOpacity
-                                  key={proofItem._id}
-                                  onPress={() =>
-                                    handleImagePress(task._id, proofItem.url)
-                                  }>
+                          <ScrollView horizontal>
+                            {proofMap[task._id]?.map(
+                              (proofItem: any, index: number) => (
+                                <View
+                                  key={index}
+                                  style={{position: 'relative', margin: 5}}>
                                   <Image
-                                    source={{uri: proofItem.url}}
+                                    source={{uri: proofItem.uri}}
                                     style={{
                                       width: 100,
                                       height: 100,
-                                      margin: 5,
                                       borderRadius: 8,
                                       backgroundColor: '#ccc',
                                     }}
                                     resizeMode="cover"
                                   />
-                                </TouchableOpacity>
-                              ) : null,
-                            ),
-                          )}
+                                  <TouchableOpacity
+                                    onPress={() =>
+                                      handleRemoveProof(task._id, index)
+                                    }
+                                    style={{
+                                      position: 'absolute',
+                                      top: -8,
+                                      right: -8,
+                                      backgroundColor: '#f00',
+                                      borderRadius: 12,
+                                      width: 24,
+                                      height: 24,
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}>
+                                    <Text
+                                      style={{
+                                        color: '#fff',
+                                        fontWeight: 'bold',
+                                      }}>
+                                      –
+                                    </Text>
+                                  </TouchableOpacity>
+                                </View>
+                              ),
+                            )}
+                          </ScrollView>
+                        </View>
+                      )}
+
+                      {isCompleted && (
+                        <ScrollView horizontal>
+                     {task.completedBy
+      ?.filter((entry:any) => entry.userDateKey === `${user._id}_${today}`) // Filter by user ID and date
+      .flatMap((entry:any) =>
+        entry.proof?.filter((proofItem:any) => proofItem.type === 'image') || []
+      )
+      .map((proofItem:any) => (
+        <TouchableOpacity
+          key={proofItem._id}
+          onPress={() => handleImagePress(task._id, proofItem.url)}>
+          <Image
+            source={{ uri: proofItem.url }}
+            style={{
+              width: 100,
+              height: 100,
+              margin: 5,
+              borderRadius: 8,
+              backgroundColor: '#ccc',
+            }}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      ))}
                         </ScrollView>
                       )}
                     </View>
@@ -1023,7 +1018,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
 
-
   buttonContainer: {
     marginTop: 30,
     marginBottom: 20,
@@ -1092,11 +1086,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 6,
   },
-  taskDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
   openButton: {
     padding: 10,
     backgroundColor: '#007bff',
@@ -1104,7 +1093,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     borderRadius: 5,
     margin: 10,
-    width:'50%'
+    width: '50%',
   },
   closeButton: {
     color: '#007bff',
@@ -1117,6 +1106,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
     // elevation: 5,
-    marginTop:40
+    marginTop: 40,
   },
 });
