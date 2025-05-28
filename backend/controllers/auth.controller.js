@@ -3,6 +3,7 @@ const User = require("../models/user.Model.js");
 const { dataUri } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 const generateToken = require("../utils/generateToken.utils.js");
+const sendEmail = require("../config/sendMail.config.js");
 
 const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -42,6 +43,12 @@ const register = asyncHandler(async (req, res) => {
     });
 
     if (user) {
+      await sendEmail({
+        email: user.email,
+        subject: "🎉 Welcome to HabiStreak!",
+        name: user.name,
+      });
+
       res.status(201).json({
         user: {
           _id: user._id,
