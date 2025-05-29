@@ -379,6 +379,24 @@ const updateFmcToken = asyncHandler(async(req,res) => {
   })
 })
 
+const deleteUserAccount = async (req, res) => {
+  try {
+    const userId = req.user._id; 
+
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return res.status(500).json({ message: 'Server error while deleting account' });
+  }
+};
+
+
 module.exports = {
   getUserProfile,
   sendFollowRequest,
@@ -388,5 +406,6 @@ module.exports = {
   updateUserProfile,
   getUserProfile1,
   getUserAnalytics,
-  updateFmcToken
+  updateFmcToken,
+  deleteUserAccount
 };

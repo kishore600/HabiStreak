@@ -162,7 +162,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     );
   };
 
-  if (loading || userGroupLoading) {
+  if (loading ) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" color="tomato" />
@@ -175,6 +175,62 @@ const ProfileScreen = ({route, navigation}: any) => {
     setUserListType(type);
     setUserListModalVisible(true);
   };
+
+
+const handleDeleteAccount = () => {
+  Dialog.show({
+    type: ALERT_TYPE.WARNING,
+    title: 'Confirm Delete',
+    textBody: 'Are you sure you want to permanently delete your account? This action cannot be undone.',
+    button: 'Delete',
+    onPressButton: async () => {
+      try {
+        const token = user?.token; // Adjust based on how you're storing the token
+
+        const response = await fetch('http://localhost:8000/api/users/delete-account', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          Dialog.show({
+            type: ALERT_TYPE.SUCCESS,
+            title: 'Account Deleted',
+            textBody: 'Your account has been successfully deleted.',
+            button: 'OK',
+            onPressButton: () => {
+              logout(); // Clear user state
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            },
+          });
+        } else {
+          Dialog.show({
+            type: ALERT_TYPE.DANGER,
+            title: 'Delete Failed',
+            textBody: data.message || 'Failed to delete account',
+            button: 'OK',
+          });
+        }
+      } catch (error:any) {
+        Dialog.show({
+          type: ALERT_TYPE.DANGER,
+          title: 'Error',
+          textBody: error.message || 'Something went wrong while deleting the account.',
+          button: 'OK',
+        });
+      }
+    },
+  });
+};
+
 
   console.log(profileUser);
   return (
@@ -199,6 +255,11 @@ const ProfileScreen = ({route, navigation}: any) => {
               }}
               title="Logout"
             />
+            <Menu.Item
+  onPress={handleDeleteAccount}
+  title="Delete Account"
+  titleStyle={{ color: 'red' }}
+/>
             {user?.pendingRequest?.length > 0 && (
               <Menu.Item
                 onPress={() => setShowPendingModal(true)}
@@ -382,7 +443,7 @@ const ProfileScreen = ({route, navigation}: any) => {
             <View>
               {currentUser && (
                 <View>
-                  <View style={{marginTop: 20}}>
+                  <View style={{display:'flex',flexDirection:'row',justifyContent:'center',alignItems:'center'}}>
                     <Button onPress={() => openUserListModal('followers')}>
                       {user?.followers?.length}Followers
                     </Button>
@@ -573,7 +634,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', // Arrange items horizontally
     flexWrap: 'wrap', // Wrap to next line if needed
     alignItems: 'center', // Center items vertically
-    marginBottom: 10,
+    // marginBottom: 10,
     gap: 30,
   },
 
