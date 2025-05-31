@@ -18,6 +18,7 @@ const LoginScreen = ({navigation}: any) => {
   const [errors, setErrors] = useState<any>({});
   const [showPassword, setShowPassword] = useState(false);
   const[loading,setLoading] = useState(false)
+  
   const validateForm = () => {
     let newErrors: any = {};
     if (!email.trim()) {
@@ -38,9 +39,10 @@ const LoginScreen = ({navigation}: any) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
+
   const handleLogin = async () => {
     setLoading(true)
-    if (!validateForm()) return;
+    if (!validateForm()) return setLoading(false);
     try {
       const userData = await login(email, password); // ✅ Call login function
       if (userData) {

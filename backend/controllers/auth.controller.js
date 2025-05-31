@@ -7,6 +7,7 @@ const sendEmail = require("../config/sendMail.config.js");
 
 const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
+  console.log(name, email, password)
   if (!name || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
   }

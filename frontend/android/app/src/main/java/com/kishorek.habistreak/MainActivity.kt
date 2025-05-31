@@ -1,4 +1,4 @@
-package com.ui
+package com.kishorek.habistreak
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

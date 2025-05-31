@@ -19,6 +19,7 @@ import {useGroup} from '../context/GroupContext';
 import {FlatList} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useCallback} from 'react';
+import { API_URL } from '@env';
 
 const ProfileScreen = ({route, navigation}: any) => {
   const {
@@ -187,7 +188,7 @@ const handleDeleteAccount = () => {
       try {
         const token = user?.token; // Adjust based on how you're storing the token
 
-        const response = await fetch('http://localhost:8000/api/users/delete-account', {
+        const response = await fetch(`${API_URL}/users/delete-account`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
