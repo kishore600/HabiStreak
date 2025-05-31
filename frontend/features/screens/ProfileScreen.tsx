@@ -19,7 +19,7 @@ import {useGroup} from '../context/GroupContext';
 import {FlatList} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useCallback} from 'react';
-import { API_URL } from '@env';
+import {API_URL} from '@env';
 
 const ProfileScreen = ({route, navigation}: any) => {
   const {
@@ -155,6 +155,7 @@ const ProfileScreen = ({route, navigation}: any) => {
       {mediaType: 'photo', includeBase64: false},
       (response: any) => {
         if (response.didCancel) {
+          setImage(user?.imge);
         } else if (response.errorMessage) {
         } else if (response.assets && response.assets.length > 0) {
           setImage(response.assets[0].uri);
@@ -163,7 +164,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     );
   };
 
-  if (loading ) {
+  if (loading) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" color="tomato" />
@@ -177,61 +178,62 @@ const ProfileScreen = ({route, navigation}: any) => {
     setUserListModalVisible(true);
   };
 
+  const handleDeleteAccount = () => {
+    Dialog.show({
+      type: ALERT_TYPE.WARNING,
+      title: 'Confirm Delete',
+      textBody:
+        'Are you sure you want to permanently delete your account? This action cannot be undone.',
+      button: 'Delete',
+      onPressButton: async () => {
+        try {
+          const token = user?.token; // Adjust based on how you're storing the token
 
-const handleDeleteAccount = () => {
-  Dialog.show({
-    type: ALERT_TYPE.WARNING,
-    title: 'Confirm Delete',
-    textBody: 'Are you sure you want to permanently delete your account? This action cannot be undone.',
-    button: 'Delete',
-    onPressButton: async () => {
-      try {
-        const token = user?.token; // Adjust based on how you're storing the token
-
-        const response = await fetch(`${API_URL}/users/delete-account`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          Dialog.show({
-            type: ALERT_TYPE.SUCCESS,
-            title: 'Account Deleted',
-            textBody: 'Your account has been successfully deleted.',
-            button: 'OK',
-            onPressButton: () => {
-              logout(); // Clear user state
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
+          const response = await fetch(`${API_URL}/users/delete-account`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
             },
           });
-        } else {
+
+          const data = await response.json();
+
+          if (response.ok) {
+            Dialog.show({
+              type: ALERT_TYPE.SUCCESS,
+              title: 'Account Deleted',
+              textBody: 'Your account has been successfully deleted.',
+              button: 'OK',
+              onPressButton: () => {
+                logout(); // Clear user state
+                navigation.reset({
+                  index: 0,
+                  routes: [{name: 'Login'}],
+                });
+              },
+            });
+          } else {
+            Dialog.show({
+              type: ALERT_TYPE.DANGER,
+              title: 'Delete Failed',
+              textBody: data.message || 'Failed to delete account',
+              button: 'OK',
+            });
+          }
+        } catch (error: any) {
           Dialog.show({
             type: ALERT_TYPE.DANGER,
-            title: 'Delete Failed',
-            textBody: data.message || 'Failed to delete account',
+            title: 'Error',
+            textBody:
+              error.message ||
+              'Something went wrong while deleting the account.',
             button: 'OK',
           });
         }
-      } catch (error:any) {
-        Dialog.show({
-          type: ALERT_TYPE.DANGER,
-          title: 'Error',
-          textBody: error.message || 'Something went wrong while deleting the account.',
-          button: 'OK',
-        });
-      }
-    },
-  });
-};
-
+      },
+    });
+  };
 
   console.log(profileUser);
   return (
@@ -257,10 +259,10 @@ const handleDeleteAccount = () => {
               title="Logout"
             />
             <Menu.Item
-  onPress={handleDeleteAccount}
-  title="Delete Account"
-  titleStyle={{ color: 'red' }}
-/>
+              onPress={handleDeleteAccount}
+              title="Delete Account"
+              titleStyle={{color: 'red'}}
+            />
             {user?.pendingRequest?.length > 0 && (
               <Menu.Item
                 onPress={() => setShowPendingModal(true)}
@@ -306,7 +308,7 @@ const handleDeleteAccount = () => {
                   <Button
                     onPress={async () => {
                       try {
-                        setLoading(true)
+                        setLoading(true);
                         await handleFollowRequest(item?.user._id, 'accept');
                         Dialog.show({
                           type: ALERT_TYPE.SUCCESS,
@@ -317,9 +319,8 @@ const handleDeleteAccount = () => {
                         setUserListModalVisible(false);
                       } catch (error) {
                         // The error dialog is already handled inside handleFollowRequest
-                      }
-                      finally{
-                        setLoading(false)
+                      } finally {
+                        setLoading(false);
                       }
                     }}>
                     Accept
@@ -337,9 +338,8 @@ const handleDeleteAccount = () => {
                         setUserListModalVisible(false);
                       } catch (error) {
                         // The error dialog is already handled inside handleFollowRequest
-                      }
-                      finally{
-                        setLoading(false)
+                      } finally {
+                        setLoading(false);
                       }
                     }}>
                     Reject
@@ -435,16 +435,22 @@ const handleDeleteAccount = () => {
           {/* Profile Info */}
           <View style={styles.topGrid}>
             <View>
-              {image && <Image source={{uri: image}} style={styles.avatar} />}
+              {user?.image && <Image source={{uri: user?.image}} style={styles.avatar} />}
             </View>
             <View>
               <Text style={styles.name}>{name || 'Guest User'} </Text>
-              {currentUser && <Text>{user?.totalStreak} 🐦‍🔥</Text> }
+              {currentUser && <Text>{user?.totalStreak} 🐦‍🔥</Text>}
             </View>
             <View>
               {currentUser && (
                 <View>
-                  <View style={{display:'flex',flexDirection:'row',justifyContent:'center',alignItems:'center'}}>
+                  <View
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}>
                     <Button onPress={() => openUserListModal('followers')}>
                       {user?.followers?.length}Followers
                     </Button>
@@ -524,10 +530,10 @@ const handleDeleteAccount = () => {
                 <TouchableOpacity
                   style={styles.imagePicker}
                   onPress={selectImage}>
-                  {user?.image ? (
-                    <Image source={{uri: user?.image}} style={styles.image} />
+                  {image ? (
+                    <Image source={{uri: image}} style={styles.image} />
                   ) : (
-                    <Image source={user?.image} style={styles.image} />
+                    <Image source={{uri: user?.image}} style={styles.image} />
                   )}
                 </TouchableOpacity>
 
@@ -574,7 +580,12 @@ const handleDeleteAccount = () => {
                   </Button>
                   <Button
                     mode="outlined"
-                    onPress={() => setEditModalVisible(false)}>
+                    onPress={() => {
+                      setName(user?.name);
+                      setEmail(user?.email);
+                      setImage(user?.image);
+                      setEditModalVisible(false);
+                    }}>
                     Cancel
                   </Button>
                 </View>

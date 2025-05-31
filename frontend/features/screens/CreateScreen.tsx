@@ -23,7 +23,7 @@ const CreateScreen = () => {
   const [goal, setGoal] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [tasks, setTasks] = useState<any>([]);
-  const {createGroup, loading} = useGroup();
+  const {createGroup, createLoading} = useGroup();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const categoryOptions = hobbies_enum.map(hobby => ({
     label: hobby,
@@ -67,7 +67,7 @@ const CreateScreen = () => {
 
   const handleTaskChange = (index: number, field: string, value: any) => {
     console.log(value);
-    setTasks((prevTasks:any) => {
+    setTasks((prevTasks: any) => {
       const updatedTasks = [...prevTasks];
       updatedTasks[index] = {
         ...updatedTasks[index],
@@ -88,9 +88,10 @@ const CreateScreen = () => {
         return;
       }
 
-const nonEmptyTasks = tasks.filter((task: any) => 
-  task.title.trim() !== '' || task.description.trim() !== ''
-);
+      const nonEmptyTasks = tasks.filter(
+        (task: any) =>
+          task.title.trim() !== '' || task.description.trim() !== '',
+      );
       if (nonEmptyTasks.length === 0) {
         Dialog.show({
           type: ALERT_TYPE.DANGER,
@@ -247,6 +248,7 @@ const nonEmptyTasks = tasks.filter((task: any) =>
 
       <Text style={styles.subheading}>Select Categories</Text>
       <MultiSelect
+        mode="modal" // 👈 This enables modal mode
         style={[styles.input, {paddingHorizontal: 10}]}
         placeholderStyle={{color: '#888'}}
         selectedTextStyle={{color: '#000'}}
@@ -267,10 +269,10 @@ const nonEmptyTasks = tasks.filter((task: any) =>
 
       <View style={{marginVertical: 20}}>
         <Button
-          title={loading ? 'Laoding' : 'Create Group and Todo'}
+          title={createLoading ? 'Laoding' : 'Create Group and Todo'}
           onPress={handleSubmit}
           color="#4CAF50"
-          disabled={loading}
+          disabled={createLoading}
         />
       </View>
     </ScrollView>
@@ -290,6 +292,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subheading: {
+    marginTop: 20,
     fontSize: 18,
     fontWeight: 'bold',
     marginVertical: 10,
@@ -320,6 +323,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ddd',
     paddingVertical: 6,
     fontSize: 14,
+    marginTop: 20,
     color: '#333',
   },
   switchContainer: {

@@ -47,6 +47,7 @@ interface GroupContextType {
   MemberAnalytics: any;
   memberData: any;
   comparisonData: any;
+  createLoading:any;
   ComparisonAnalytisc: any;
 }
 export type RootStackParamList = {
@@ -70,6 +71,7 @@ export const GroupProvider = ({children}: any) => {
   const [analytics, setAnalytics] = useState<any>([]);
   const [memberData, setMemberData] = useState([]);
   const [comparisonData, setComparisonData] = useState([]);
+  const [createLoading,setCreateLoading] = useState(false)
 
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
@@ -203,7 +205,7 @@ export const GroupProvider = ({children}: any) => {
 
   const createGroup = async (formData: FormData) => {
     try {
-      setLoading(true);
+      setCreateLoading(true);
       console.log(formData, API_URL);
       const headers = await getAuthHeaders();
       await axios.post(`${API_URL}/groups`, formData, {
@@ -229,7 +231,7 @@ export const GroupProvider = ({children}: any) => {
         textBody: error.data.message || 'Failed to create group',
       });
     } finally {
-      setLoading(false);
+      setCreateLoading(false);
     }
   };
 
@@ -573,6 +575,7 @@ const markTaskComplete = async (groupId:any, taskId:any, imageUrls:any) => {
         memberData,
         ComparisonAnalytisc,
         comparisonData,
+        createLoading
       }}>
       {children}
     </GroupContext.Provider>

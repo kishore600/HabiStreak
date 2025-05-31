@@ -122,7 +122,7 @@ export const AuthProvider = ({children}: any) => {
         });
       }
       console.log(`${API_URL}/auth/register`,);
-      const response = await axios.post(`http://192.168.1.5:8000/api/auth/register`, formData, {
+      const response = await axios.post(`${API_URL}/auth/register`, formData, {
         headers: {'Content-Type': 'multipart/form-data'},
       });
       console.log(response);

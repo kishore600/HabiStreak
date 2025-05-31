@@ -163,6 +163,15 @@ const updateGroup = asyncHandler(async (req, res) => {
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
+    
+ if (req.body.title) {
+      group.title = req.body.title;
+    }
+
+    // ✅ Update goal if provided
+    if (req.body.goal) {
+      group.goal = req.body.goal;
+    }
 
     if (req.file) {
       const file = dataUri(req).content;
@@ -241,7 +250,6 @@ const updateGroup = asyncHandler(async (req, res) => {
       group.endDate = req.body.endDate;
     }
 
-    // ✅ Parse comma-separated string into an array if needed
     if (req.body.categories) {
       if (typeof req.body.categories === "string") {
         group.categories = req.body.categories
