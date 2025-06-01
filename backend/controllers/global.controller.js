@@ -3,9 +3,9 @@ const Group = require("../models/group.model");
 
 const searchUsersAndGroups = async (req, res) => {
   try {
-    const { query, type } = req.query;
-
-    if (!query) {
+    const { trimmed, type } = req.query;
+console.log(trimmed)
+    if (!trimmed) {
       return res.status(400).json({ message: "No search query provided" });
     }
 
@@ -15,8 +15,8 @@ const searchUsersAndGroups = async (req, res) => {
       // Search Users
       const users = await User.find({
         $or: [
-          { name: { $regex: query, $options: "i" } },
-          { email: { $regex: query, $options: "i" } }
+          { name: { $regex: trimmed, $options: "i" } },
+          { email: { $regex: trimmed, $options: "i" } }
         ]
       }).select("-password -pendingRequest");
 
@@ -31,7 +31,7 @@ const searchUsersAndGroups = async (req, res) => {
     if (type === "group" || !type) {
       // Search Groups
       const groups = await Group.find({
-        title: { $regex: query, $options: "i" }
+        title: { $regex: trimmed, $options: "i" }
       });
 
       const formattedGroups = groups.map(group => ({

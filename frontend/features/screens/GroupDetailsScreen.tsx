@@ -459,6 +459,7 @@ const GroupDetailsScreen = ({route}: any) => {
 
           <Text style={styles.subheading}>Select Categories</Text>
           <MultiSelect
+        mode="modal" // 👈 This enables modal mode
             style={[styles.input, {paddingHorizontal: 10}]}
             placeholderStyle={{color: '#888'}}
             selectedTextStyle={{color: '#000'}}
