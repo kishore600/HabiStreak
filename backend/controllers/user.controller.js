@@ -141,11 +141,14 @@ const unfollowUser = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User not found");
   }
-console.log(targetUser,requestingUser)
-  targetUser.following = targetUser.followers.filter(
+
+  // ✅ Remove requester from target user's followers
+  targetUser.followers = targetUser.followers.filter(
     (id) => id.toString() !== requestingUserId.toString()
   );
-  requestingUser.followers = requestingUser.following.filter(
+
+  // ✅ Remove target from requester's following
+  requestingUser.following = requestingUser.following.filter(
     (id) => id.toString() !== targetUserId.toString()
   );
 
@@ -176,61 +179,44 @@ const getPendingRequests = asyncHandler(async (req, res) => {
 
 const handleFollowRequest = asyncHandler(async (req, res) => {
   const { requesterId, action } = req.body;
-  const receiverId = req.user._id;
+  const userId = req.user._id;
 
-  const receiver = await User.findById(receiverId);
-  if (!receiver) {
-    res.status(404);
-    throw new Error("Receiver not found");
-  }
 
-  const requestIndex = receiver.pendingRequest.findIndex(
-    (r) => r.user.toString() === requesterId.toString()
+  const user = await User.findById(userId);
+  const requestingUserIndex = user.pendingRequest.findIndex(
+    (request) => request.user.toString() === requesterId.toString()
   );
 
-  if (requestIndex === -1) {
+  if (requestingUserIndex === -1) {
     res.status(404);
     throw new Error("Follow request not found");
   }
 
-  const requester = await User.findById(requesterId);
-  if (!requester) {
-    res.status(404);
-    throw new Error("Requester user not found");
+  const { user: requestingUserId } = user.pendingRequest[requestingUserIndex];
+
+  if (action === "accept") {
+    user.pendingRequest.splice(requestingUserIndex, 1);
+
+    const requestingUser = await User.findById(requestingUserId);
+    user.following.push(requestingUser._id);
+
+    if (requestingUser.followers.includes(user._id)) {
+      return res
+        .status(400)
+        .json({ message: "You are already following this user" });
+    }
+
+    requestingUser.followers.push(user._id);
+
+    await Promise.all([user.save(), requestingUser.save()]);
+
+    res.status(200).json({ message: "Follow request accepted" });
+  } else if (action === "reject") {
+    user.pendingRequest.splice(requestingUserIndex, 1);
+    await user.save();
+
+    res.status(200).json({ message: "Follow request rejected" });
   }
-
-if (action === "accept") {
-  // Add requester to receiver's followers if not already present
-  if (!receiver.followers.includes(requesterId)) {
-    receiver.followers.push(requesterId);
-  }
-
-  // Remove receiverId from requester's following if exists
-  requester.following = requester.following.filter(
-    (id) => id.toString() !== receiverId.toString()
-  );
-
-  // Add receiverId to requester's followers if mutual follow required
-  if (!requester.followers.includes(receiverId)) {
-    requester.followers.push(receiverId);
-  }
-
-  // Remove from pending requests
-  receiver.pendingRequest.splice(requestIndex, 1);
-
-  await Promise.all([receiver.save(), requester.save()]);
-  return res.status(200).json({ message: "Follow request accepted" });
-}
-
-
-  if (action === "reject") {
-    // Remove from pending requests only
-    receiver.pendingRequest.splice(requestIndex, 1);
-    await receiver.save();
-    return res.status(200).json({ message: "Follow request rejected" });
-  }
-
-  res.status(400).json({ message: "Invalid action" });
 });
 
 const updateUserProfile = asyncHandler(async (req, res) => {

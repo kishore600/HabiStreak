@@ -68,7 +68,7 @@ const ProfileScreen = ({route, navigation}: any) => {
         setGroups(userGroups);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userGroups.length]), // optional dependency if you still want to trigger on update
+    }, [userGroups.length,currentUser,profileUser,navigation]), // optional dependency if you still want to trigger on update
   );
 
   useFocusEffect(
@@ -104,8 +104,7 @@ const ProfileScreen = ({route, navigation}: any) => {
       setGroups(userGroups);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileUser, currentUser, isGroupUpdated]);
-
+  }, [profileUser, currentUser, isGroupUpdated,userGroups,navigation]);
   const openEditModal = () => {
     setEditModalVisible(true);
     closeMenu();
@@ -235,43 +234,52 @@ const ProfileScreen = ({route, navigation}: any) => {
     });
   };
 
-  console.log(profileUser);
+  console.log(groups)
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
-      <View style={styles.menuContainer}>
-        {currentUser && (
-          <Menu
-            visible={menuVisible}
-            onDismiss={closeMenu}
-            anchor={
-              <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
-                <Icon name="bars" size={30} color="#333" />
-              </TouchableOpacity>
-            }
-            contentStyle={styles.menuContent}>
-            <Menu.Item onPress={openEditModal} title="Edit Profile" />
-            <Menu.Item
-              onPress={() => {
-                logout();
-                navigation.navigate('Login');
-              }}
-              title="Logout"
-            />
-            <Menu.Item
-              onPress={handleDeleteAccount}
-              title="Delete Account"
-              titleStyle={{color: 'red'}}
-            />
-            {user?.pendingRequest?.length > 0 && (
-              <Menu.Item
-                onPress={() => setShowPendingModal(true)}
-                title={`Requested Users (${user.pendingRequest.length})`}
-              />
-            )}
-          </Menu>
+    <View style={styles.menuContainer}>
+  {currentUser && (
+    <>
+      {/* Pending Requests Badge or Text */}
+      {user?.pendingRequest?.length > 0 && (
+        <Text style={styles.pendingRequestText}>
+          {user.pendingRequest.length} Pending Request
+        </Text>
+      )}
+
+      <Menu
+        visible={menuVisible}
+        onDismiss={closeMenu}
+        anchor={
+          <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
+            <Icon name="bars" size={30} color="#333" />
+          </TouchableOpacity>
+        }
+        contentStyle={styles.menuContent}>
+        <Menu.Item onPress={openEditModal} title="Edit Profile" />
+        <Menu.Item
+          onPress={() => {
+            logout();
+            navigation.navigate('Login');
+          }}
+          title="Logout"
+        />
+        <Menu.Item
+          onPress={handleDeleteAccount}
+          title="Delete Account"
+          titleStyle={{ color: 'red' }}
+        />
+        {user?.pendingRequest?.length > 0 && (
+          <Menu.Item
+            onPress={() => setShowPendingModal(true)}
+            title={`Requested Users (${user.pendingRequest.length})`}
+          />
         )}
-      </View>
+      </Menu>
+    </>
+  )}
+</View>
 
       <Modal
         visible={showPendingModal}
@@ -318,8 +326,9 @@ const ProfileScreen = ({route, navigation}: any) => {
                         });
                         setUserListModalVisible(false);
                       } catch (error) {
-                        // The error dialog is already handled inside handleFollowRequest
                       } finally {
+                        setUserListModalVisible(false);
+
                         setLoading(false);
                       }
                     }}>
@@ -392,11 +401,12 @@ const ProfileScreen = ({route, navigation}: any) => {
                   }}>
                   <Text>{item.name}</Text>
                   {userListType === 'following' && (
-                    <TouchableOpacity onPress={() => unfollowUser(item._id)}>
+                    <TouchableOpacity>
                       <Button
                         onPress={async () => {
                           try {
                             await unfollowUser(profileUser._id);
+                            console.log('in')
                             Dialog.show({
                               type: ALERT_TYPE.SUCCESS,
                               title: 'Unfollowed',
@@ -435,7 +445,7 @@ const ProfileScreen = ({route, navigation}: any) => {
           {/* Profile Info */}
           <View style={styles.topGrid}>
             <View>
-              {user?.image && <Image source={{uri: user?.image}} style={styles.avatar} />}
+             <Image source={{uri: image}} style={styles.avatar} />
             </View>
             <View>
               <Text style={styles.name}>{name || 'Guest User'} </Text>
@@ -462,7 +472,7 @@ const ProfileScreen = ({route, navigation}: any) => {
               )}
             </View>
             {!currentUser && (
-              <View style={{marginTop: 20}}>
+              <View style={{marginTop: 0}}>
                 {profileUser?.following.some(
                   (f: {_id: {toString: () => any}}) =>
                     f._id.toString() === user._id.toString(),
@@ -752,6 +762,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 5,
   },
+  pendingRequestText: {
+  color: 'red',
+  fontWeight: 'bold',
+  marginBottom: 5,
+  fontSize: 14,
+  alignSelf: 'flex-end',
+},
   groupItem: {
     backgroundColor: '#f0f0f0',
     borderRadius: 10,

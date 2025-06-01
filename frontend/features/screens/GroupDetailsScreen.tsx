@@ -67,6 +67,8 @@ const GroupDetailsScreen = ({route}: any) => {
   const [type, setType] = useState('daily');
   const [proofMap, setProofMap] = useState<any>({});
   const [modalVisible, setModalVisible] = useState(false);
+  const isUserInGroup =
+    group?.members?.some((member: any) => member._id === user?._id) ?? false;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,8 +98,8 @@ const GroupDetailsScreen = ({route}: any) => {
       setEndDate(group.endDate);
       setSelectedCategories(group?.categories);
     }
-  }, [group]);
-
+  }, [group, groupId, group?.members]);
+  console.log(group);
   const handleUploadProof = async (taskId: string) => {
     const result: any = await launchImageLibrary({
       mediaType: 'photo',
@@ -292,9 +294,6 @@ const GroupDetailsScreen = ({route}: any) => {
 
   const IsEditUser_id = user?._id === admin_id;
 
-  const isUserInGroup =
-    group?.members?.some((member: any) => member._id === user?._id) ?? false;
-
   const getProof = (taskId: string) => {
     if (proofMap[taskId]?.length > 0) {
       return proofMap[taskId];
@@ -307,6 +306,11 @@ const GroupDetailsScreen = ({route}: any) => {
 
     return completedEntry?.proof || [];
   };
+
+  console.log(
+    group?.members?.some((member: any) => member._id === user?._id) ?? false,
+  );
+  console.log(isUserInGroup);
 
   return (
     <ScrollView
@@ -479,14 +483,6 @@ const GroupDetailsScreen = ({route}: any) => {
         </>
       ) : (
         <>
-          <Text style={styles.title}>{group?.title} </Text>
-          <Text style={styles.goal}>Goal: {group?.goal}</Text>
-          <Text style={styles.goal}>End Date: {formattedDate}</Text>
-          <Text style={styles.streak}>Group Streak: {group?.streak} 🐦‍🔥</Text>
-          <CategoryList
-            categories={group?.categories}
-            setSelectedCategories={setSelectedCategories}
-          />{' '}
           <TouchableOpacity
             onPress={() => {
               setShowJoinRequests(true);
@@ -505,6 +501,14 @@ const GroupDetailsScreen = ({route}: any) => {
               {pendingRequests.length}
             </Text>
           </TouchableOpacity>
+          <Text style={styles.title}>{group?.title} </Text>
+          <Text style={styles.goal}>Goal: {group?.goal}</Text>
+          <Text style={styles.goal}>End Date: {formattedDate}</Text>
+          <Text style={styles.streak}>Group Streak: {group?.streak} 🐦‍🔥</Text>
+          <CategoryList
+            categories={group?.categories}
+            setSelectedCategories={setSelectedCategories}
+          />{' '}
           <View>
             <TouchableOpacity onPress={() => setModalVisible(true)}>
               <Text style={styles.openButton}>Open Analytics</Text>
@@ -701,28 +705,37 @@ const GroupDetailsScreen = ({route}: any) => {
 
                       {isCompleted && (
                         <ScrollView horizontal>
-                     {task.completedBy
-      ?.filter((entry:any) => entry.userDateKey === `${user._id}_${today}`) // Filter by user ID and date
-      .flatMap((entry:any) =>
-        entry.proof?.filter((proofItem:any) => proofItem.type === 'image') || []
-      )
-      .map((proofItem:any) => (
-        <TouchableOpacity
-          key={proofItem._id}
-          onPress={() => handleImagePress(task._id, proofItem.url)}>
-          <Image
-            source={{ uri: proofItem.url }}
-            style={{
-              width: 100,
-              height: 100,
-              margin: 5,
-              borderRadius: 8,
-              backgroundColor: '#ccc',
-            }}
-            resizeMode="cover"
-          />
-        </TouchableOpacity>
-      ))}
+                          {task.completedBy
+                            ?.filter(
+                              (entry: any) =>
+                                entry.userDateKey === `${user._id}_${today}`,
+                            ) // Filter by user ID and date
+                            .flatMap(
+                              (entry: any) =>
+                                entry.proof?.filter(
+                                  (proofItem: any) =>
+                                    proofItem.type === 'image',
+                                ) || [],
+                            )
+                            .map((proofItem: any) => (
+                              <TouchableOpacity
+                                key={proofItem._id}
+                                onPress={() =>
+                                  handleImagePress(task._id, proofItem.url)
+                                }>
+                                <Image
+                                  source={{uri: proofItem.url}}
+                                  style={{
+                                    width: 100,
+                                    height: 100,
+                                    margin: 5,
+                                    borderRadius: 8,
+                                    backgroundColor: '#ccc',
+                                  }}
+                                  resizeMode="cover"
+                                />
+                              </TouchableOpacity>
+                            ))}
                         </ScrollView>
                       )}
                     </View>

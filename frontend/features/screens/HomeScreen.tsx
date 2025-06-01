@@ -28,7 +28,7 @@ const HomeScreen = ({navigation}: any) => {
   useEffect(() => {
     fetchGroups();
     fetchUserGroups();
-  }, [fetchGroups, fetchUserGroups]);
+  }, [fetchGroups, fetchUserGroups,navigation]);
 
   const renderItem = ({item}: any) => {
     swipeX.setValue(0);

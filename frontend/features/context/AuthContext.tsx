@@ -264,15 +264,10 @@ const unfollowUser = async (targetUserId: string) => {
       { targetUserId },
       { headers: { Authorization: `Bearer ${token}` } }
     );
-
-    console.log('Unfollow response:', response.data);
     fetchProfile();
 
     return response.data;
   } catch (error: any) {
-    console.error('Unfollow error:', error.response?.data || error.message);
-    // Optionally, show an alert or return an error object
-    // Alert.alert('Error', error.response?.data?.message || 'Something went wrong');
     return null;
   }
 };
