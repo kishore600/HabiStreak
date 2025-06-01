@@ -358,7 +358,7 @@ const markTaskComplete = async (groupId:any, taskId:any, imageUrls:any) => {
       const headers = await getAuthHeaders();
 
       const response = await axios.put(
-        `http://192.168.1.7:8000/api/groups/${groupId}`,
+        `${API_URL}/groups/${groupId}`,
         formData,
         {
           headers: {

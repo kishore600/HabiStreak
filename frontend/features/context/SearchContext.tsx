@@ -48,7 +48,7 @@ export const SearchProvider = ({children}: SearchProviderProps) => {
       const trimmed = query.replace(/\s+/g, '');
       console.log(trimmed)
       const response = await axios.get<{results: ResultType[]}>(
-        `http://192.168.84.68:8000/api/global/search`,
+        `${API_URL}/global/search`,
         {
           params: {
             trimmed,
