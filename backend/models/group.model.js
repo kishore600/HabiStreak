@@ -24,6 +24,10 @@ const groupSchema = new mongoose.Schema({
   createdDate: { type: Date, default: Date.now },
   endDate: { type: Date, required: false },
   joinRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+streakDeductedDates: {
+  type: [String], // Store dates as 'YYYY-MM-DD'
+  default: [],
+},
   categories: [
     {
       type: String,

@@ -50,6 +50,16 @@ const register = asyncHandler(async (req, res) => {
         name: user.name,
       });
 
+      console.log({
+          user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+        },
+        token: generateToken(user._id),
+      })
+
       res.status(201).json({
         user: {
           _id: user._id,

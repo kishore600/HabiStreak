@@ -19,10 +19,8 @@ const dataUriFromFile = (file) =>
   parser.format(path.extname(file.originalname).toString(), file.buffer);
 
 const getTodayName = () => {
-  return new Date().toLocaleDateString("en-US", { weekday: "short" }); 
+  return new Date().toLocaleDateString("en-US", { weekday: "short" });
 };
-
-
 const createGroup = asyncHandler(async (req, res) => {
   try {
     const { title, members, goal, tasks, endDate, categories } = req.body;
@@ -95,7 +93,7 @@ const createGroup = asyncHandler(async (req, res) => {
       title: task.title,
       description: task.description || "",
       requireProof: task.requireProof || false,
-      days:task.days || []
+      days:task.days || [],
     }));
 
     const group = new Group({
@@ -169,8 +167,8 @@ const updateGroup = asyncHandler(async (req, res) => {
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
-    
- if (req.body.title) {
+
+    if (req.body.title) {
       group.title = req.body.title;
     }
 
@@ -330,7 +328,15 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   );
 
   if (isAlreadyCompleted) {
-    const wasAllCompleted = todo.tasks.every((t) =>
+    const currentDay = new Date().toLocaleString("en-US", { weekday: "short" });
+    const todayTasks = todo.tasks.filter((t) => t.days.includes(currentDay));
+
+    console.log(
+      todayTasks.every((t) =>
+        t.completedBy.some((c) => console.log(c.userDateKey, userDateKey))
+      )
+    );
+    const userHadCompletedAllTodayTasks = todayTasks.every((t) =>
       t.completedBy.some((c) => c.userDateKey === userDateKey)
     );
 
@@ -344,18 +350,37 @@ const markTaskComplete = asyncHandler(async (req, res) => {
         (d) => d !== userDateKey
       );
     }
-
-    if (wasAllCompleted) {
+    if (userHadCompletedAllTodayTasks) {
       user.totalStreak = Math.max(user.totalStreak - 1, 0);
       user.lastStreakDate = null;
-
-      const currentStreak = group.userStreaks.get(userId) || 0;
-      group.userStreaks.set(userId, Math.max(currentStreak - 1, 0));
-      group.streak = Math.max((group.streak || 0) - 1, 0);
-
       await user.save();
+
+      const currentUserStreak = group.userStreaks.get(userId) || 0;
+      group.userStreaks.set(userId, Math.max(currentUserStreak - 1, 0));
+      const today = new Date().toISOString().slice(0, 10);
+
+      const todayDateStr = new Date().toISOString().split("T")[0]; // e.g., '2025-06-04'
+
+      group.streakDeductedDates = group.streakDeductedDates || [];
+      const allUsersStillCompletedToday = group.members.every((memberId) => {
+        const memberKey = memberId.toString();
+        const memberDateKey = `${memberKey}_${today}`;
+        return todayTasks.every((task) =>
+          task.completedBy.some((c) => c.userDateKey === memberDateKey)
+        );
+      });
+
+      if (
+        !allUsersStillCompletedToday &&
+        !group.streakDeductedDates.includes(todayDateStr)
+      ) {
+        group.streak = Math.max((group.streak || 0) - 1, 0);
+        group.streakDeductedDates.push(todayDateStr); // Prevent repeat deduction
+      }
+
       await group.save();
     }
+    console.log(group.streak);
 
     return res.json({
       message: "Task unmarked as complete",
@@ -364,7 +389,6 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     });
   }
 
-  // Handle proof uploads
   let proofs = [];
 
   if (Array.isArray(proofUrls) && proofUrls.length > 0) {
@@ -387,7 +411,6 @@ const markTaskComplete = asyncHandler(async (req, res) => {
       .json({ message: "At least one image is required for proof" });
   }
 
-  // Add completion record
   task.completedBy.push({
     userDateKey,
     proof: proofs.length ? proofs : undefined,
@@ -395,8 +418,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
 
   await todo.save();
 
-  // Check if user completed all today's tasks
-  const currentDay = new Date().toLocaleString('en-US', { weekday: 'short' });
+  const currentDay = new Date().toLocaleString("en-US", { weekday: "short" });
   const todayTasks = todo.tasks.filter((t) => t.days.includes(currentDay));
 
   const userCompletedAllTodayTasks = todayTasks.every((t) =>

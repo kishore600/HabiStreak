@@ -199,7 +199,13 @@ const GroupDetailsScreen = ({route}: any) => {
   const addNewTask = () => {
     setTasks([
       ...tasks,
-      {title: '', completedBy: [], requireProof: false, description: '',days:[]},
+      {
+        title: '',
+        completedBy: [],
+        requireProof: false,
+        description: '',
+        days: [],
+      },
     ]);
   };
 
@@ -309,8 +315,20 @@ const GroupDetailsScreen = ({route}: any) => {
     return completedEntry?.proof || [];
   };
 
+const combinedUsers = [
+  ...user.followers,
+  ...(group?.members || []),
+];
 
-  return (
+// Remove duplicates based on user._id
+const uniqueUsers = combinedUsers.filter(
+  (user, index, self) =>
+    index === self.findIndex((u) => u._id === user._id)
+);
+
+console.log(uniqueUsers,combinedUsers)
+
+return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={{paddingBottom: 50}}>
@@ -356,7 +374,7 @@ const GroupDetailsScreen = ({route}: any) => {
           )}
 
           <Text style={styles.subTitle}>Select Members:</Text>
-          {user.followers.map((item: any) => (
+          {uniqueUsers?.map((item: any) => (
             <TouchableOpacity
               key={item._id}
               style={styles.memberItem}
@@ -379,178 +397,207 @@ const GroupDetailsScreen = ({route}: any) => {
           ))}
 
           <Text style={styles.subTitle}>Edit Tasks</Text>
-    {tasks.map((task: any, index: number) => {
-  const completionKey = `${user._id}_${today}`;
-  const isCompleted = task?.completedBy?.some(
-    (c: any) => c.userDateKey === completionKey
-  );
-  const requiresProof = task.requireProof;
-  const hasProvidedProof = proofMap[task._id]?.length > 0;
-  const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'short' });
-  const isTaskToday = task?.days?.includes(currentDay);
+          {tasks.map((task: any, index: number) => {
+            const completionKey = `${user._id}_${today}`;
+            const isCompleted = task?.completedBy?.some(
+              (c: any) => c.userDateKey === completionKey,
+            );
+            const requiresProof = task.requireProof;
+            const hasProvidedProof = proofMap[task._id]?.length > 0;
+            const currentDay = new Date().toLocaleDateString('en-US', {
+              weekday: 'short',
+            });
+            const isTaskToday = task?.days?.includes(currentDay);
 
-  const handleImagePress = (taskId: string, imageUrl: string) => {
-    console.log('Task ID:', taskId);
-    console.log('Image URL:', imageUrl);
-  };
+            const handleImagePress = (taskId: string, imageUrl: string) => {
+              console.log('Task ID:', taskId);
+              console.log('Image URL:', imageUrl);
+            };
 
-  return (
-    <View key={index} style={[styles.taskContainer, !isTaskToday && { backgroundColor: '#eee' }]}>
-      <TextInput
-        placeholder={`Task ${index + 1} Title`}
-        value={task.title}
-        onChangeText={text => {
-          const updatedTasks = [...tasks];
-          updatedTasks[index].title = text;
-          setTasks(updatedTasks);
-        }}
-        style={[styles.input, { flex: 1 }]}
-      />
-
-      <TextInput
-        placeholder="Description (optional)"
-        value={task.description}
-        onChangeText={text => {
-          const updatedTasks = [...tasks];
-          updatedTasks[index].description = text;
-          setTasks(updatedTasks);
-        }}
-        style={[styles.input, { flex: 1, marginTop: 8 }]}
-        multiline
-      />
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-        <Text style={{ marginRight: 8 }}>Require Proof</Text>
-        <Switch
-          value={task.requireProof}
-          onValueChange={value => {
-            const updatedTasks = [...tasks];
-            updatedTasks[index].requireProof = value;
-            setTasks(updatedTasks);
-          }}
-        />
-      </View>
-
-      {/* Days badges like your first snippet */}
-      <View style={styles.daysContainer}>
-    {weekdays.map(day => (
-  <TouchableOpacity
-    key={day}
-    onPress={() => {
-      const updatedTasks = [...tasks];
-      const days = updatedTasks[index].days || [];
-      if (days.includes(day)) {
-        // Remove day
-        updatedTasks[index].days = days.filter(d => d !== day);
-      } else {
-        // Add day
-        updatedTasks[index].days = [...days, day];
-      }
-      setTasks(updatedTasks);
-    }}
-    style={[
-      styles.dayButton,
-      task?.days?.includes(day) && styles.dayButtonSelected,
-      day === currentDay && { borderColor: 'blue', borderWidth: 1 },
-    ]}
-  >
-    <Text
-      style={[
-        styles.dayButtonText,
-        task?.days?.includes(day) && styles.dayButtonTextSelected,
-        day === currentDay && { fontWeight: 'bold' },
-      ]}
-    >
-      {day}
-    </Text>
-  </TouchableOpacity>
-))}
-
-      </View>
-
-      {/* Proof Upload Button & Images */}
-      {requiresProof && !isCompleted && (
-        <View style={{ marginTop: 10 }}>
-          <Text style={{ color: '#d9534f', fontSize: 13, marginBottom: 6 }}>
-            * Proof required (image or video)
-          </Text>
-
-          <Button onPress={() => handleUploadProof(task._id)}>
-            <Text>Upload Proof</Text>
-          </Button>
-
-          <ScrollView horizontal>
-            {proofMap[task._id]?.map((proofItem: any, idx: number) => (
-              <View key={idx} style={{ position: 'relative', margin: 5 }}>
-                <Image
-                  source={{ uri: proofItem.uri }}
-                  style={{ width: 100, height: 100, borderRadius: 8, backgroundColor: '#ccc' }}
-                  resizeMode="cover"
-                />
-                <TouchableOpacity
-                  onPress={() => handleRemoveProof(task._id, idx)}
-                  style={{
-                    position: 'absolute',
-                    top: -8,
-                    right: -8,
-                    backgroundColor: '#f00',
-                    borderRadius: 12,
-                    width: 24,
-                    height: 24,
-                    alignItems: 'center',
-                    justifyContent: 'center',
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.taskContainer,
+                  !isTaskToday && {backgroundColor: '#eee'},
+                ]}>
+                <TextInput
+                  placeholder={`Task ${index + 1} Title`}
+                  value={task.title}
+                  onChangeText={text => {
+                    const updatedTasks = [...tasks];
+                    updatedTasks[index].title = text;
+                    setTasks(updatedTasks);
                   }}
-                >
-                  <Text style={{ color: '#fff', fontWeight: 'bold' }}>–</Text>
+                  style={[styles.input, {flex: 1}]}
+                />
+
+                <TextInput
+                  placeholder="Description (optional)"
+                  value={task.description}
+                  onChangeText={text => {
+                    const updatedTasks = [...tasks];
+                    updatedTasks[index].description = text;
+                    setTasks(updatedTasks);
+                  }}
+                  style={[styles.input, {flex: 1, marginTop: 8}]}
+                  multiline
+                />
+
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginTop: 8,
+                  }}>
+                  <Text style={{marginRight: 8}}>Require Proof</Text>
+                  <Switch
+                    value={task.requireProof}
+                    onValueChange={value => {
+                      const updatedTasks = [...tasks];
+                      updatedTasks[index].requireProof = value;
+                      setTasks(updatedTasks);
+                    }}
+                  />
+                </View>
+
+                {/* Days badges like your first snippet */}
+                <View style={styles.daysContainer}>
+                  {weekdays.map(day => (
+                    <TouchableOpacity
+                      key={day}
+                      onPress={() => {
+                        const updatedTasks = [...tasks];
+                        const days = updatedTasks[index].days || [];
+                        if (days.includes(day)) {
+                          // Remove day
+                          updatedTasks[index].days = days.filter(
+                            d => d !== day,
+                          );
+                        } else {
+                          // Add day
+                          updatedTasks[index].days = [...days, day];
+                        }
+                        setTasks(updatedTasks);
+                      }}
+                      style={[
+                        styles.dayButton,
+                        task?.days?.includes(day) && styles.dayButtonSelected,
+                        day === currentDay && {
+                          borderColor: 'blue',
+                          borderWidth: 1,
+                        },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.dayButtonText,
+                          task?.days?.includes(day) &&
+                            styles.dayButtonTextSelected,
+                          day === currentDay && {fontWeight: 'bold'},
+                        ]}>
+                        {day}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Proof Upload Button & Images */}
+                {requiresProof && !isCompleted && (
+                  <View style={{marginTop: 10}}>
+                    <Text
+                      style={{color: '#d9534f', fontSize: 13, marginBottom: 6}}>
+                      * Proof required (image or video)
+                    </Text>
+
+                    <Button onPress={() => handleUploadProof(task._id)}>
+                      <Text>Upload Proof</Text>
+                    </Button>
+
+                    <ScrollView horizontal>
+                      {proofMap[task._id]?.map(
+                        (proofItem: any, idx: number) => (
+                          <View
+                            key={idx}
+                            style={{position: 'relative', margin: 5}}>
+                            <Image
+                              source={{uri: proofItem.uri}}
+                              style={{
+                                width: 100,
+                                height: 100,
+                                borderRadius: 8,
+                                backgroundColor: '#ccc',
+                              }}
+                              resizeMode="cover"
+                            />
+                            <TouchableOpacity
+                              onPress={() => handleRemoveProof(task._id, idx)}
+                              style={{
+                                position: 'absolute',
+                                top: -8,
+                                right: -8,
+                                backgroundColor: '#f00',
+                                borderRadius: 12,
+                                width: 24,
+                                height: 24,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}>
+                              <Text style={{color: '#fff', fontWeight: 'bold'}}>
+                                –
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        ),
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {/* Completion toggle, disabled if not today's task */}
+                <TouchableOpacity
+                  onPress={() => {
+                    if (requiresProof && !hasProvidedProof && !isCompleted) {
+                      Dialog.show({
+                        type: ALERT_TYPE.DANGER,
+                        title: 'Error',
+                        textBody: 'Please Upload the required fields',
+                      });
+                      return;
+                    }
+                    handleCompleteTask(task._id, getProof(task._id));
+                  }}
+                  activeOpacity={0.8}
+                  disabled={!isTaskToday}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginTop: 12,
+                  }}>
+                  <Icon
+                    name={isCompleted ? 'check-circle' : 'circle-o'}
+                    size={20}
+                    color={isCompleted ? '#34c759' : '#bbb'}
+                    style={{marginRight: 12, marginTop: 4}}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '600',
+                      color: isCompleted ? '#34c759' : '#333',
+                    }}>
+                    {isCompleted ? 'Completed' : 'Mark as Completed'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Remove Task button */}
+                <TouchableOpacity
+                  onPress={() => removeTask(index)}
+                  style={styles.removeButton}>
+                  <Text style={{color: 'white'}}>X</Text>
                 </TouchableOpacity>
               </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Completion toggle, disabled if not today's task */}
-      <TouchableOpacity
-        onPress={() => {
-          if (requiresProof && !hasProvidedProof && !isCompleted) {
-            Dialog.show({
-              type: ALERT_TYPE.DANGER,
-              title: 'Error',
-              textBody: 'Please Upload the required fields',
-            });
-            return;
-          }
-          handleCompleteTask(task._id, getProof(task._id));
-        }}
-        activeOpacity={0.8}
-        disabled={!isTaskToday}
-        style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}
-      >
-        <Icon
-          name={isCompleted ? 'check-circle' : 'circle-o'}
-          size={20}
-          color={isCompleted ? '#34c759' : '#bbb'}
-          style={{ marginRight: 12, marginTop: 4 }}
-        />
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: '600',
-            color: isCompleted ? '#34c759' : '#333',
-          }}
-        >
-          {isCompleted ? 'Completed' : 'Mark as Completed'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Remove Task button */}
-      <TouchableOpacity onPress={() => removeTask(index)} style={styles.removeButton}>
-        <Text style={{ color: 'white' }}>X</Text>
-      </TouchableOpacity>
-    </View>
-  );
-})}
-
+            );
+          })}
 
           <Button onPress={addNewTask}>
             <Text>Add Task</Text>
@@ -605,26 +652,28 @@ const GroupDetailsScreen = ({route}: any) => {
         </>
       ) : (
         <>
-          <TouchableOpacity
-            onPress={() => {
-              setShowJoinRequests(true);
-            }}
-            style={{
-              padding: 4,
-              backgroundColor: 'red',
-              borderRadius: 30,
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginTop: 20,
-              marginBottom: 20,
-            }}>
-            <Text
+          {admin_id && (
+            <TouchableOpacity
+              onPress={() => {
+                setShowJoinRequests(true);
+              }}
               style={{
-                color: 'white',
+                padding: 4,
+                backgroundColor: 'red',
+                borderRadius: 30,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginTop: 20,
+                marginBottom: 20,
               }}>
-              Pending Request {pendingRequests.length}
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={{
+                  color: 'white',
+                }}>
+                Pending Request {pendingRequests.length}
+              </Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.title}>{group?.title} </Text>
           <Text style={styles.goal}>Goal: {group?.goal}</Text>
           <Text style={styles.goal}>End Date: {formattedDate}</Text>
@@ -706,8 +755,10 @@ const GroupDetailsScreen = ({route}: any) => {
               );
               const requiresProof = task.requireProof;
               const hasProvidedProof = proofMap[task._id]?.length > 0;
-const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'short' });
-const isTaskToday = task?.days?.includes(currentDay);
+              const currentDay = new Date().toLocaleDateString('en-US', {
+                weekday: 'short',
+              });
+              const isTaskToday = task?.days?.includes(currentDay);
               const handleImagePress = (taskId: string, imageUrl: string) => {
                 console.log('Task ID:', taskId);
                 console.log('Image URL:', imageUrl);
@@ -729,7 +780,7 @@ const isTaskToday = task?.days?.includes(currentDay);
                       elevation: 2,
                     },
                     isCompleted && {backgroundColor: '#e6f5e6'},
-                     !isTaskToday && { backgroundColor: 'lightgray' },
+                    !isTaskToday && {backgroundColor: 'lightgray'},
                   ]}>
                   <View style={styles.daysContainer}>
                     {weekdays.map(day => (
@@ -738,7 +789,6 @@ const isTaskToday = task?.days?.includes(currentDay);
                         style={[
                           styles.dayButton,
                           task?.days?.includes(day) && styles.dayButtonSelected,
-                          
                         ]}>
                         <Text
                           style={[
@@ -765,7 +815,7 @@ const isTaskToday = task?.days?.includes(currentDay);
                       handleCompleteTask(task._id, getProof(task._id));
                     }}
                     activeOpacity={0.8}
-                      disabled={!isTaskToday}>
+                    disabled={!isTaskToday}>
                     <Icon
                       name={isCompleted ? 'check-circle' : 'circle-o'}
                       size={20}
