@@ -47,9 +47,25 @@ const CreateScreen = () => {
     );
   };
 
-  const handleAddTask = () => {
-    setTasks([...tasks, {title: '', description: '', requireProof: false}]);
-  };
+const handleAddTask = () => {
+  // Validate that all tasks have descriptions
+  for (let i = 0; i < tasks.length; i++) {
+    if (!tasks[i].description || tasks[i].description.trim() === '') {
+        Dialog.show({
+          type: ALERT_TYPE.DANGER,
+          title: 'Validation Error',
+          textBody: 'Please enter a description for Task ${i + 1}.',
+        });
+      return;
+    }
+  }
+
+  // If all descriptions are valid, add a new task
+  setTasks((prevTasks:any) => [
+    ...prevTasks,
+    { title: '', description: '', requireProof: false , days: []}
+  ]);
+};
 
   const handleRemoveTask = (index: number) => {
     const updatedTasks = [...tasks];
@@ -162,6 +178,20 @@ const CreateScreen = () => {
       setEndDate(''); // Reset end date
     }
   };
+  const handleToggleDay = (taskIndex:any, day:any) => {
+  const updatedTasks = [...tasks];
+  const currentDays = updatedTasks[taskIndex].days || [];
+
+  if (currentDays.includes(day)) {
+    updatedTasks[taskIndex].days = currentDays.filter((d: any) => d !== day);
+  } else {
+    updatedTasks[taskIndex].days = [...currentDays, day];
+  }
+
+  setTasks(updatedTasks);
+};
+
+const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -192,6 +222,28 @@ const CreateScreen = () => {
       <Text style={styles.subheading}>Create Todo (Tasks)</Text>
       {tasks.map((task: any, index: number) => (
         <View key={index} style={styles.taskContainer}>
+          <View style={styles.daysContainer}>
+  {weekdays.map((day) => (
+    <TouchableOpacity
+      key={day}
+      style={[
+        styles.dayButton,
+        task?.days?.includes(day) && styles.dayButtonSelected,
+      ]}
+      onPress={() => handleToggleDay(index, day)}
+    >
+      <Text
+        style={[
+          styles.dayButtonText,
+          task?.days?.includes(day) && styles.dayButtonTextSelected,
+        ]}
+      >
+        {day}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</View>
+
           <TextInput
             placeholder={`Task ${index + 1} Title`}
             value={task.title}
@@ -201,7 +253,7 @@ const CreateScreen = () => {
           />
 
           <TextInput
-            placeholder="Description (optional)"
+            placeholder="Description"
             value={task.description}
             onChangeText={text => handleTaskChange(index, 'description', text)}
             style={[styles.input, {marginTop: 6}]}
@@ -348,6 +400,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  daysContainer: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  marginTop: 10,
+  gap: 6,
+},
+dayButton: {
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  borderRadius: 6,
+  borderWidth: 1,
+  borderColor: '#aaa',
+  backgroundColor: '#f0f0f0',
+},
+dayButtonSelected: {
+  backgroundColor: '#007AFF',
+  borderColor: '#007AFF',
+},
+dayButtonText: {
+  fontSize: 14,
+  color: '#333',
+},
+dayButtonTextSelected: {
+  color: '#fff',
+},
+
 });
 
 export default CreateScreen;

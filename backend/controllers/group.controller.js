@@ -18,6 +18,11 @@ const parser = new DataUriParser();
 const dataUriFromFile = (file) =>
   parser.format(path.extname(file.originalname).toString(), file.buffer);
 
+const getTodayName = () => {
+  return new Date().toLocaleDateString("en-US", { weekday: "short" }); 
+};
+
+
 const createGroup = asyncHandler(async (req, res) => {
   try {
     const { title, members, goal, tasks, endDate, categories } = req.body;
@@ -90,6 +95,7 @@ const createGroup = asyncHandler(async (req, res) => {
       title: task.title,
       description: task.description || "",
       requireProof: task.requireProof || false,
+      days:task.days || []
     }));
 
     const group = new Group({
@@ -304,24 +310,19 @@ const createTodoForGroup = asyncHandler(async (req, res) => {
 const markTaskComplete = asyncHandler(async (req, res) => {
   const { groupId, taskId } = req.params;
   const userId = req.user._id.toString();
-  const { proofUrls } = req.body; // Find group
+  const { proofUrls } = req.body;
 
   const group = await Group.findById(groupId);
   if (!group) return res.status(404).json({ message: "Group not found" });
 
-  // Find todo associated with group
   const todo = await Todo.findById(group.todo);
   if (!todo) return res.status(404).json({ message: "Todo not found" });
 
-  // Find task within todo
   const task = todo.tasks.id(taskId);
   if (!task) return res.status(404).json({ message: "Task not found" });
 
-  // Construct userDateKey (userId + date)
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const userDateKey = `${userId}_${today}`;
-
-  // Fetch user for updating streaks
   const user = await User.findById(userId);
 
   const isAlreadyCompleted = task.completedBy.some(
@@ -332,15 +333,18 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     const wasAllCompleted = todo.tasks.every((t) =>
       t.completedBy.some((c) => c.userDateKey === userDateKey)
     );
+
     task.completedBy = task.completedBy.filter(
       (c) => c.userDateKey !== userDateKey
     );
     await todo.save();
+
     if (group.completedDates?.includes(userDateKey)) {
       group.completedDates = group.completedDates.filter(
         (d) => d !== userDateKey
       );
     }
+
     if (wasAllCompleted) {
       user.totalStreak = Math.max(user.totalStreak - 1, 0);
       user.lastStreakDate = null;
@@ -348,6 +352,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
       const currentStreak = group.userStreaks.get(userId) || 0;
       group.userStreaks.set(userId, Math.max(currentStreak - 1, 0));
       group.streak = Math.max((group.streak || 0) - 1, 0);
+
       await user.save();
       await group.save();
     }
@@ -358,7 +363,8 @@ const markTaskComplete = asyncHandler(async (req, res) => {
       streak: group.userStreaks.get(userId) || 0,
     });
   }
-  // Handle proofs (image uploads)
+
+  // Handle proof uploads
   let proofs = [];
 
   if (Array.isArray(proofUrls) && proofUrls.length > 0) {
@@ -368,7 +374,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     }));
   } else if (req.files && req.files.length > 0) {
     for (const file of req.files) {
-      const fileDataUri = dataUriFromFile(file).content; // convert file to data URI
+      const fileDataUri = dataUriFromFile(file).content;
       const result = await cloudinary.uploader.upload(fileDataUri, {
         folder: "uploads",
         transformation: { width: 500, height: 500, crop: "limit" },
@@ -381,7 +387,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
       .json({ message: "At least one image is required for proof" });
   }
 
-  // Add completion record for userDateKey with optional proofs
+  // Add completion record
   task.completedBy.push({
     userDateKey,
     proof: proofs.length ? proofs : undefined,
@@ -389,14 +395,16 @@ const markTaskComplete = asyncHandler(async (req, res) => {
 
   await todo.save();
 
-  // Check if user completed all tasks today
-  const userCompletedAllTasks = todo.tasks.every((t) =>
+  // Check if user completed all today's tasks
+  const currentDay = new Date().toLocaleString('en-US', { weekday: 'short' });
+  const todayTasks = todo.tasks.filter((t) => t.days.includes(currentDay));
+
+  const userCompletedAllTodayTasks = todayTasks.every((t) =>
     t.completedBy.some((c) => c.userDateKey === userDateKey)
   );
 
-  // If user completed all tasks and this date is new for group
   if (
-    userCompletedAllTasks &&
+    userCompletedAllTodayTasks &&
     (!group.completedDates || !group.completedDates.includes(userDateKey))
   ) {
     user.totalStreak += 1;
@@ -409,11 +417,10 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     group.completedDates = group.completedDates || [];
     group.completedDates.push(userDateKey);
 
-    // Check if all group members completed all tasks today
     const allCompletedToday = group.members.every((memberId) => {
       const memberKey = memberId.toString();
       const memberDateKey = `${memberKey}_${today}`;
-      return todo.tasks.every((task) =>
+      return todayTasks.every((task) =>
         task.completedBy.some((c) => c.userDateKey === memberDateKey)
       );
     });
@@ -427,7 +434,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
 
   res.json({
     message: "Task marked as complete",
-    userCompletedAllTasks,
+    userCompletedAllTasks: userCompletedAllTodayTasks,
     streak: group.userStreaks.get(userId) || 0,
   });
 });

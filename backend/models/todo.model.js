@@ -10,6 +10,7 @@ const taskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
   requireProof: { type: Boolean, default: false },
+  days: [String],
   completedBy: [
     {
       userDateKey: String,
