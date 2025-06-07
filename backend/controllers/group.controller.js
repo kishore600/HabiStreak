@@ -14,6 +14,9 @@ const formatMap = {
 };
 const DataUriParser = require("datauri/parser");
 const path = require("path");
+const { sendNotificationToTokens } = require("../services/fcmSender.js");
+const userModel = require("../models/user.Model");
+const { groupCollapsed } = require("console");
 const parser = new DataUriParser();
 const dataUriFromFile = (file) =>
   parser.format(path.extname(file.originalname).toString(), file.buffer);
@@ -93,7 +96,7 @@ const createGroup = asyncHandler(async (req, res) => {
       title: task.title,
       description: task.description || "",
       requireProof: task.requireProof || false,
-      days:task.days || [],
+      days: task.days || [],
     }));
 
     const group = new Group({
@@ -309,7 +312,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   const { groupId, taskId } = req.params;
   const userId = req.user._id.toString();
   const { proofUrls } = req.body;
-
+  console.log("ib");
   const group = await Group.findById(groupId);
   if (!group) return res.status(404).json({ message: "Group not found" });
 
@@ -452,17 +455,40 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     }
 
     await group.save();
-
-    // Fetch all users in the group except the one who just completed the task
-const otherMemberIds = group.members.filter(
-  (memberId) => memberId.toString() !== userId
-);
-
-// Fetch those users to get their FCM tokens and names
-const otherMembers = await User.find({ _id: { $in: otherMemberIds } });
-
   }
 
+  try {
+    const otherMemberIds = group.members.filter(
+      (memberId) => memberId.toString() !== userId
+    );
+
+    const otherMembers = await User.find({ _id: { $in: otherMemberIds } });
+
+    const tokens = otherMembers
+      .map((member) => member.fcmToken) // adjust field name if needed
+      .filter(Boolean);
+
+    console.log("✅ FCM Tokens:", tokens);
+
+    if (tokens.length > 0) {
+      const notificationTitle = "Task Completed";
+      const notificationBody = `✅ ${user.name} has completed the task "${task.name}" in group "${group.name}"`;
+
+      await sendNotificationToTokens(
+        tokens,
+        notificationTitle,
+        notificationBody
+      );
+      console.log("✅ Notifications sent to group members.");
+    } else {
+      console.log("⚠️ No valid FCM tokens found for group members.");
+    }
+  } catch (err) {
+    console.error(
+      "❌ Error sending notifications:",
+      err?.response?.data || err.message
+    );
+  }
   res.json({
     message: "Task marked as complete",
     userCompletedAllTasks: userCompletedAllTodayTasks,
@@ -525,6 +551,10 @@ const requestToJoinGroup = asyncHandler(async (req, res) => {
 
   try {
     const group = await Group.findById(groupId);
+
+    const adminUser = await userModel.findById(group.admin);
+    const user = await User.findById(userId);
+
     if (!group) {
       return res.status(400).json({ message: "Group not found" });
     }
@@ -544,6 +574,22 @@ const requestToJoinGroup = asyncHandler(async (req, res) => {
       // Add user to joinRequests
       group.joinRequests.push(userId);
       await group.save();
+
+      if (adminUser?.fcmToken) {
+        const title = "Join Request";
+        const body = `${user.name} has requested to join your group "${group.name}"`;
+
+        try {
+          await sendNotificationToTokens([adminUser.fcmToken], title, body);
+          console.log("✅ Notification sent to group admin.");
+        } catch (err) {
+          console.error(
+            "❌ Failed to send notification to admin:",
+            err.message
+          );
+        }
+      }
+
       return res.status(200).json({ message: "Join request sent" });
     }
   } catch (error) {
@@ -573,6 +619,19 @@ const acceptJoinRequest = asyncHandler(async (req, res) => {
     group.joinRequests.pull(userId);
     group.members.push(userId);
     await group.save();
+
+       const user = await User.findById(userId);
+    if (user?.fcmToken) {
+      const title = "Request Accepted";
+      const body = `Your request to join "${group.name}" has been accepted.`;
+
+      try {
+        await sendNotificationToTokens([user.fcmToken], title, body);
+        console.log("✅ Notification sent to accepted user.");
+      } catch (err) {
+        console.error("❌ Failed to send notification:", err.message);
+      }
+    }
 
     res.status(200).json({ message: "User added to group" });
   } catch (error) {

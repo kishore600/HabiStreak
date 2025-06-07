@@ -59,14 +59,19 @@ const sendBulkFCM = async (fcmTokens, title, body) => {
 const sendNotificationToTokens = async (tokens, title, body) => {
   if (!tokens.length) return;
 
-  const messages = tokens.map((token) => ({
-    token,
-    notification: { title, body },
-  }));
-
-  const response = await admin.messaging().sendAll(messages);
-  return response;
+  for (const token of tokens) {
+    try {
+      await admin.messaging().send({
+        token,
+        notification: { title, body },
+      });
+      console.log(`✅ Sent to ${token}`);
+    } catch (err) {
+      console.error(`❌ Error sending to ${token}:`, err.message);
+    }
+  }
 };
+
 
 module.exports = {
   sendFCM,

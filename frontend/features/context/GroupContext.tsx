@@ -299,7 +299,7 @@ const markTaskComplete = async (groupId:any, taskId:any, imageUrls:any) => {
 
   try {
     const response = await axios.put(
-      `${API_URL}/groups/${groupId}/todos/${taskId}/complete`,
+      `http://192.168.1.2:8000/api/groups/${groupId}/todos/${taskId}/complete`,
       { proofUrls: imageUrls },
       { headers: authHeaders }
     );
