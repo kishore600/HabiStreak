@@ -79,7 +79,7 @@ const register = asyncHandler(async (req, res) => {
 });
 
 const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password , fcmToken } = req.body;
   const user = await User.findOne({ email })
     .populate("followers", "name email image")
     .populate("following", "name email image")
