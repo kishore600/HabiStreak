@@ -27,7 +27,7 @@ import {Picker} from '@react-native-picker/picker';
 import AnalyticsChart from '../components/AnalyticsChart';
 
 const GroupDetailsScreen = ({route}: any) => {
-  const {user}: any = useAuth();
+  const {user,fetchProfile}: any = useAuth();
   const {groupId}: any = route.params;
   const {
     group,
@@ -252,6 +252,8 @@ const GroupDetailsScreen = ({route}: any) => {
       });
 
       await fetchGroupById(groupId);
+      await fetchProfile()
+
     } catch (error: any) {
       Dialog.show({
         type: ALERT_TYPE.DANGER,
@@ -300,6 +302,8 @@ const GroupDetailsScreen = ({route}: any) => {
 
   const admin_id = group?.admin?._id;
 
+  const isAdmin = admin_id === user?._id;
+
   const IsEditUser_id = user?._id === admin_id;
 
   const getProof = (taskId: string) => {
@@ -325,8 +329,6 @@ const uniqueUsers = combinedUsers.filter(
   (user, index, self) =>
     index === self.findIndex((u) => u._id === user._id)
 );
-
-console.log(uniqueUsers,combinedUsers)
 
 return (
     <ScrollView
@@ -409,11 +411,6 @@ return (
             });
             const isTaskToday = task?.days?.includes(currentDay);
 
-            const handleImagePress = (taskId: string, imageUrl: string) => {
-              console.log('Task ID:', taskId);
-              console.log('Image URL:', imageUrl);
-            };
-
             return (
               <View
                 key={index}
@@ -472,7 +469,7 @@ return (
                         if (days.includes(day)) {
                           // Remove day
                           updatedTasks[index].days = days.filter(
-                            d => d !== day,
+                            (d:any) => d !== day,
                           );
                         } else {
                           // Add day
@@ -652,7 +649,7 @@ return (
         </>
       ) : (
         <>
-          {admin_id && (
+          {isAdmin && (
             <TouchableOpacity
               onPress={() => {
                 setShowJoinRequests(true);

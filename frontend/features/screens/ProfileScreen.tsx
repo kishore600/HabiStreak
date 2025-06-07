@@ -324,10 +324,10 @@ const ProfileScreen = ({route, navigation}: any) => {
                           textBody: 'You have accepted the follow request.',
                           button: 'OK',
                         });
-                        setUserListModalVisible(false);
+                        setShowPendingModal(false);
                       } catch (error) {
                       } finally {
-                        setUserListModalVisible(false);
+                        setShowPendingModal(false);
 
                         setLoading(false);
                       }
@@ -344,10 +344,12 @@ const ProfileScreen = ({route, navigation}: any) => {
                           textBody: 'You have rejected the follow request.',
                           button: 'OK',
                         });
-                        setUserListModalVisible(false);
+                        setShowPendingModal(false);
                       } catch (error) {
                         // The error dialog is already handled inside handleFollowRequest
                       } finally {
+                        await fetchProfile()
+                        setShowPendingModal(false)
                         setLoading(false);
                       }
                     }}>

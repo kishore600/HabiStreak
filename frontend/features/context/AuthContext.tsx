@@ -4,6 +4,7 @@ import {Alert} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import {API_URL} from '@env';
+import messaging from '@react-native-firebase/messaging';
 
 interface AuthContextType {
   user: any;
@@ -76,9 +77,12 @@ export const AuthProvider = ({children}: any) => {
 
   const login = async (email: any, password: any) => {
     try {
+    const fcmToken  = await messaging().getToken();
+
       const response = await axios.post(`${API_URL}/auth/login`, {
         email,
         password,
+        fcmToken
       });
       console.log(response);
       const {user: resuser, token: restoken} = response.data;
@@ -121,7 +125,6 @@ export const AuthProvider = ({children}: any) => {
           name: 'profile.jpg',
         });
       }
-      console.log(`${API_URL}/auth/register`,);
       const response = await axios.post(`${API_URL}/auth/register`, formData, {
         headers: {'Content-Type': 'multipart/form-data'},
       });
@@ -147,7 +150,6 @@ export const AuthProvider = ({children}: any) => {
   };
 
   const logout = async () => {
-    console.log('in');
     try {
       setUser(null);
       await AsyncStorage.removeItem('user');

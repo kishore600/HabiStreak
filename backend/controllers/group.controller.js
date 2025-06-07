@@ -452,6 +452,15 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     }
 
     await group.save();
+
+    // Fetch all users in the group except the one who just completed the task
+const otherMemberIds = group.members.filter(
+  (memberId) => memberId.toString() !== userId
+);
+
+// Fetch those users to get their FCM tokens and names
+const otherMembers = await User.find({ _id: { $in: otherMemberIds } });
+
   }
 
   res.json({

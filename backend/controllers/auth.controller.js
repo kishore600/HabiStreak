@@ -93,6 +93,10 @@ const login = asyncHandler(async (req, res) => {
     .populate("createdGroups");
 
   if (user && (await user.matchPassword(password))) {
+     if (fcmToken) {
+      user.fcmToken = fcmToken;
+      await user.save();
+    }
     res.json({ user: user, token: generateToken(user._id) });
   } else {
     res.status(401);

@@ -16,6 +16,7 @@ import {AuthProvider} from './features/context/AuthContext';
 import {GroupProvider} from './features/context/GroupContext';
 import {SearchProvider} from './features/context/SearchContext';
 import SearchScreen from './features/screens/SearchScreen';
+import { useNotifications } from './features/notifications/useNotifications';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -51,7 +52,7 @@ const TabNavigator = () => {
 
 const AppNavigator = () => {
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
-
+  useNotifications()
   useEffect(() => {
     const checkUserSession = async () => {
       try {

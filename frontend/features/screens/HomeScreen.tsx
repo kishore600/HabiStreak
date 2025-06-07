@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   swipeHint: {
-    marginTop: 60,
+    marginTop: 30,
     fontSize: 14,
     color: '#999',
     textAlign: 'right',
