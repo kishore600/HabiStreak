@@ -79,7 +79,7 @@ export const AuthProvider = ({children}: any) => {
     try {
     const fcmToken  = await messaging().getToken();
 
-      const response = await axios.post(`${API_URL}/auth/login`, {
+      const response = await axios.post(`http://192.168.1.2:8000/api/auth/login`, {
         email,
         password,
         fcmToken
