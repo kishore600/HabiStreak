@@ -698,8 +698,8 @@ return (
 
                   {/* Your existing content */}
                   <View style={styles.pickerContainer}>
-                    <Text style={styles.label1}>Analytics:</Text>
-                    <Text style={styles.label}>Select Type:</Text>
+                    {/* <Text style={styles.label1}>Analytics:</Text> */}
+                    {/* <Text style={styles.label}>Select Type:</Text>
                     <Picker
                       selectedValue={type}
                       style={styles.picker}
@@ -708,7 +708,7 @@ return (
                       <Picker.Item label="Weekly" value="weekly" />
                       <Picker.Item label="Monthly" value="monthly" />
                       <Picker.Item label="Yearly" value="yearly" />
-                    </Picker>
+                    </Picker> */}
                   </View>
 
                   {loading ? (
@@ -1310,6 +1310,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: 'white',
     width: '100%',
+    height: '100%',
     borderRadius: 10,
     padding: 20,
     // elevation: 5,

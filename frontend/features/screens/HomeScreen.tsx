@@ -13,6 +13,7 @@ import {
   Animated,
 } from 'react-native';
 import {useGroup} from '../context/GroupContext';
+import ForceUpdateCheck from '../components/ForceUpdateCheck';
 
 const {height: screenHeight, width: screenWidth} = Dimensions.get('window');
 
@@ -164,6 +165,7 @@ const HomeScreen = ({navigation}: any) => {
           </View>
         </View>
       </Modal>
+      <ForceUpdateCheck />
     </View>
   );
 };
