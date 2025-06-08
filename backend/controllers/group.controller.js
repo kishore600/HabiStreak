@@ -16,7 +16,6 @@ const DataUriParser = require("datauri/parser");
 const path = require("path");
 const { sendNotificationToTokens } = require("../services/fcmSender.js");
 const userModel = require("../models/user.Model");
-const { groupCollapsed } = require("console");
 const parser = new DataUriParser();
 const dataUriFromFile = (file) =>
   parser.format(path.extname(file.originalname).toString(), file.buffer);
@@ -472,7 +471,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
 
     if (tokens.length > 0) {
       const notificationTitle = "Task Completed";
-      const notificationBody = `✅ ${user.name} has completed the task "${task.name}" in group "${group.name}"`;
+      const notificationBody = `✅ ${user.name} has completed the task "${task.title}" in group "${group.title}"`;
 
       await sendNotificationToTokens(
         tokens,

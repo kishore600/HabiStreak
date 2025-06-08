@@ -113,10 +113,12 @@ export const AuthProvider = ({children}: any) => {
     imageUri: string | null,
   ) => {
     try {
+    const fcmToken  = await messaging().getToken();
       const formData = new FormData();
       formData.append('name', name);
       formData.append('email', email);
       formData.append('password', password);
+      formData.append('fcmToken', fcmToken);
 
       if (imageUri) {
         formData.append('image', {

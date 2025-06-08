@@ -6,7 +6,7 @@ const generateToken = require("../utils/generateToken.utils.js");
 const sendEmail = require("../config/sendMail.config.js");
 
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password,fcmToken } = req.body;
   console.log(name, email, password)
   if (!name || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
@@ -41,6 +41,7 @@ const register = asyncHandler(async (req, res) => {
       email,
       password,
       image: imageUrl,
+      fcmToken
     });
 
     if (user) {

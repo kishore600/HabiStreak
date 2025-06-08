@@ -126,6 +126,22 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
     targetUser.followers.push(requestingUserId);
     requestingUser.following.push(targetUserId);
     await Promise.all([targetUser.save(), requestingUser.save()]);
+
+    if (targetUser?.fcmToken) {
+      const title = "New Follow Request";
+      const body = `${requestingUser.name} wants to follow you.`;
+
+      try {
+        await sendNotificationToTokens([targetUser.fcmToken], title, body);
+        console.log("✅ Notification sent to target user.");
+      } catch (err) {
+        console.error(
+          "❌ Failed to send follow request notification:",
+          err.message
+        );
+      }
+    }
+
     return res.status(200).json({ message: "Followed successfully" });
   }
 });
@@ -181,7 +197,6 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
   const { requesterId, action } = req.body;
   const userId = req.user._id;
 
-
   const user = await User.findById(userId);
   const requestingUserIndex = user.pendingRequest.findIndex(
     (request) => request.user.toString() === requesterId.toString()
@@ -209,6 +224,18 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
     requestingUser.followers.push(user._id);
 
     await Promise.all([user.save(), requestingUser.save()]);
+
+    if (requestingUser?.fcmToken) {
+      const title = "Follow Request Accepted";
+      const body = `${user.name} accepted your follow request.`;
+
+      try {
+        await sendNotificationToTokens([requestingUser.fcmToken], title, body);
+        console.log("✅ Notification sent to requesting user.");
+      } catch (err) {
+        console.error("❌ Failed to send notification:", err.message);
+      }
+    }
 
     res.status(200).json({ message: "Follow request accepted" });
   } else if (action === "reject") {
@@ -285,103 +312,104 @@ const getUserAnalytics = async (req, res) => {
   try {
     const userId = req.user._id.toString(); // assuming you use middleware like 'protect' to attach the user
     const type = req.body.type || "daily";
-console.log(type)
+    console.log(type);
     const formatMap = {
       daily: "%Y-%m-%d",
       weekly: "%Y-%U",
       monthly: "%Y-%m",
-      yearly: "%Y"
+      yearly: "%Y",
     };
 
     if (!formatMap[type]) {
-      return res.status(400).json({ message: "Invalid type. Use daily, weekly, monthly, or yearly." });
+      return res.status(400).json({
+        message: "Invalid type. Use daily, weekly, monthly, or yearly.",
+      });
     }
 
     const data = await Group.aggregate([
       {
         $project: {
-          completedDates: 1
-        }
+          completedDates: 1,
+        },
       },
       {
-        $unwind: "$completedDates"
+        $unwind: "$completedDates",
       },
       {
         $match: {
-          completedDates: { $regex: `^${userId}_` }
-        }
+          completedDates: { $regex: `^${userId}_` },
+        },
       },
       {
         $project: {
           dateString: {
-            $arrayElemAt: [
-              { $split: ["$completedDates", "_"] },
-              1
-            ]
-          }
-        }
+            $arrayElemAt: [{ $split: ["$completedDates", "_"] }, 1],
+          },
+        },
       },
       {
         $addFields: {
           completedDate: {
             $dateFromString: {
-              dateString: "$dateString"
-            }
-          }
-        }
+              dateString: "$dateString",
+            },
+          },
+        },
       },
       {
         $group: {
           _id: {
             $dateToString: {
               format: formatMap[type],
-              date: "$completedDate"
-            }
+              date: "$completedDate",
+            },
           },
-          completedCount: { $sum: 1 }
-        }
+          completedCount: { $sum: 1 },
+        },
       },
       {
         $sort: {
-          _id: 1
-        }
-      }
+          _id: 1,
+        },
+      },
     ]);
 
     res.status(200).json(data);
-
   } catch (error) {
     console.error("Error fetching analytics:", error);
-    res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server Error", error: error.message });
   }
 };
 
-const updateFmcToken = asyncHandler(async(req,res) => {
-  const {token} = req.body
-  const userId = req.user_id
+const updateFmcToken = asyncHandler(async (req, res) => {
+  const { token } = req.body;
+  const userId = req.user_id;
 
-  await User.findByIdAndUpdate(userId,{
-    fcmToken:token
-  })
-})
+  await User.findByIdAndUpdate(userId, {
+    fcmToken: token,
+  });
+});
 
 const deleteUserAccount = async (req, res) => {
   try {
-    const userId = req.user._id; 
+    const userId = req.user._id;
 
     const deletedUser = await User.findByIdAndDelete(userId);
 
     if (!deletedUser) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    return res.status(200).json({ message: 'Account deleted successfully' });
+    return res.status(200).json({ message: "Account deleted successfully" });
   } catch (error) {
-    console.error('Delete account error:', error);
-    return res.status(500).json({ message: 'Server error while deleting account' });
+    console.error("Delete account error:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while deleting account" });
   }
 };
-
 
 module.exports = {
   getUserProfile,
@@ -393,5 +421,5 @@ module.exports = {
   getUserProfile1,
   getUserAnalytics,
   updateFmcToken,
-  deleteUserAccount
+  deleteUserAccount,
 };
