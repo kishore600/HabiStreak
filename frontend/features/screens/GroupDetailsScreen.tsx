@@ -23,7 +23,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import {hobbies_enum} from '../constant';
 import {MultiSelect} from 'react-native-element-dropdown';
 import {Platform} from 'react-native';
-import {Picker} from '@react-native-picker/picker';
 import AnalyticsChart from '../components/AnalyticsChart';
 
 const GroupDetailsScreen = ({route}: any) => {
@@ -64,7 +63,6 @@ const GroupDetailsScreen = ({route}: any) => {
     value: hobby,
   }));
   const [showJoinRequests, setShowJoinRequests] = useState(false);
-  const [type, setType] = useState('daily');
   const [proofMap, setProofMap] = useState<any>({});
   const [modalVisible, setModalVisible] = useState(false);
   const isUserInGroup =
@@ -80,12 +78,12 @@ const GroupDetailsScreen = ({route}: any) => {
 
     if (groupId) {
       fetchData();
-      fetchAnalytics(type);
+      fetchAnalytics('daily');
       MemberAnalytics(groupId);
       ComparisonAnalytisc(groupId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, type]);
+  }, [groupId]);
 
   useEffect(() => {
     if (group) {

@@ -576,7 +576,7 @@ const requestToJoinGroup = asyncHandler(async (req, res) => {
 
       if (adminUser?.fcmToken) {
         const title = "Join Request";
-        const body = `${user.name} has requested to join your group "${group.name}"`;
+        const body = `${user.name} has requested to join your group "${group.title}"`;
 
         try {
           await sendNotificationToTokens([adminUser.fcmToken], title, body);

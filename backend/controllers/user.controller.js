@@ -149,7 +149,7 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
 const unfollowUser = asyncHandler(async (req, res) => {
   const { targetUserId } = req.body;
   const requestingUserId = req.user._id;
-
+console.log(requestingUserId)
   const targetUser = await User.findById(targetUserId);
   const requestingUser = await User.findById(requestingUserId);
 
@@ -157,11 +157,11 @@ const unfollowUser = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User not found");
   }
-
   // ✅ Remove requester from target user's followers
   targetUser.followers = targetUser.followers.filter(
     (id) => id.toString() !== requestingUserId.toString()
   );
+console.log(requestingUser.followers)
 
   // ✅ Remove target from requester's following
   requestingUser.following = requestingUser.following.filter(

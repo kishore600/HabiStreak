@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
-  // FlatList,
 } from 'react-native';
 import {useAuth} from '../context/AuthContext';
 import {Menu, Provider, Button, ActivityIndicator} from 'react-native-paper';
@@ -68,7 +67,7 @@ const ProfileScreen = ({route, navigation}: any) => {
         setGroups(userGroups);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userGroups.length,currentUser,profileUser,navigation]), // optional dependency if you still want to trigger on update
+    }, [userGroups.length, currentUser, profileUser, navigation]), // optional dependency if you still want to trigger on update
   );
 
   useFocusEffect(
@@ -104,7 +103,7 @@ const ProfileScreen = ({route, navigation}: any) => {
       setGroups(userGroups);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileUser, currentUser, isGroupUpdated,userGroups,navigation]);
+  }, [profileUser, currentUser, isGroupUpdated, userGroups, navigation]);
   const openEditModal = () => {
     setEditModalVisible(true);
     closeMenu();
@@ -233,53 +232,52 @@ const ProfileScreen = ({route, navigation}: any) => {
       },
     });
   };
-
-  console.log(groups)
+  console.log(profileUser);
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
-    <View style={styles.menuContainer}>
-  {currentUser && (
-    <>
-      {/* Pending Requests Badge or Text */}
-      {user?.pendingRequest?.length > 0 && (
-        <Text style={styles.pendingRequestText}>
-          {user.pendingRequest.length} Pending Request
-        </Text>
-      )}
+      <View style={styles.menuContainer}>
+        {currentUser && (
+          <>
+            {/* Pending Requests Badge or Text */}
+            {user?.pendingRequest?.length > 0 && (
+              <Text style={styles.pendingRequestText}>
+                {user.pendingRequest.length} Pending Request
+              </Text>
+            )}
 
-      <Menu
-        visible={menuVisible}
-        onDismiss={closeMenu}
-        anchor={
-          <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
-            <Icon name="bars" size={30} color="#333" />
-          </TouchableOpacity>
-        }
-        contentStyle={styles.menuContent}>
-        <Menu.Item onPress={openEditModal} title="Edit Profile" />
-        <Menu.Item
-          onPress={() => {
-            logout();
-            navigation.navigate('Login');
-          }}
-          title="Logout"
-        />
-        <Menu.Item
-          onPress={handleDeleteAccount}
-          title="Delete Account"
-          titleStyle={{ color: 'red' }}
-        />
-        {user?.pendingRequest?.length > 0 && (
-          <Menu.Item
-            onPress={() => setShowPendingModal(true)}
-            title={`Requested Users (${user.pendingRequest.length})`}
-          />
+            <Menu
+              visible={menuVisible}
+              onDismiss={closeMenu}
+              anchor={
+                <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
+                  <Icon name="bars" size={30} color="#333" />
+                </TouchableOpacity>
+              }
+              contentStyle={styles.menuContent}>
+              <Menu.Item onPress={openEditModal} title="Edit Profile" />
+              <Menu.Item
+                onPress={() => {
+                  logout();
+                  navigation.navigate('Login');
+                }}
+                title="Logout"
+              />
+              <Menu.Item
+                onPress={handleDeleteAccount}
+                title="Delete Account"
+                titleStyle={{color: 'red'}}
+              />
+              {user?.pendingRequest?.length > 0 && (
+                <Menu.Item
+                  onPress={() => setShowPendingModal(true)}
+                  title={`Requested Users (${user.pendingRequest.length})`}
+                />
+              )}
+            </Menu>
+          </>
         )}
-      </Menu>
-    </>
-  )}
-</View>
+      </View>
 
       <Modal
         visible={showPendingModal}
@@ -348,8 +346,8 @@ const ProfileScreen = ({route, navigation}: any) => {
                       } catch (error) {
                         // The error dialog is already handled inside handleFollowRequest
                       } finally {
-                        await fetchProfile()
-                        setShowPendingModal(false)
+                        await fetchProfile();
+                        setShowPendingModal(false);
                         setLoading(false);
                       }
                     }}>
@@ -403,28 +401,29 @@ const ProfileScreen = ({route, navigation}: any) => {
                   }}>
                   <Text>{item.name}</Text>
                   {userListType === 'following' && (
-                    <TouchableOpacity>
-                      <Button
-                        onPress={async () => {
-                          try {
-                            await unfollowUser(profileUser._id);
-                            console.log('in')
-                            Dialog.show({
-                              type: ALERT_TYPE.SUCCESS,
-                              title: 'Unfollowed',
-                              textBody: 'You have unfollowed this user.',
-                            });
-                            fetchUserProfile(profileUser._id); // Refresh state
-                          } catch (err: any) {
-                            Dialog.show({
-                              type: ALERT_TYPE.DANGER,
-                              title: 'Error',
-                              textBody: err.response.data.message,
-                            });
-                          }
-                        }}>
-                        ❌
-                      </Button>
+                    <TouchableOpacity
+                      style={styles.unfollowButton}
+                      onPress={async () => {
+                        try {
+                          await unfollowUser(item._id);
+                          Dialog.show({
+                            type: ALERT_TYPE.SUCCESS,
+                            title: 'Unfollowed',
+                            textBody: 'You have unfollowed this user.',
+                          });
+                          fetchUserProfile(user?._id);
+                        } catch (err: any) {
+                          console.log(err)
+                          Dialog.show({
+                            type: ALERT_TYPE.DANGER,
+                            title: 'Error',
+                            textBody:
+                              err.response?.data?.message ||
+                              'Something went wrong.',
+                          });
+                        }
+                      }}>
+                      <Text style={styles.unfollowText}>❌</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -447,7 +446,7 @@ const ProfileScreen = ({route, navigation}: any) => {
           {/* Profile Info */}
           <View style={styles.topGrid}>
             <View>
-             <Image source={{uri: image}} style={styles.avatar} />
+              <Image source={{uri: image}} style={styles.avatar} />
             </View>
             <View>
               <Text style={styles.name}>{name || 'Guest User'} </Text>
@@ -614,11 +613,10 @@ const ProfileScreen = ({route, navigation}: any) => {
               {/* User Groups */}
               <View style={styles.groupContainer}>
                 <Text style={styles.sectionTitle}>Groups:</Text>
-
                 {groups?.length > 0 ? (
                   <FlatList
                     data={groups}
-                    numColumns={3} // 3 columns like Instagram
+                    numColumns={3}
                     keyExtractor={item => item._id}
                     renderItem={({item}) => (
                       <TouchableOpacity
@@ -628,11 +626,20 @@ const ProfileScreen = ({route, navigation}: any) => {
                             groupId: item._id,
                           })
                         }>
-                        <Image
-                          source={{uri: item.image}} // Assuming you have group.imageUrl
-                          style={styles.groupImage}
-                          resizeMode="cover"
-                        />
+                        <View style={styles.imageContainer}>
+                          <Image
+                            source={{uri: item.image}}
+                            style={styles.groupImage}
+                            resizeMode="cover"
+                          />
+                          {item?.joinRequests.length > 0 && (
+                            <View style={styles.badge}>
+                              <Text style={styles.badgeText}>
+                                {item?.joinRequests?.length}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
                       </TouchableOpacity>
                     )}
                   />
@@ -661,6 +668,21 @@ const styles = StyleSheet.create({
     // marginBottom: 10,
     gap: 30,
   },
+  notificationCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    marginHorizontal: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+
+  notificationText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 
   container: {
     // flex: 1,
@@ -670,6 +692,48 @@ const styles = StyleSheet.create({
     // backgroundColor: '#fff',
     padding: 20,
   },
+  imageContainer: {
+    position: 'relative',
+    width: 100, // adjust based on your layout
+    height: 100,
+    margin: 5,
+  },
+
+  groupImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+  },
+
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -9,
+    backgroundColor: '#e74c3c',
+    borderRadius: 10,
+    minWidth: 18,
+    minHeight: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  unfollowButton: {
+    padding: 10,
+    backgroundColor: 'lightgray',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+
+  unfollowText: {
+    fontSize: 16,
+    color: 'white',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+
   menuContainer: {
     position: 'absolute',
     top: 40,
@@ -765,12 +829,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   pendingRequestText: {
-  color: 'red',
-  fontWeight: 'bold',
-  marginBottom: 5,
-  fontSize: 14,
-  alignSelf: 'flex-end',
-},
+    color: 'red',
+    fontWeight: 'bold',
+    marginBottom: 5,
+    fontSize: 14,
+    alignSelf: 'flex-end',
+  },
   groupItem: {
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
@@ -793,7 +857,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   groupContainer: {
-    marginTop: 20,
+    marginTop: 5,
   },
   sectionTitle: {
     fontSize: 20,
@@ -810,11 +874,6 @@ const styles = StyleSheet.create({
     flex: 1 / 3, // 3 items per row
     aspectRatio: 1, // make it square
     padding: 6, // small space between images
-  },
-  groupImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8, // optional: rounded corners
   },
 });
 

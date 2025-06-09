@@ -6,10 +6,11 @@ const ForceUpdateCheck = () => {
   useEffect(() => {
     const checkAppVersion = async () => {
       const currentVersion = DeviceInfo.getVersion(); 
-      const latestVersion = '1.0.5';
+      console.log(currentVersion)
+      const latestVersion = '1.0.6';
       const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.kishorek.habistreak'; 
       const appStoreUrl = 'https://apps.apple.com/app/id000000000';
-console.log(currentVersion)
+
       if (compareVersions(latestVersion, currentVersion)) {
         Alert.alert(
           'Update Required',
