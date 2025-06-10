@@ -6,6 +6,7 @@ const { cloudinary } = require("../config/cloudnari.config.js");
 const { default: mongoose } = require("mongoose");
 const hobbies_enum = require("../constant.js");
 const Group = require("../models/group.model.js");
+const { sendNotificationToTokens } = require("../services/fcmSender.js");
 
 const getUserProfile = async (req, res) => {
   try {
@@ -167,7 +168,9 @@ console.log(requestingUser.followers)
   requestingUser.following = requestingUser.following.filter(
     (id) => id.toString() !== targetUserId.toString()
   );
-
+ targetUser.pendingRequest = targetUser.pendingRequest.filter(
+    (req) => req.user.toString() !== requestingUserId.toString()
+  );
   await Promise.all([targetUser.save(), requestingUser.save()]);
 
   res.status(200).json({ message: "Unfollowed successfully" });

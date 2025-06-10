@@ -258,14 +258,13 @@ const sendFollowRequest = async (targetUserId: string ) => {
 
 const unfollowUser = async (targetUserId: string) => {
   try {
-    console.log('sdfsdf')
     const token = await AsyncStorage.getItem('token');
     if (!token) {
       throw new Error('No token found');
     }
 
     const response = await axios.post(
-      `http://192.168.245.68:8000/api/users/unfollow`,
+      `${API_URL}/users/unfollow`,
       { targetUserId },
       { headers: { Authorization: `Bearer ${token}` } }
     );

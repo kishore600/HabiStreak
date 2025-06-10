@@ -93,11 +93,19 @@ const login = asyncHandler(async (req, res) => {
     })
     .populate("createdGroups");
 
-  if (user && (await user.matchPassword(password))) {
+  if (user.fcmToken !== "" && (await user.matchPassword(password))) {
      if (fcmToken) {
       user.fcmToken = fcmToken;
       await user.save();
     }
+
+       await sendEmail({
+        email: user.email,
+        subject: "🎉Again Welcome to HabiStreak!",
+        name: user.name,
+      });
+
+
     res.json({ user: user, token: generateToken(user._id) });
   } else {
     res.status(401);

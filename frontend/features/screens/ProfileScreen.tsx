@@ -232,26 +232,23 @@ const ProfileScreen = ({route, navigation}: any) => {
       },
     });
   };
-  console.log(profileUser);
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
       <View style={styles.menuContainer}>
         {currentUser && (
           <>
-            {/* Pending Requests Badge or Text */}
-            {user?.pendingRequest?.length > 0 && (
-              <Text style={styles.pendingRequestText}>
-                {user.pendingRequest.length} Pending Request
-              </Text>
-            )}
-
             <Menu
               visible={menuVisible}
               onDismiss={closeMenu}
               anchor={
                 <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
                   <Icon name="bars" size={30} color="#333" />
+                    {user?.pendingRequest?.length > 0 && (
+    <View style={styles.badgeContainer}>
+      <Text style={styles.badgeText}>{user.pendingRequest.length}</Text>
+    </View>
+  )}
                 </TouchableOpacity>
               }
               contentStyle={styles.menuContent}>
@@ -474,11 +471,39 @@ const ProfileScreen = ({route, navigation}: any) => {
             </View>
             {!currentUser && (
               <View style={{marginTop: 0}}>
-                {profileUser?.following.some(
+                {user?.followers.some(
                   (f: {_id: {toString: () => any}}) =>
-                    f._id.toString() === user._id.toString(),
-                ) ? (
-                  <Button
+                    f._id.toString() === profileUser._id.toString(),
+                ) && !user?.following.some(
+                    (f: {_id: {toString: () => any}}) =>
+                      f._id.toString() === profileUser._id.toString(),
+                  ) ? (
+                   <Button
+                    onPress={async () => {
+                      try {
+                        await sendFollowRequest(profileUser._id);
+                        fetchProfile();
+                        Dialog.show({
+                          type: ALERT_TYPE.SUCCESS,
+                          title: 'Follow Requested',
+                          textBody: 'Follow request sent.',
+                        });
+                      } catch (err: any) {
+                        console.log(err);
+                        Dialog.show({
+                          type: ALERT_TYPE.DANGER,
+                          title: 'Error',
+                          textBody: err.data.message,
+                        });
+                      }
+                    }}>
+                    Follow Back
+                  </Button>
+                ) : user?.following.some(
+                    (f: {_id: {toString: () => any}}) =>
+                      f._id.toString() === profileUser._id.toString(),
+                  ) ? (
+                   <Button
                     onPress={async () => {
                       try {
                         await unfollowUser(profileUser._id);
@@ -498,11 +523,6 @@ const ProfileScreen = ({route, navigation}: any) => {
                     }}>
                     Unfollow
                   </Button>
-                ) : profileUser?.followers.some(
-                    (f: {_id: {toString: () => any}}) =>
-                      f._id.toString() === user._id.toString(),
-                  ) ? (
-                  <Text>Following</Text>
                 ) : (
                   <Button
                     onPress={async () => {
@@ -519,7 +539,7 @@ const ProfileScreen = ({route, navigation}: any) => {
                         Dialog.show({
                           type: ALERT_TYPE.DANGER,
                           title: 'Error',
-                          textBody: err.message,
+                          textBody: err.data.message,
                         });
                       }
                     }}>
@@ -632,7 +652,7 @@ const ProfileScreen = ({route, navigation}: any) => {
                             style={styles.groupImage}
                             resizeMode="cover"
                           />
-                          {item?.joinRequests.length > 0 && (
+                         {currentUser && item?.joinRequests.length > 0 && (
                             <View style={styles.badge}>
                               <Text style={styles.badgeText}>
                                 {item?.joinRequests?.length}
@@ -875,6 +895,26 @@ const styles = StyleSheet.create({
     aspectRatio: 1, // make it square
     padding: 6, // small space between images
   },
+  badgeContainer: {
+  position: 'absolute',
+  top: -4,
+  right: -4,
+  backgroundColor: 'red',
+  borderRadius: 10,
+  minWidth: 18,
+  height: 18,
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 4,
+  zIndex: 1,
+},
+
+badgeText1: {
+  color: 'white',
+  fontSize: 10,
+  fontWeight: 'bold',
+},
+
 });
 
 export default ProfileScreen;
