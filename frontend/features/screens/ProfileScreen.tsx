@@ -244,11 +244,13 @@ const ProfileScreen = ({route, navigation}: any) => {
               anchor={
                 <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
                   <Icon name="bars" size={30} color="#333" />
-                    {user?.pendingRequest?.length > 0 && (
-    <View style={styles.badgeContainer}>
-      <Text style={styles.badgeText}>{user.pendingRequest.length}</Text>
-    </View>
-  )}
+                  {user?.pendingRequest?.length > 0 && (
+                    <View style={styles.badgeContainer}>
+                      <Text style={styles.badgeText}>
+                        {user.pendingRequest.length}
+                      </Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               }
               contentStyle={styles.menuContent}>
@@ -387,7 +389,7 @@ const ProfileScreen = ({route, navigation}: any) => {
               data={
                 userListType === 'followers' ? user?.followers : user?.following
               }
-              keyExtractor={item => item._id}
+              keyExtractor={item => item?._id}
               renderItem={({item}) => (
                 <View
                   style={{
@@ -402,7 +404,7 @@ const ProfileScreen = ({route, navigation}: any) => {
                       style={styles.unfollowButton}
                       onPress={async () => {
                         try {
-                          await unfollowUser(item._id);
+                          await unfollowUser(item?._id);
                           Dialog.show({
                             type: ALERT_TYPE.SUCCESS,
                             title: 'Unfollowed',
@@ -410,7 +412,7 @@ const ProfileScreen = ({route, navigation}: any) => {
                           });
                           fetchUserProfile(user?._id);
                         } catch (err: any) {
-                          console.log(err)
+                          console.log(err);
                           Dialog.show({
                             type: ALERT_TYPE.DANGER,
                             title: 'Error',
@@ -473,15 +475,16 @@ const ProfileScreen = ({route, navigation}: any) => {
               <View style={{marginTop: 0}}>
                 {user?.followers.some(
                   (f: {_id: {toString: () => any}}) =>
-                    f._id.toString() === profileUser._id.toString(),
-                ) && !user?.following.some(
-                    (f: {_id: {toString: () => any}}) =>
-                      f._id.toString() === profileUser._id.toString(),
-                  ) ? (
-                   <Button
+                    f._id.toString() === profileUser?._id.toString(),
+                ) &&
+                !user?.following.some(
+                  (f: {_id: {toString: () => any}}) =>
+                    f._id.toString() === profileUser?._id.toString(),
+                ) ? (
+                  <Button
                     onPress={async () => {
                       try {
-                        await sendFollowRequest(profileUser._id);
+                        await sendFollowRequest(profileUser?._id);
                         fetchProfile();
                         Dialog.show({
                           type: ALERT_TYPE.SUCCESS,
@@ -501,9 +504,9 @@ const ProfileScreen = ({route, navigation}: any) => {
                   </Button>
                 ) : user?.following.some(
                     (f: {_id: {toString: () => any}}) =>
-                      f._id.toString() === profileUser._id.toString(),
+                      f._id.toString() === profileUser?._id.toString(),
                   ) ? (
-                   <Button
+                  <Button
                     onPress={async () => {
                       try {
                         await unfollowUser(profileUser._id);
@@ -652,7 +655,7 @@ const ProfileScreen = ({route, navigation}: any) => {
                             style={styles.groupImage}
                             resizeMode="cover"
                           />
-                         {currentUser && item?.joinRequests.length > 0 && (
+                          {currentUser && item?.joinRequests.length > 0 && (
                             <View style={styles.badge}>
                               <Text style={styles.badgeText}>
                                 {item?.joinRequests?.length}
@@ -896,25 +899,24 @@ const styles = StyleSheet.create({
     padding: 6, // small space between images
   },
   badgeContainer: {
-  position: 'absolute',
-  top: -4,
-  right: -4,
-  backgroundColor: 'red',
-  borderRadius: 10,
-  minWidth: 18,
-  height: 18,
-  justifyContent: 'center',
-  alignItems: 'center',
-  paddingHorizontal: 4,
-  zIndex: 1,
-},
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    zIndex: 1,
+  },
 
-badgeText1: {
-  color: 'white',
-  fontSize: 10,
-  fontWeight: 'bold',
-},
-
+  badgeText1: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
 });
 
 export default ProfileScreen;

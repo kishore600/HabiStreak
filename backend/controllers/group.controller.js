@@ -622,7 +622,7 @@ const acceptJoinRequest = asyncHandler(async (req, res) => {
        const user = await User.findById(userId);
     if (user?.fcmToken) {
       const title = "Request Accepted";
-      const body = `Your request to join "${group.name}" has been accepted.`;
+      const body = `Your request to join "${group.title}" has been accepted.`;
 
       try {
         await sendNotificationToTokens([user.fcmToken], title, body);
