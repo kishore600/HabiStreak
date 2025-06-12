@@ -1,29 +1,39 @@
-import  { useEffect } from 'react';
+import { API_URL } from '@env';
+import { useEffect } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 
 const ForceUpdateCheck = () => {
   useEffect(() => {
     const checkAppVersion = async () => {
-      const currentVersion = DeviceInfo.getVersion(); 
+      const currentVersion = DeviceInfo.getVersion();
 
-      const latestVersion = '1.0.9';
-      const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.kishorek.habistreak'; 
-      const appStoreUrl = 'https://apps.apple.com/app/id000000000';
+      try {
+        const response = await fetch(`${API_URL}/version/latest-version`);
+        const data = await response.json();
+console.log(data)
+        const latestVersion = data.latestVersion;
+        const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.kishorek.habistreak';
+        const appStoreUrl = 'https://apps.apple.com/app/id000000000';
 
-      if (compareVersions(latestVersion, currentVersion)) {
-        Alert.alert(
-          'Update Required',
-          'A new version of the app is available. Please update to continue.',
-          [
-            {
-              text: 'Update Now',
-              onPress: () =>
-                Linking.openURL(Platform.OS === 'android' ? playStoreUrl : appStoreUrl),
-            },
-          ],
-          { cancelable: false }
-        );
+        if (compareVersions(latestVersion, currentVersion)) {
+          Alert.alert(
+            'Update Required',
+            'A new version of the app is available. Please update to continue.',
+            [
+              {
+                text: 'Update Now',
+                onPress: () =>
+                  Linking.openURL(
+                    Platform.OS === 'android' ? playStoreUrl : appStoreUrl
+                  ),
+              },
+            ],
+            { cancelable: false }
+          );
+        }
+      } catch (error) {
+        console.error('Failed to fetch app version:', error);
       }
     };
 
@@ -33,7 +43,7 @@ const ForceUpdateCheck = () => {
   return null;
 };
 
-// 🔍 Semver-safe version comparison
+// 🔍 Semantic version comparison
 const compareVersions = (latest: string, current: string) => {
   const latestParts = latest.split('.').map(Number);
   const currentParts = current.split('.').map(Number);

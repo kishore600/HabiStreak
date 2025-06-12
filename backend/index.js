@@ -8,6 +8,7 @@ const userRoutes = require('./routes/user.Routes.js');
 const groupRoutes = require('./routes/group.Routes.js');
 const globalRoutes = require('./routes/global.Routes.js');
 const notificationRoutes = require('./routes/notification.routes.js')
+const versionRoutes = require('./routes/version.routes.js');
 dotenv.config();
 connectDB();
 
@@ -21,6 +22,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/global', globalRoutes);
 app.use('/api/notification', notificationRoutes);
+app.use('/api/version', versionRoutes);
 // Global Error Handling Middleware
 app.use((err, req, res, next) => {
     console.error("Global Error:", err.stack);
