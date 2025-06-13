@@ -124,7 +124,6 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
       user: requestingUserId,
       receiver: targetUserId,
     });
-    targetUser.followers.push(requestingUserId);
     requestingUser.following.push(targetUserId);
     await Promise.all([targetUser.save(), requestingUser.save()]);
 
@@ -414,6 +413,75 @@ const deleteUserAccount = async (req, res) => {
   }
 };
 
+const requestPasswordReset = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  user.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+  await user.save();
+
+  const resetUrl = `${req.protocol}://https://challengespear.netlify.app/resetpassword/${resetToken}`;
+
+  const message = resetUrl;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Password reset Request",
+      message: message,
+    });
+
+    res.status(200).json({
+      message: "Email send",
+    });
+  } catch (error) {
+    console.log(error);
+    user.resetPasswordExpire = undefined;
+    user.resetPasswordToken = undefined;
+    await user.save();
+    res.status(500);
+    throw new Error("Email could not be send");
+  }
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(req.params.token)
+    .digest("hex");
+
+  const user = await User.findOne({
+    resetPasswordToken,
+    resetPasswordExpire: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    res.status(400);
+    throw new Error("Invalid token or token has expired");
+  }
+
+  user.password = req.body.password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+
+  res.status(200).json({
+    message: "Password updated sucessfully",
+  });
+});
 module.exports = {
   getUserProfile,
   sendFollowRequest,
