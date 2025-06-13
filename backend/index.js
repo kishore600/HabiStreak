@@ -33,16 +33,11 @@ app.use((err, req, res, next) => {
   });
   
   // Handle unhandled promise rejections
-  process.on('unhandledRejection', (err) => {
+  process.on('unhandledRejection', (err,res) => {
     console.error('Unhandled Rejection:', err.message);
     // Optionally: log, alert, or exit process
   });
   
-  // Handle uncaught exceptions
-  process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err.message);
-    // Optionally: log, alert, or exit process
-  });
 
 
   // Runs every day at 1:00 AM

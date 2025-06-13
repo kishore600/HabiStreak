@@ -10,6 +10,7 @@ import {useAuth} from '../context/AuthContext';
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { ActivityIndicator } from 'react-native-paper';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 const LoginScreen = ({navigation}: any) => {
   const {login}: any = useAuth(); // Get setUser function from context
@@ -18,7 +19,8 @@ const LoginScreen = ({navigation}: any) => {
   const [errors, setErrors] = useState<any>({});
   const [showPassword, setShowPassword] = useState(false);
   const[loading,setLoading] = useState(false)
-  
+    const [isForgotVisible, setIsForgotVisible] = useState(false); // ← New
+
   const validateForm = () => {
     let newErrors: any = {};
     if (!email.trim()) {
@@ -108,6 +110,7 @@ const LoginScreen = ({navigation}: any) => {
           <Text style={styles.buttonText}>Login In</Text>
         )}
       </TouchableOpacity>
+
       <Text style={styles.footerText}>
         Don't have an account?{' '}
         <Text
@@ -115,7 +118,20 @@ const LoginScreen = ({navigation}: any) => {
           onPress={() => navigation.navigate('Signup')}>
           Sign up
         </Text>
+
+        
       </Text>
+       <TouchableOpacity
+        onPress={() => setIsForgotVisible(true)}
+        style={{ alignSelf: 'center', marginBottom: 10,marginTop:10 }}
+      >
+        <Text style={{ color: '#FFD700', fontSize: 14 }}>Forgot Password?</Text>
+      </TouchableOpacity>
+      
+       <ForgotPasswordModal
+        visible={isForgotVisible}
+        onClose={() => setIsForgotVisible(false)}
+      />
     </View>
   );
 };

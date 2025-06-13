@@ -44,7 +44,13 @@ const userSchema = new mongoose.Schema({
   pendingRequest: [pendingRequestSchema],
   totalStreak: { type: Number, default: 0 },
   lastStreakDate: { type: Date },
-  fcmToken:{type:String}
+  fcmToken: { type: String },
+  resetPasswordToken: {
+    type: String,
+  },
+  resetPasswordExpire: {
+    type: Date,
+  },
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {

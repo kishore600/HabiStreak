@@ -11,7 +11,8 @@ const sendEmail = async (options) => {
   const htmlContent = htmlTemplate
     .replace('[RecipientName]', options.name || 'HabiStreaker')
     .replace('[CompanyName]', 'HabiStreak')
-    .replace('[Year]', new Date().getFullYear());
+    .replace('[Year]', new Date().getFullYear())
+    .replace('[ResetLink]', options.message || '#');
 
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
