@@ -127,7 +127,7 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
     });
     requestingUser.following.push(targetUserId);
     await Promise.all([targetUser.save(), requestingUser.save()]);
-
+targetUser.followers.push(requestingUserId)
     if (targetUser?.fcmToken) {
       const title = "New Follow Request";
       const body = `${requestingUser.name} wants to follow you.`;
@@ -225,10 +225,7 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
     }
 
     requestingUser.followers.push(user._id);
-
-    await Promise.all([user.save(), requestingUser.save()]);
-
-    if (requestingUser?.fcmToken) {
+ if (requestingUser?.fcmToken) {
       const title = "Follow Request Accepted";
       const body = `${user.name} accepted your follow request.`;
 
@@ -239,6 +236,9 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
         console.error("❌ Failed to send notification:", err.message);
       }
     }
+    await Promise.all([user.save(), requestingUser.save()]);
+
+   
 
     res.status(200).json({ message: "Follow request accepted" });
   } else if (action === "reject") {
