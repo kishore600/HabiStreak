@@ -126,8 +126,8 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
       receiver: targetUserId,
     });
     requestingUser.following.push(targetUserId);
+    targetUser.followers.push(requestingUserId)
     await Promise.all([targetUser.save(), requestingUser.save()]);
-targetUser.followers.push(requestingUserId)
     if (targetUser?.fcmToken) {
       const title = "New Follow Request";
       const body = `${requestingUser.name} wants to follow you.`;
