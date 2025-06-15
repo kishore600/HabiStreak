@@ -118,7 +118,7 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
   if (alreadyFollowing || alreadyRequested) {
     return res.status(400).json({ message: "Already following or requested" });
   }
-const targetUserAlreadyFollowed = requestingUser.following.includes(targetUserId)
+const targetUserAlreadyFollowed = targetUser.following.includes(requestingUserId)
 
   if (targetUser) {
     // Send follow request
