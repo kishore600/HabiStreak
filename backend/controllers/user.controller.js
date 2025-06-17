@@ -7,7 +7,6 @@ const { default: mongoose } = require("mongoose");
 const hobbies_enum = require("../constant.js");
 const Group = require("../models/group.model.js");
 const { sendNotificationToTokens } = require("../services/fcmSender.js");
-const sendEmail = require("../config/sendMail.config.js");
 
 const getUserProfile = async (req, res) => {
   try {
@@ -118,18 +117,19 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
   if (alreadyFollowing || alreadyRequested) {
     return res.status(400).json({ message: "Already following or requested" });
   }
-const targetUserAlreadyFollowed = targetUser.following.includes(requestingUserId)
+  const targetUserAlreadyFollowed =
+    targetUser.following.includes(requestingUserId);
 
   if (targetUser) {
     // Send follow request
-    if(!targetUserAlreadyFollowed) {
+    if (!targetUserAlreadyFollowed) {
       targetUser.pendingRequest.push({
         user: requestingUserId,
         receiver: targetUserId,
       });
     }
     requestingUser.following.push(targetUserId);
-    targetUser.followers.push(requestingUserId)
+    targetUser.followers.push(requestingUserId);
     await Promise.all([targetUser.save(), requestingUser.save()]);
     if (targetUser?.fcmToken) {
       const title = "New Follow Request";
@@ -153,7 +153,7 @@ const targetUserAlreadyFollowed = targetUser.following.includes(requestingUserId
 const unfollowUser = asyncHandler(async (req, res) => {
   const { targetUserId } = req.body;
   const requestingUserId = req.user._id;
-console.log(requestingUserId)
+  console.log(requestingUserId);
   const targetUser = await User.findById(targetUserId);
   const requestingUser = await User.findById(requestingUserId);
 
@@ -165,13 +165,13 @@ console.log(requestingUserId)
   targetUser.followers = targetUser.followers.filter(
     (id) => id.toString() !== requestingUserId.toString()
   );
-console.log(requestingUser.followers)
+  console.log(requestingUser.followers);
 
   // ✅ Remove target from requester's following
   requestingUser.following = requestingUser.following.filter(
     (id) => id.toString() !== targetUserId.toString()
   );
- targetUser.pendingRequest = targetUser.pendingRequest.filter(
+  targetUser.pendingRequest = targetUser.pendingRequest.filter(
     (req) => req.user.toString() !== requestingUserId.toString()
   );
   await Promise.all([targetUser.save(), requestingUser.save()]);
@@ -228,7 +228,7 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
     }
 
     requestingUser.followers.push(user._id);
- if (requestingUser?.fcmToken) {
+    if (requestingUser?.fcmToken) {
       const title = "Follow Request Accepted";
       const body = `${user.name} accepted your follow request.`;
 
@@ -240,8 +240,6 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
       }
     }
     await Promise.all([user.save(), requestingUser.save()]);
-
-   
 
     res.status(200).json({ message: "Follow request accepted" });
   } else if (action === "reject") {
@@ -416,7 +414,6 @@ const deleteUserAccount = async (req, res) => {
       .json({ message: "Server error while deleting account" });
   }
 };
-
 
 module.exports = {
   getUserProfile,
