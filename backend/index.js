@@ -32,8 +32,13 @@ app.use((err, req, res, next) => {
       message: err.message || "Something went wrong!",
     });
   });
-cron.schedule('0 1,17 * * *', async () => {
-  console.log("🔔 Sending daily task reminders...");
+cron.schedule("30 1 * * *", async () => {
+  console.log("🔔 Morning Reminder: 7:00 AM IST");
+  await sendReminderNotifications();
+});
+
+cron.schedule("30 16 * * *", async () => {
+  console.log("🌙 Evening Reminder: 10:00 PM IST");
   await sendReminderNotifications();
 });
 
@@ -42,7 +47,6 @@ cron.schedule('0 1,17 * * *', async () => {
     console.error('Unhandled Rejection:', err.message);
     // Optionally: log, alert, or exit process
   });
-  
   
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
