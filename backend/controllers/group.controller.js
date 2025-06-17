@@ -20,9 +20,6 @@ const parser = new DataUriParser();
 const dataUriFromFile = (file) =>
   parser.format(path.extname(file.originalname).toString(), file.buffer);
 
-const getTodayName = () => {
-  return new Date().toLocaleDateString("en-US", { weekday: "short" });
-};
 const createGroup = asyncHandler(async (req, res) => {
   try {
     const { title, members, goal, tasks, endDate, categories } = req.body;
@@ -751,7 +748,46 @@ const getUserVsGroupAnalytics = asyncHandler(async (req, res) => {
   }
 });
 
+const leaveGroup = asyncHandler(async(req,res) =>{
+  const groupId = req.params.groupId
+  const userId = req.user._id
+
+    try {
+    const group = await Group.findById(groupId);
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Prevent admin from leaving the group
+    if (group.admin.toString() === userId.toString()) {
+      return res.status(400).json({ message: 'Admin cannot leave the group.' });
+    }
+
+    // Remove user from members array
+    group.members = group.members.filter(
+      (memberId) => memberId.toString() !== userId.toString()
+    );
+
+    // Remove user from joinRequests if exists
+    group.joinRequests = group.joinRequests.filter(
+      (requestId) => requestId.toString() !== userId.toString()
+    );
+
+    // Remove user's streak entry
+    group.userStreaks.delete(userId.toString());
+
+    await group.save();
+
+    res.status(200).json({ message: 'You have left the group successfully.' });
+  } catch (err) {
+    console.error('Leave Group Error:', err);
+    res.status(500).json({ message: 'Server error while leaving the group.' });
+  }
+
+})
 module.exports = {
+  leaveGroup,
   getMemberAnalytics,
   getUserVsGroupAnalytics,
   createGroup,

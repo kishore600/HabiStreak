@@ -14,6 +14,7 @@ const {
   acceptJoinRequest,
   getMemberAnalytics,
   getUserVsGroupAnalytics,
+  leaveGroup,
 } = require('../controllers/group.controller');
 const { protect } = require('../middleware/auth.middleware');
 const multer = require('multer');
@@ -36,5 +37,6 @@ router.post('/:groupId/join-request', protect, requestToJoinGroup);
 router.post('/:groupId/accept-request', protect, acceptJoinRequest);
 router.get("/:groupId/members", getMemberAnalytics);
 router.get("/:groupId/comparison", protect, getUserVsGroupAnalytics);
+router.delete('/:groupId/leave', protect, leaveGroup);
 
 module.exports = router;

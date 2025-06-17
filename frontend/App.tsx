@@ -16,7 +16,8 @@ import {AuthProvider} from './features/context/AuthContext';
 import {GroupProvider} from './features/context/GroupContext';
 import {SearchProvider} from './features/context/SearchContext';
 import SearchScreen from './features/screens/SearchScreen';
-import { useNotifications } from './features/notifications/useNotifications';
+import {useNotifications} from './features/notifications/useNotifications';
+import {MenuProvider} from 'react-native-popup-menu';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -31,10 +32,14 @@ const TabNavigator = () => {
             Home: 'coffee',
             Profile: 'user',
             Create: 'plus',
-            Search:'search'
+            Search: 'search',
           };
           return (
-            <Icon name={icons[route.name as keyof typeof icons]}  size={size} color={color} />
+            <Icon
+              name={icons[route.name as keyof typeof icons]}
+              size={size}
+              color={color}
+            />
           );
         },
         tabBarActiveTintColor: 'tomato',
@@ -52,7 +57,7 @@ const TabNavigator = () => {
 
 const AppNavigator = () => {
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
-  useNotifications()
+  useNotifications();
   useEffect(() => {
     const checkUserSession = async () => {
       try {
@@ -79,16 +84,21 @@ const AppNavigator = () => {
       <AlertNotificationRoot>
         <AuthProvider>
           <GroupProvider>
-            <SearchProvider>
-            <Stack.Navigator
-              screenOptions={{headerShown: false}}
-              initialRouteName={initialRoute}>
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="Signup" component={SignupScreen} />
-              <Stack.Screen name="Main" component={TabNavigator} />
-              <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} /> 
-            </Stack.Navigator>
-            </SearchProvider>
+            <MenuProvider>
+              <SearchProvider>
+                <Stack.Navigator
+                  screenOptions={{headerShown: false}}
+                  initialRouteName={initialRoute}>
+                  <Stack.Screen name="Login" component={LoginScreen} />
+                  <Stack.Screen name="Signup" component={SignupScreen} />
+                  <Stack.Screen name="Main" component={TabNavigator} />
+                  <Stack.Screen
+                    name="GroupDetails"
+                    component={GroupDetailsScreen}
+                  />
+                </Stack.Navigator>
+              </SearchProvider>
+            </MenuProvider>
           </GroupProvider>
         </AuthProvider>
       </AlertNotificationRoot>

@@ -24,9 +24,15 @@ import {hobbies_enum} from '../constant';
 import {MultiSelect} from 'react-native-element-dropdown';
 import {Platform} from 'react-native';
 import AnalyticsChart from '../components/AnalyticsChart';
+import {
+  Menu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+} from 'react-native-popup-menu';
 
 const GroupDetailsScreen = ({route}: any) => {
-  const {user,fetchProfile}: any = useAuth();
+  const {user, fetchProfile}: any = useAuth();
   const {groupId}: any = route.params;
   const {
     group,
@@ -46,6 +52,7 @@ const GroupDetailsScreen = ({route}: any) => {
     analytics,
     MemberAnalytics,
     ComparisonAnalytisc,
+    leaveGroup,
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
@@ -250,8 +257,7 @@ const GroupDetailsScreen = ({route}: any) => {
       });
 
       await fetchGroupById(groupId);
-      await fetchProfile()
-
+      await fetchProfile();
     } catch (error: any) {
       Dialog.show({
         type: ALERT_TYPE.DANGER,
@@ -302,7 +308,7 @@ const GroupDetailsScreen = ({route}: any) => {
 
   const isAdmin = admin_id === user?._id;
 
-  const IsEditUser_id = user?._id === admin_id;
+  // const IsEditUser_id = user?._id === admin_id;
 
   const getProof = (taskId: string) => {
     if (proofMap[taskId]?.length > 0) {
@@ -317,18 +323,14 @@ const GroupDetailsScreen = ({route}: any) => {
     return completedEntry?.proof || [];
   };
 
-const combinedUsers = [
-  ...user.followers,
-  ...(group?.members || []),
-];
+  const combinedUsers = [...user.followers, ...(group?.members || [])];
 
-// Remove duplicates based on user._id
-const uniqueUsers = combinedUsers.filter(
-  (user, index, self) =>
-    index === self.findIndex((u) => u._id === user._id)
-);
+  // Remove duplicates based on user._id
+  const uniqueUsers = combinedUsers.filter(
+    (user, index, self) => index === self.findIndex(u => u._id === user._id),
+  );
 
-return (
+  return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={{paddingBottom: 50}}>
@@ -467,7 +469,7 @@ return (
                         if (days.includes(day)) {
                           // Remove day
                           updatedTasks[index].days = days.filter(
-                            (d:any) => d !== day,
+                            (d: any) => d !== day,
                           );
                         } else {
                           // Add day
@@ -669,6 +671,30 @@ return (
               </Text>
             </TouchableOpacity>
           )}
+          <Menu>
+            <MenuTrigger>
+              <Icon name="ellipsis-v" size={20} color="#333" />
+            </MenuTrigger>
+            <MenuOptions>
+              {isAdmin ? (
+                <>
+                  <MenuOption
+                    onSelect={() => handleDelete}
+                    text="Delete Group"
+                  />
+                  <MenuOption
+                    onSelect={() => setEditMode(true)}
+                    text="Edit Group"
+                  />
+                </>
+              ) : (
+                <MenuOption
+                  onSelect={() => leaveGroup(groupId)}
+                  text="Leave Group"
+                />
+              )}
+            </MenuOptions>
+          </Menu>
           <Text style={styles.title}>{group?.title} </Text>
           <Text style={styles.goal}>Goal: {group?.goal}</Text>
           <Text style={styles.goal}>End Date: {formattedDate}</Text>
@@ -694,20 +720,7 @@ return (
                     <Text style={styles.closeButton}>Close</Text>
                   </TouchableOpacity>
 
-                  {/* Your existing content */}
-                  <View style={styles.pickerContainer}>
-                    {/* <Text style={styles.label1}>Analytics:</Text> */}
-                    {/* <Text style={styles.label}>Select Type:</Text>
-                    <Picker
-                      selectedValue={type}
-                      style={styles.picker}
-                      onValueChange={itemValue => setType(itemValue)}>
-                      <Picker.Item label="Daily" value="daily" />
-                      <Picker.Item label="Weekly" value="weekly" />
-                      <Picker.Item label="Monthly" value="monthly" />
-                      <Picker.Item label="Yearly" value="yearly" />
-                    </Picker> */}
-                  </View>
+                  <View style={styles.pickerContainer}></View>
 
                   {loading ? (
                     <ActivityIndicator size="large" color="#007bff" />
@@ -1074,21 +1087,7 @@ return (
             </Button>
           </>
         ) : (
-          <>
-            {IsEditUser_id && (
-              <>
-                <Button
-                  mode="contained"
-                  style={{backgroundColor: 'tomato', marginBottom: 10}}
-                  onPress={() => setEditMode(true)}>
-                  <Text> Edit Group</Text>
-                </Button>
-                <Button mode="outlined" onPress={handleDelete}>
-                  <Text>Delete Group</Text>
-                </Button>
-              </>
-            )}
-          </>
+          <></>
         )}
       </View>
     </ScrollView>

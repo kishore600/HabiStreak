@@ -47,7 +47,8 @@ interface GroupContextType {
   MemberAnalytics: any;
   memberData: any;
   comparisonData: any;
-  createLoading:any;
+  createLoading: any;
+  leaveGroup: any;
   ComparisonAnalytisc: any;
 }
 export type RootStackParamList = {
@@ -71,7 +72,7 @@ export const GroupProvider = ({children}: any) => {
   const [analytics, setAnalytics] = useState<any>([]);
   const [memberData, setMemberData] = useState([]);
   const [comparisonData, setComparisonData] = useState([]);
-  const [createLoading,setCreateLoading] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false);
 
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem('token');
@@ -141,10 +142,7 @@ export const GroupProvider = ({children}: any) => {
   const fetchGroupById = async (groupId: string) => {
     try {
       const headers = await getAuthHeaders();
-      const res = await axios.get(
-        `${API_URL}/groups/${groupId}`,
-        headers,
-      );
+      const res = await axios.get(`${API_URL}/groups/${groupId}`, headers);
       setPendingRequests(res?.data?.joinRequests);
       const hasrequested_ingroup = res?.data?.joinRequests?.some(
         (req: any) => req._id === user?._id,
@@ -270,6 +268,32 @@ export const GroupProvider = ({children}: any) => {
       });
     }
   };
+  const leaveGroup = async (groupId: string) => {
+    try {
+      setLoading(true);
+      const headers = await getAuthHeaders();
+      await axios.delete(`${API_URL}/groups/${groupId}/leave`, headers);
+      setIsGroupUpdated(true);
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('Profile');
+      }
+      Dialog.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Left Group',
+        textBody: 'You have left the group successfully!',
+      });
+    } catch (error) {
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Error',
+        textBody: 'Failed to leave group',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const createTodoForGroup = async (groupId: string, tasks: string[]) => {
     try {
@@ -294,22 +318,26 @@ export const GroupProvider = ({children}: any) => {
     return {Authorization: `Bearer ${token}`};
   };
 
-const markTaskComplete = async (groupId:any, taskId:any, imageUrls:any) => {
-  const authHeaders = await getAuthHeaders1();
+  const markTaskComplete = async (
+    groupId: any,
+    taskId: any,
+    imageUrls: any,
+  ) => {
+    const authHeaders = await getAuthHeaders1();
 
-  try {
-    const response = await axios.put(
-      `${API_URL}/groups/${groupId}/todos/${taskId}/complete`,
-      { proofUrls: imageUrls },
-      { headers: authHeaders }
-    );
+    try {
+      const response = await axios.put(
+        `${API_URL}/groups/${groupId}/todos/${taskId}/complete`,
+        {proofUrls: imageUrls},
+        {headers: authHeaders},
+      );
 
-    console.log('Success:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to mark complete:', error);
-  }
-};
+      console.log('Success:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to mark complete:', error);
+    }
+  };
 
   const getLeaderboard = async (groupId: string) => {
     try {
@@ -544,6 +572,7 @@ const markTaskComplete = async (groupId:any, taskId:any, imageUrls:any) => {
   return (
     <GroupContext.Provider
       value={{
+        leaveGroup,
         groups,
         userGroups,
         loading,
@@ -575,7 +604,7 @@ const markTaskComplete = async (groupId:any, taskId:any, imageUrls:any) => {
         memberData,
         ComparisonAnalytisc,
         comparisonData,
-        createLoading
+        createLoading,
       }}>
       {children}
     </GroupContext.Provider>
