@@ -9,7 +9,7 @@ import {
   Button,
   StyleSheet,
 } from 'react-native';
-import * as ImagePicker from 'react-native-image-picker';
+import {launchImageLibrary} from 'react-native-image-picker';
 import {useGroup} from '../context/GroupContext';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
 import {hobbies_enum} from '../constant';
@@ -21,7 +21,8 @@ import {Switch} from 'react-native-paper';
 const CreateScreen = () => {
   const [groupTitle, setGroupTitle] = useState('');
   const [goal, setGoal] = useState('');
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
+  const [bannerImageUri, setBannerImageUri] = useState<string | null>(null);
   const [tasks, setTasks] = useState<any>([]);
   const {createGroup, createLoading} = useGroup();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -32,40 +33,46 @@ const CreateScreen = () => {
   const [endDate, setEndDate] = useState('');
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
-  const handlePickImage = () => {
-    ImagePicker.launchImageLibrary(
-      {mediaType: 'photo', quality: 1},
-      response => {
-        if (response.didCancel) {
-          console.log('User cancelled image picker');
-        } else if (response.errorMessage) {
-          console.log('ImagePicker Error: ', response.errorMessage);
-        } else if (response.assets && response.assets.length > 0) {
-          setImageUri(response.assets[0].uri as any);
-        }
-      },
-    );
+  const handlePickProfileImage = async () => {
+    const result: any = await launchImageLibrary({
+      mediaType: 'photo',
+      includeBase64: false,
+    });
+
+    if (result?.assets && result.assets.length > 0) {
+      setProfileImageUri(result.assets[0].uri);
+    }
   };
 
-const handleAddTask = () => {
-  // Validate that all tasks have descriptions
-  for (let i = 0; i < tasks.length; i++) {
-    if (!tasks[i].description || tasks[i].description.trim() === '') {
+  const handlePickBannerImage = async () => {
+    const result: any = await launchImageLibrary({
+      mediaType: 'photo',
+      includeBase64: false,
+    });
+
+    if (result?.assets && result.assets.length > 0) {
+      setBannerImageUri(result.assets[0].uri);
+    }
+  };
+  const handleAddTask = () => {
+    // Validate that all tasks have descriptions
+    for (let i = 0; i < tasks.length; i++) {
+      if (!tasks[i].description || tasks[i].description.trim() === '') {
         Dialog.show({
           type: ALERT_TYPE.DANGER,
           title: 'Validation Error',
           textBody: 'Please enter a description for Task ${i + 1}.',
         });
-      return;
+        return;
+      }
     }
-  }
 
-  // If all descriptions are valid, add a new task
-  setTasks((prevTasks:any) => [
-    ...prevTasks,
-    { title: '', description: '', requireProof: false , days: []}
-  ]);
-};
+    // If all descriptions are valid, add a new task
+    setTasks((prevTasks: any) => [
+      ...prevTasks,
+      {title: '', description: '', requireProof: false, days: []},
+    ]);
+  };
 
   const handleRemoveTask = (index: number) => {
     const updatedTasks = [...tasks];
@@ -95,11 +102,11 @@ const handleAddTask = () => {
 
   const handleSubmit = async () => {
     try {
-      if (!imageUri) {
+      if (!profileImageUri || !bannerImageUri) {
         Dialog.show({
           type: ALERT_TYPE.DANGER,
           title: 'Error',
-          textBody: 'Please select an image for the group.',
+          textBody: 'Please select an require images for the group.',
         });
         return;
       }
@@ -144,13 +151,25 @@ const handleAddTask = () => {
       formData.append('categories', JSON.stringify(selectedCategories));
       formData.append('endDate', endDate); // Must be a valid ISO or 'YYYY-MM-DD' string
 
-      if (imageUri) {
-        const filename = imageUri.split('/').pop();
+      if (profileImageUri) {
+        const filename = profileImageUri.split('/').pop();
         const match = /\.(\w+)$/.exec(filename ?? '');
         const type = match ? `image/${match[1]}` : `image`;
 
-        formData.append('image', {
-          uri: imageUri,
+        formData.append('profileImage', {
+          uri: profileImageUri,
+          name: filename,
+          type,
+        } as any);
+      }
+
+      if (bannerImageUri) {
+        const filename = bannerImageUri.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename ?? '');
+        const type = match ? `image/${match[1]}` : `image`;
+
+        formData.append('bannerImage', {
+          uri: bannerImageUri,
           name: filename,
           type,
         } as any);
@@ -160,7 +179,8 @@ const handleAddTask = () => {
       setGroupTitle('');
       setGoal('');
       setTasks(['']);
-      setImageUri(null);
+      setProfileImageUri(null);
+      setBannerImageUri(null);
       setSelectedCategories([]); // Reset categories
       setEndDate(''); // Reset end date
     } catch (error) {
@@ -173,25 +193,25 @@ const handleAddTask = () => {
       setGroupTitle('');
       setGoal('');
       setTasks(['']);
-      setImageUri(null);
       setSelectedCategories([]); // Reset categories
       setEndDate(''); // Reset end date
     }
   };
-  const handleToggleDay = (taskIndex:any, day:any) => {
-  const updatedTasks = [...tasks];
-  const currentDays = updatedTasks[taskIndex].days || [];
 
-  if (currentDays.includes(day)) {
-    updatedTasks[taskIndex].days = currentDays.filter((d: any) => d !== day);
-  } else {
-    updatedTasks[taskIndex].days = [...currentDays, day];
-  }
+  const handleToggleDay = (taskIndex: any, day: any) => {
+    const updatedTasks = [...tasks];
+    const currentDays = updatedTasks[taskIndex].days || [];
 
-  setTasks(updatedTasks);
-};
+    if (currentDays.includes(day)) {
+      updatedTasks[taskIndex].days = currentDays.filter((d: any) => d !== day);
+    } else {
+      updatedTasks[taskIndex].days = [...currentDays, day];
+    }
 
-const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    setTasks(updatedTasks);
+  };
+
+  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -211,11 +231,38 @@ const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
         style={styles.input}
       />
 
-      <TouchableOpacity onPress={handlePickImage} style={styles.imagePicker}>
-        {imageUri ? (
-          <Image source={{uri: imageUri}} style={styles.image} />
+      <TouchableOpacity
+        onPress={handlePickProfileImage}
+        style={styles.imagePicker}>
+        {profileImageUri ? (
+          <Image
+            source={{uri: profileImageUri}}
+            style={styles.imagePreview}
+            resizeMode="cover"
+          />
         ) : (
-          <Text>Place Image</Text>
+          <View style={styles.imagePlaceholder}>
+            <Text style={styles.imagePlaceholderText}>
+              Select Profile Image
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      {/* Banner Image Picker */}
+      <TouchableOpacity
+        onPress={handlePickBannerImage}
+        style={styles.imagePicker}>
+        {bannerImageUri ? (
+          <Image
+            source={{uri: bannerImageUri}}
+            style={styles.imagePreview}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Text style={styles.imagePlaceholderText}>Select Banner Image</Text>
+          </View>
         )}
       </TouchableOpacity>
 
@@ -223,26 +270,24 @@ const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
       {tasks.map((task: any, index: number) => (
         <View key={index} style={styles.taskContainer}>
           <View style={styles.daysContainer}>
-  {weekdays.map((day) => (
-    <TouchableOpacity
-      key={day}
-      style={[
-        styles.dayButton,
-        task?.days?.includes(day) && styles.dayButtonSelected,
-      ]}
-      onPress={() => handleToggleDay(index, day)}
-    >
-      <Text
-        style={[
-          styles.dayButtonText,
-          task?.days?.includes(day) && styles.dayButtonTextSelected,
-        ]}
-      >
-        {day}
-      </Text>
-    </TouchableOpacity>
-  ))}
-</View>
+            {weekdays.map(day => (
+              <TouchableOpacity
+                key={day}
+                style={[
+                  styles.dayButton,
+                  task?.days?.includes(day) && styles.dayButtonSelected,
+                ]}
+                onPress={() => handleToggleDay(index, day)}>
+                <Text
+                  style={[
+                    styles.dayButtonText,
+                    task?.days?.includes(day) && styles.dayButtonTextSelected,
+                  ]}>
+                  {day}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <TextInput
             placeholder={`Task ${index + 1} Title`}
@@ -349,14 +394,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginVertical: 10,
   },
-  imagePicker: {
-    height: 150,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-    borderRadius: 8,
-  },
   image: {
     width: '100%',
     height: '100%',
@@ -396,36 +433,60 @@ const styles = StyleSheet.create({
     backgroundColor: '#f44',
     borderRadius: 4,
   },
+  imagePicker: {
+    marginBottom: 15,
+    alignItems: 'center',
+  },
+  imagePreview: {
+    width: 120,
+    height: 120,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  imagePlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 10,
+    backgroundColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  imagePlaceholderText: {
+    color: '#888',
+    fontSize: 14,
+  },
   removeButtonText: {
     color: '#fff',
     fontWeight: 'bold',
   },
   daysContainer: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  marginTop: 10,
-  gap: 6,
-},
-dayButton: {
-  paddingHorizontal: 10,
-  paddingVertical: 6,
-  borderRadius: 6,
-  borderWidth: 1,
-  borderColor: '#aaa',
-  backgroundColor: '#f0f0f0',
-},
-dayButtonSelected: {
-  backgroundColor: '#007AFF',
-  borderColor: '#007AFF',
-},
-dayButtonText: {
-  fontSize: 14,
-  color: '#333',
-},
-dayButtonTextSelected: {
-  color: '#fff',
-},
-
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
+    gap: 6,
+  },
+  dayButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#aaa',
+    backgroundColor: '#f0f0f0',
+  },
+  dayButtonSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  dayButtonText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  dayButtonTextSelected: {
+    color: '#fff',
+  },
 });
 
 export default CreateScreen;

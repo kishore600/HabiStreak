@@ -361,7 +361,8 @@ export const GroupProvider = ({children}: any) => {
     title: string,
     goal: string,
     members: any[],
-    image: any,
+    profileImage: any, // previously: `image`
+    bannerImage: any,
     endDate: any,
     selectedCategories: any,
   ) => {
@@ -373,15 +374,24 @@ export const GroupProvider = ({children}: any) => {
       formData.append('endDate', endDate);
       formData.append('categories', selectedCategories);
 
-      if (image && image.uri) {
-        const imageFile = {
-          uri: image.uri,
-          name: image.fileName || 'photo.jpg',
-          type: image.type || 'image/jpeg',
-        };
-
-        formData.append('image', imageFile as any);
+      if (profileImage?.uri) {
+        formData.append('profileImage', {
+          uri: profileImage.uri,
+          name: profileImage.fileName || 'profile.jpg',
+          type: profileImage.type || 'image/jpeg',
+        } as any);
       }
+
+      // 📤 Add banner image
+      if (bannerImage?.uri) {
+        formData.append('bannerImage', {
+          uri: bannerImage.uri,
+          name: bannerImage.fileName || 'banner.jpg',
+          type: bannerImage.type || 'image/jpeg',
+        } as any);
+      }
+
+      console.log(formData)
 
       const headers = await getAuthHeaders();
 

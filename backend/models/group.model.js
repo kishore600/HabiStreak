@@ -21,13 +21,17 @@ const groupSchema = new mongoose.Schema({
     default: [],
   },
   image: { type: String, required: true },
+  banner: {
+  type: String,
+  default:'https://www.toyoindia.in/wp-content/uploads/Image-Contact-1.jpg',
+},
   createdDate: { type: Date, default: Date.now },
   endDate: { type: Date, required: false },
   joinRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-streakDeductedDates: {
-  type: [String], // Store dates as 'YYYY-MM-DD'
-  default: [],
-},
+  streakDeductedDates: {
+    type: [String], // Store dates as 'YYYY-MM-DD'
+    default: [],
+  },
   categories: [
     {
       type: String,

@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Group = require("../models/group.model");
 const Todo = require("../models/todo.model");
 const User = require("../models/user.Model");
-const { dataUri } = require("../middleware/upload.middleware.js");
+const { dataUri, dataUriMultipleFiles } = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 const { default: mongoose } = require("mongoose");
 const hobbies_enum = require("../constant.js");
@@ -54,18 +54,30 @@ const createGroup = asyncHandler(async (req, res) => {
       return res.status(400).json({ message: "Invalid endDate format" });
     }
 
-    let imageUrl;
-    if (req.file) {
-      const file = dataUri(req).content;
-      const result = await cloudinary.uploader.upload(file, {
-        folder: "uploads",
+    let profileImageUrl;
+    let bannerImageUrl;
+
+    if (req.files?.profileImage?.[0]) {
+      const profileFile = dataUriMultipleFiles(req.files.profileImage[0]).content;
+      const result = await cloudinary.uploader.upload(profileFile, {
+        folder: "uploads/profile",
         transformation: { width: 500, height: 500, crop: "limit" },
       });
-      imageUrl = result.secure_url;
+      profileImageUrl = result.secure_url;
     } else {
-      return res.status(400).json({ message: "Image is required" });
+      return res.status(400).json({ message: "Profile image is required" });
     }
 
+    if (req.files?.bannerImage?.[0]) {
+      const bannerFile = dataUriMultipleFiles(req.files.bannerImage[0]).content;
+      const result = await cloudinary.uploader.upload(bannerFile, {
+        folder: "uploads/banner",
+        transformation: { width: 1000, height: 300, crop: "limit" },
+      });
+      bannerImageUrl = result.secure_url;
+    } else {
+      return res.status(400).json({ message: "Banner image is required" });
+    }
     let parsedMembers = members;
     if (typeof members === "string") {
       try {
@@ -100,7 +112,8 @@ const createGroup = asyncHandler(async (req, res) => {
       members: updatedMembers,
       admin: userId,
       goal,
-      image: imageUrl,
+      image: profileImageUrl,
+      banner: bannerImageUrl,
       userStreaks: {},
       endDate,
       categories: parsedCategories,
@@ -167,48 +180,81 @@ const updateGroup = asyncHandler(async (req, res) => {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    if (req.body.title) {
-      group.title = req.body.title;
+    // Update title and goal
+    if (req.body.title) group.title = req.body.title;
+    if (req.body.goal) group.goal = req.body.goal;
+    if (req.body.endDate) group.endDate = req.body.endDate;
+
+    // Update categories
+    if (req.body.categories) {
+      let parsedCategories = req.body.categories;
+      if (typeof parsedCategories === "string") {
+        try {
+          parsedCategories = JSON.parse(parsedCategories);
+        } catch (err) {
+          parsedCategories = parsedCategories.split(",").map((cat) => cat.trim());
+        }
+      }
+      group.categories = parsedCategories;
     }
 
-    // ✅ Update goal if provided
-    if (req.body.goal) {
-      group.goal = req.body.goal;
-    }
+    // Handle profile image
+    if (req.files?.profileImage?.[0]) {
+      const profileFile = dataUriMultipleFiles(req.files.profileImage[0]).content;
 
-    if (req.file) {
-      const file = dataUri(req).content;
-      console.log(req.file);
-
+      // Remove existing profile image from Cloudinary
       if (group.image) {
-        const publicId = group.image.split("/").slice(-1)[0].split(".")[0];
-        console.log(publicId);
-        await cloudinary.uploader.destroy(`uploads/${publicId}`);
+        const publicId = group.image.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(`uploads/profile/${publicId}`);
       }
 
-      const result = await cloudinary.uploader.upload(file, {
-        folder: "uploads",
+      const result = await cloudinary.uploader.upload(profileFile, {
+        folder: "uploads/profile",
         transformation: { width: 500, height: 500, crop: "limit" },
       });
 
       group.image = result.secure_url;
     }
 
-    if (req.body.members) {
-      if (typeof req.body.members === "string") {
-        req.body.members = JSON.parse(req.body.members);
+    // Handle banner image
+    if (req.files?.bannerImage?.[0]) {
+      const bannerFile = dataUriMultipleFiles(req.files.bannerImage[0]).content;
+
+      // Remove existing banner image from Cloudinary
+      if (group.banner) {
+        const publicId = group.banner.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(`uploads/banner/${publicId}`);
       }
 
-      if (!Array.isArray(req.body.members)) {
+      const result = await cloudinary.uploader.upload(bannerFile, {
+        folder: "uploads/banner",
+        transformation: { width: 1000, height: 300, crop: "limit" },
+      });
+
+      group.banner = result.secure_url;
+    }
+
+    // Update members
+    if (req.body.members) {
+      let parsedMembers = req.body.members;
+
+      if (typeof parsedMembers === "string") {
+        try {
+          parsedMembers = JSON.parse(parsedMembers);
+        } catch (err) {
+          return res.status(400).json({ message: "Invalid members format" });
+        }
+      }
+
+      if (!Array.isArray(parsedMembers)) {
         return res.status(400).json({ message: "Invalid members format" });
       }
 
-      const newMemberIds = req.body.members.map(
-        (id) => new mongoose.Types.ObjectId(id)
-      );
+      const newMemberIds = parsedMembers.map((id) => new mongoose.Types.ObjectId(id));
       const oldMemberIds = group.members.map((id) => id.toString());
       const newSet = new Set(newMemberIds.map((id) => id.toString()));
 
+      // Remove old members from user.joinedGroups
       const removedMembers = oldMemberIds.filter((id) => !newSet.has(id));
       for (const memberId of removedMembers) {
         const user = await User.findById(memberId);
@@ -220,6 +266,7 @@ const updateGroup = asyncHandler(async (req, res) => {
         }
       }
 
+      // Add new members to user.joinedGroups
       for (const memberId of newMemberIds) {
         const user = await User.findById(memberId);
         if (user && !user.joinedGroups.includes(group._id)) {
@@ -228,6 +275,7 @@ const updateGroup = asyncHandler(async (req, res) => {
         }
       }
 
+      // Recalculate common hobbies
       const memberHobbiesList = [];
       for (const memberId of newMemberIds) {
         const user = await User.findById(memberId);
@@ -236,43 +284,15 @@ const updateGroup = asyncHandler(async (req, res) => {
         }
       }
 
-      let commonHobbies = [];
-      if (memberHobbiesList.length > 0) {
-        commonHobbies = [
-          ...memberHobbiesList.reduce((a, b) => {
-            return new Set([...a].filter((hobby) => b.has(hobby)));
-          }),
-        ];
-      }
-
-      group.categories = commonHobbies;
       group.members = newMemberIds;
-    }
-
-    if (req.body.endDate) {
-      group.endDate = req.body.endDate;
-    }
-
-    if (req.body.categories) {
-      if (typeof req.body.categories === "string") {
-        group.categories = req.body.categories
-          .split(",")
-          .map((cat) => cat.trim());
-      } else if (Array.isArray(req.body.categories)) {
-        group.categories = req.body.categories;
-      }
     }
 
     const updatedGroup = await group.save();
 
-    res
-      .status(200)
-      .json({ message: "update successfully", group: updatedGroup });
+    res.status(200).json({ message: "Group updated successfully", group: updatedGroup });
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Failed to update group", error: error.message });
+    console.error("Error in updateGroup:", error);
+    res.status(500).json({ message: error.message || "Server Error" });
   }
 });
 
@@ -616,7 +636,7 @@ const acceptJoinRequest = asyncHandler(async (req, res) => {
     group.members.push(userId);
     await group.save();
 
-       const user = await User.findById(userId);
+    const user = await User.findById(userId);
     if (user?.fcmToken) {
       const title = "Request Accepted";
       const body = `Your request to join "${group.title}" has been accepted.`;
@@ -748,20 +768,20 @@ const getUserVsGroupAnalytics = asyncHandler(async (req, res) => {
   }
 });
 
-const leaveGroup = asyncHandler(async(req,res) =>{
-  const groupId = req.params.groupId
-  const userId = req.user._id
+const leaveGroup = asyncHandler(async (req, res) => {
+  const groupId = req.params.groupId;
+  const userId = req.user._id;
 
-    try {
+  try {
     const group = await Group.findById(groupId);
 
     if (!group) {
-      return res.status(404).json({ message: 'Group not found' });
+      return res.status(404).json({ message: "Group not found" });
     }
 
     // Prevent admin from leaving the group
     if (group.admin.toString() === userId.toString()) {
-      return res.status(400).json({ message: 'Admin cannot leave the group.' });
+      return res.status(400).json({ message: "Admin cannot leave the group." });
     }
 
     // Remove user from members array
@@ -779,13 +799,12 @@ const leaveGroup = asyncHandler(async(req,res) =>{
 
     await group.save();
 
-    res.status(200).json({ message: 'You have left the group successfully.' });
+    res.status(200).json({ message: "You have left the group successfully." });
   } catch (err) {
-    console.error('Leave Group Error:', err);
-    res.status(500).json({ message: 'Server error while leaving the group.' });
+    console.error("Leave Group Error:", err);
+    res.status(500).json({ message: "Server error while leaving the group." });
   }
-
-})
+});
 module.exports = {
   leaveGroup,
   getMemberAnalytics,

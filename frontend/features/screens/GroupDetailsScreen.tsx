@@ -60,7 +60,8 @@ const GroupDetailsScreen = ({route}: any) => {
   const [goal, setGoal] = useState('');
   const [members, setMembers] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState<any>([]);
-  const [image, setImage] = useState<any>(null);
+  const [profileImageUri, setProfileImageUri] = useState<any>(null);
+  const [bannerImageUri, setBannerImageUri] = useState<any>(null);
   const [tasks, setTasks] = useState<any>([]);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [endDate, setEndDate] = useState('');
@@ -97,7 +98,8 @@ const GroupDetailsScreen = ({route}: any) => {
       setTitle(group.title);
       setGoal(group.goal);
       setMembers(group.members || []);
-      setImage(group.image);
+      setProfileImageUri({uri:group.image});
+      setBannerImageUri({uri:group.banner});
       setSelectedMembers(group.members?.map((m: any) => m._id) || []);
       setTasks(group.todo?.tasks || []);
       setEndDate(group.endDate);
@@ -134,16 +136,38 @@ const GroupDetailsScreen = ({route}: any) => {
     return text && text.trim().length > 0;
   };
 
-  const pickImage = async () => {
+ const handlePickProfileImage = async () => {
     const result: any = await launchImageLibrary({
       mediaType: 'photo',
       includeBase64: false,
     });
 
     if (result?.assets && result.assets.length > 0) {
-      setImage(result.assets[0]);
+       const asset = result.assets[0];
+       console.log(asset)
+    setProfileImageUri({
+      uri: asset.uri,
+      fileName: asset.fileName || 'profile.jpg',
+      type: asset.type || 'image/jpeg',
+    });
     }
   };
+
+   const handlePickBannerImage = async () => {
+     const result: any = await launchImageLibrary({
+       mediaType: 'photo',
+       includeBase64: false,
+     });
+ 
+     if (result?.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+    setBannerImageUri({
+      uri: asset.uri,
+      fileName: asset.fileName || 'banner.jpg',
+      type: asset.type || 'image/jpeg',
+    });
+     }
+   };
 
   const toggleMemberSelection = (id: string) => {
     setSelectedMembers((prev: any) =>
@@ -170,7 +194,8 @@ const GroupDetailsScreen = ({route}: any) => {
         title,
         goal,
         selectedMembers,
-        image,
+        profileImageUri,
+        bannerImageUri,
         endDate,
         selectedCategories,
       );
@@ -243,7 +268,6 @@ const GroupDetailsScreen = ({route}: any) => {
   };
 
   const handleCompleteTask = async (taskId: string, images: File[]) => {
-    console.log(images);
     try {
       setLoading(true);
       console.log(groupId, taskId, images);
@@ -329,7 +353,7 @@ const GroupDetailsScreen = ({route}: any) => {
   const uniqueUsers = combinedUsers.filter(
     (user, index, self) => index === self.findIndex(u => u._id === user._id),
   );
-
+  console.log(group);
   return (
     <ScrollView
       style={styles.container}
@@ -348,32 +372,44 @@ const GroupDetailsScreen = ({route}: any) => {
             value={goal}
             onChangeText={setGoal}
           />
-          <TouchableOpacity onPress={pickImage}>
-            <Text style={{color: 'blue', marginBottom: 10}}>
-              Pick New Group Image
-            </Text>
-          </TouchableOpacity>
-          {image ? (
-            <Image
-              source={{uri: image.uri || image}}
-              style={{width: 100, height: 100, marginBottom: 10}}
-            />
-          ) : (
-            <TouchableOpacity onPress={pickImage}>
-              <View
-                style={{
-                  width: 100,
-                  height: 100,
-                  marginBottom: 10,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  backgroundColor: '#eee',
-                  borderRadius: 8,
-                }}>
-                <Text style={{color: '#888'}}>Pick Group Image</Text>
+
+          {/* Profile Image Picker */}
+          <TouchableOpacity
+            onPress={handlePickProfileImage}
+            style={styles.imagePicker}>
+            {profileImageUri ? (
+              <Image
+                source={{uri: profileImageUri.uri}}
+                style={styles.imagePreview}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Text style={styles.imagePlaceholderText}>
+                  Select Profile Image
+                </Text>
               </View>
-            </TouchableOpacity>
-          )}
+            )}
+          </TouchableOpacity>
+
+          {/* Banner Image Picker */}
+          <TouchableOpacity
+            onPress={handlePickBannerImage}
+            style={styles.imagePicker}>
+            {bannerImageUri ? (
+              <Image
+                source={{uri: bannerImageUri.uri}}
+                style={styles.imagePreview}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Text style={styles.imagePlaceholderText}>
+                  Select Banner Image
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
           <Text style={styles.subTitle}>Select Members:</Text>
           {uniqueUsers?.map((item: any) => (
@@ -675,6 +711,7 @@ const GroupDetailsScreen = ({route}: any) => {
             <MenuTrigger>
               <Icon name="ellipsis-v" size={20} color="#333" />
             </MenuTrigger>
+
             <MenuOptions>
               {isAdmin ? (
                 <>
@@ -695,6 +732,23 @@ const GroupDetailsScreen = ({route}: any) => {
               )}
             </MenuOptions>
           </Menu>
+          <View style={{marginTop: 30}}>
+            {group?.banner && (
+              <Image
+                source={{uri: group.banner}}
+                style={styles.bannerImage}
+                resizeMode="cover"
+              />
+            )}
+            {/* Profile Image (Circular) */}
+            {group?.image && (
+              <Image
+                source={{uri: group.image}}
+                style={styles.profileImage}
+                resizeMode="cover"
+              />
+            )}
+          </View>
           <Text style={styles.title}>{group?.title} </Text>
           <Text style={styles.goal}>Goal: {group?.goal}</Text>
           <Text style={styles.goal}>End Date: {formattedDate}</Text>
@@ -1097,6 +1151,47 @@ const GroupDetailsScreen = ({route}: any) => {
 export default GroupDetailsScreen;
 
 const styles = StyleSheet.create({
+  imagePicker: {
+    marginBottom: 15,
+    alignItems: 'center',
+  },
+  bannerImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: '#fff',
+    marginTop: -50,
+    marginBottom: 16,
+    backgroundColor: '#ccc',
+  },
+  imagePreview: {
+    width: 120,
+    height: 120,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  imagePlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 10,
+    backgroundColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  imagePlaceholderText: {
+    color: '#888',
+    fontSize: 14,
+  },
   taskItemContainer: {
     backgroundColor: '#fff',
     padding: 14,
