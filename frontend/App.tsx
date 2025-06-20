@@ -4,6 +4,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {AlertNotificationRoot} from 'react-native-alert-notification';
+import {View, Text, StyleSheet, TouchableOpacity, Animated} from 'react-native';
 
 import LoginScreen from './features/screens/LoginScreen';
 import SignupScreen from './features/screens/SignupScreen';
@@ -22,35 +23,164 @@ import {MenuProvider} from 'react-native-popup-menu';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Enhanced Custom Tab Bar with Animations
+const CustomTabBar = ({state, descriptors, navigation}: any) => {
+  const [animatedValues] = useState(
+    state.routes.map(() => new Animated.Value(0))
+  );
+
+  const animateTab = (index: number, isFocused: boolean) => {
+    Animated.spring(animatedValues[index], {
+      toValue: isFocused ? 1 : 0,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 8,
+    }).start();
+  };
+
+  React.useEffect(() => {
+    state.routes.forEach((_: any, index: number) => {
+      animateTab(index, state.index === index);
+    });
+  }, [state.index]);
+
+  return (
+    <View style={styles.tabBarContainer}>
+      <View style={styles.tabBar}>
+        {state.routes.map((route: any, index: number) => {
+          const {options} = descriptors[route.key];
+          const label =
+            options.tabBarLabel !== undefined
+              ? options.tabBarLabel
+              : options.title !== undefined
+              ? options.title
+              : route.name;
+
+          const isFocused = state.index === index;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name, route.params);
+            }
+          };
+
+          // Icon mapping with better icons
+          const getIconName = (routeName: string) => {
+            switch (routeName) {
+              case 'Home':
+                return 'home';
+              case 'Search':
+                return 'search';
+              case 'Create':
+                return 'plus-circle';
+              case 'Profile':
+                return 'user-circle';
+              default:
+                return 'circle';
+            }
+          };
+
+          const scale = animatedValues[index].interpolate({
+            inputRange: [0, 1],
+            outputRange: [1, 1.2],
+          });
+
+          const translateY = animatedValues[index].interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, -3],
+          });
+
+          return (
+            <TouchableOpacity
+              key={index}
+              style={styles.tabItem}
+              onPress={onPress}
+              activeOpacity={0.7}>
+              <Animated.View
+                style={[
+                  styles.tabButton,
+                  isFocused && styles.tabButtonActive,
+                  {
+                    transform: [{scale}, {translateY}],
+                  },
+                ]}>
+                <View style={isFocused ? styles.iconContainer : null}>
+                  <Icon
+                    name={getIconName(route.name)}
+                    size={route.name === 'Create' ? 28 : 22}
+                    color={isFocused ? '#fff' : '#666'}
+                  />
+                </View>
+              {!isFocused && (
+  <Text
+    style={[
+      styles.tabLabel,
+      isFocused && styles.tabLabelActive,
+    ]}>
+    {label}
+  </Text>
+)}
+
+              </Animated.View>
+              {isFocused && (
+                <Animated.View
+                  style={[
+                    styles.activeIndicator,
+                    {
+                      opacity: animatedValues[index],
+                    },
+                  ]}
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
 const TabNavigator = () => {
   return (
     <Tab.Navigator
-      screenOptions={({route}) => ({
-        // eslint-disable-next-line react/no-unstable-nested-components
-        tabBarIcon: ({color, size}) => {
-          const icons = {
-            Home: 'coffee',
-            Profile: 'user',
-            Create: 'plus',
-            Search: 'search',
-          };
-          return (
-            <Icon
-              name={icons[route.name as keyof typeof icons]}
-              size={size}
-              color={color}
-            />
-          );
-        },
-        tabBarActiveTintColor: 'tomato',
-        tabBarInactiveTintColor: 'gray',
-        tabBarStyle: {backgroundColor: '#f8f9fa'},
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-      })}>
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Create" component={CreateScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      }}>
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Home',
+        }}
+      />
+      <Tab.Screen 
+        name="Search" 
+        component={SearchScreen}
+        options={{
+          tabBarLabel: 'Search',
+        }}
+      />
+      <Tab.Screen 
+        name="Create" 
+        component={CreateScreen}
+        options={{
+          tabBarLabel: 'Create',
+        }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+        }}
+      />
     </Tab.Navigator>
   );
 };
@@ -58,6 +188,7 @@ const TabNavigator = () => {
 const AppNavigator = () => {
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
   useNotifications();
+  
   useEffect(() => {
     const checkUserSession = async () => {
       try {
@@ -77,7 +208,7 @@ const AppNavigator = () => {
     checkUserSession();
   }, []);
 
-  if (initialRoute === null) return null; // Prevent rendering until initialRoute is determined
+  if (initialRoute === null) return null;
 
   return (
     <NavigationContainer>
@@ -105,5 +236,68 @@ const AppNavigator = () => {
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  tabBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#111',
+    borderRadius: 30,
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 15,
+    borderWidth: 1,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  tabButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    borderRadius: 25,
+    minHeight: 60,
+  },
+  tabButtonActive: {
+    backgroundColor: 'transparent',
+  },
+  iconContainer: {
+    backgroundColor: '#8B5CF6',
+    borderRadius: 60,
+    padding: 8,
+    marginBottom: 4,
+  },
+  tabLabel: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 2,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  tabLabelActive: {
+    color: '#8B5CF6',
+    fontWeight: '600',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#8B5CF6',
+  },
+});
 
 export default AppNavigator;
