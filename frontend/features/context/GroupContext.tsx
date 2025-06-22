@@ -285,7 +285,6 @@ const fetchGroups = useCallback(async () => {
       });
     }
   };
-
   const leaveGroup = async (groupId: string) => {
     try {
       setLoading(true);
@@ -540,7 +539,7 @@ const fetchGroups = useCallback(async () => {
       const headers = await getAuthHeaders(); // your function to get headers
 
       const res = await axios.post(
-        `http://192.168.1.6:8000/api/groups/${groupId}/join-request`,
+        `${API_URL}/groups/${groupId}/join-request`,
         {},
         headers,
       );
@@ -569,7 +568,7 @@ const fetchGroups = useCallback(async () => {
       const headers = await getAuthHeaders(); // your function to get headers
       console.log(groupId, userId);
       const res = await axios.post(
-        `http://192.168.1.6:8000/api/groups/${groupId}/accept-request`,
+        `${API_URL}/groups/${groupId}/accept-request`,
         {userId: userId},
         headers,
       );
