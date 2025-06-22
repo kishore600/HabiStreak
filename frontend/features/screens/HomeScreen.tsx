@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react';
+import {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -7,69 +7,50 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  PanResponder,
   Dimensions,
-  Animated,
   StatusBar,
-  ScrollView,
+  FlatList,
   RefreshControl,
+  Animated,
 } from 'react-native';
 import {useGroup} from '../context/GroupContext';
-import {useAuth} from '../context/AuthContext';
 import ForceUpdateCheck from '../components/ForceUpdateCheck';
+import React from 'react';
 
 const {height: screenHeight, width: screenWidth} = Dimensions.get('window');
 
-const CARD_HEIGHT = screenHeight * 0.65;
-const CARD_WIDTH = screenWidth * 0.9;
+// Full screen height for true reels experience
+export const CARD_HEIGHT = screenHeight;
+export const CARD_WIDTH = screenWidth;
 
 const HomeScreen = ({navigation}: any) => {
-  const {groups, loading, fetchGroups, fetchUserGroups} = useGroup();
-  const {user}: any = useAuth();
+  const {groups, loading, fetchGroups, fetchUserGroups, handleJoinRequest} =
+    useGroup();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<any[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [cardHistory, setCardHistory] = useState<number[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const position = useRef(new Animated.ValueXY()).current;
-  const refreshAnimation = useRef(new Animated.Value(0)).current;
-  const pullToRefreshAnimation = useRef(new Animated.Value(0)).current;
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  console.log(currentIndex, setSelectedTasks);
+
+  const handleJoinGroup = async (groupId: string) => {
+    await handleJoinRequest(groupId);
+    await fetchGroups();
+  };
 
   useEffect(() => {
     fetchGroups();
     fetchUserGroups();
   }, [fetchGroups, fetchUserGroups, navigation]);
 
-  const resetPosition = () => {
-    position.setValue({x: 0, y: 0});
-  };
-
-  // Snapchat-like refresh function
   const onRefresh = async () => {
     setRefreshing(true);
-    
-    // Start refresh animation
-    Animated.sequence([
-      Animated.timing(refreshAnimation, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(refreshAnimation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
     try {
       await fetchGroups();
       await fetchUserGroups();
-      setCurrentIndex(0);
-      setCardHistory([]);
     } catch (error) {
       console.log('Refresh error:', error);
     } finally {
@@ -77,324 +58,124 @@ const HomeScreen = ({navigation}: any) => {
     }
   };
 
-  // Custom pull-to-refresh handler
-  const handleScroll = (event: any) => {
-    const {contentOffset} = event.nativeEvent;
-    if (contentOffset.y < -50 && !refreshing) {
-      const distance = Math.abs(contentOffset.y + 50);
-      setPullDistance(distance);
-      
-      // Animate pull indicator
-      Animated.timing(pullToRefreshAnimation, {
-        toValue: Math.min(distance / 100, 1),
-        duration: 100,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
-  const forceSwipe = (direction: string) => {
-    const x = direction === 'right' ? screenWidth : -screenWidth;
-    Animated.timing(position, {
-      toValue: {x, y: 0},
-      duration: 250,
+  // Handle scroll events
+  const handleScroll = Animated.event(
+    [{nativeEvent: {contentOffset: {y: scrollY}}}],
+    {
       useNativeDriver: false,
-    }).start(() => onSwipeComplete(direction));
-  };
-
-  const onSwipeComplete = (direction: string) => {
-    const item = groups[currentIndex];
-    if (direction === 'right') {
-      navigation.navigate('GroupDetails', {groupId: item._id});
-    }
-
-    setCardHistory(prev => [...prev, currentIndex]);
-    setCurrentIndex(currentIndex + 1);
-    resetPosition();
-  };
-
-  const goBackToPreviousCard = () => {
-    if (cardHistory.length > 0) {
-      const previousIndex = cardHistory[cardHistory.length - 1];
-      setCardHistory(prev => prev.slice(0, -1));
-      setCurrentIndex(previousIndex);
-      resetPosition();
-    }
-  };
-
-  const handleUpSwipe = () => {
-    if (cardHistory.length > 0) {
-      Animated.timing(position, {
-        toValue: {x: 0, y: -screenHeight},
-        duration: 300,
-        useNativeDriver: false,
-      }).start(() => {
-        goBackToPreviousCard();
-      });
-    }
-  };
-
-  const getCardStyle = () => {
-    const rotateCard = position.x.interpolate({
-      inputRange: [-screenWidth * 1.5, 0, screenWidth * 1.5],
-      outputRange: ['-30deg', '0deg', '30deg'],
-    });
-
-    return {
-      ...position.getLayout(),
-      transform: [{rotate: rotateCard}],
-    };
-  };
-
-  const getLikeOpacity = () => {
-    return position.x.interpolate({
-      inputRange: [-screenWidth / 2, 0, screenWidth / 2],
-      outputRange: [0, 0, 1],
-      extrapolate: 'clamp',
-    });
-  };
-
-  const getNopeOpacity = () => {
-    return position.x.interpolate({
-      inputRange: [-screenWidth / 2, 0, screenWidth / 2],
-      outputRange: [1, 0, 0],
-      extrapolate: 'clamp',
-    });
-  };
-
-  const getBackOpacity = () => {
-    return position.y.interpolate({
-      inputRange: [-screenHeight / 2, 0],
-      outputRange: [1, 0],
-      extrapolate: 'clamp',
-    });
-  };
-
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: (evt, gestureState) => {
-      return Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
+      listener: (event: any) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        const index = Math.round(offsetY / CARD_HEIGHT);
+        setCurrentIndex(index);
+      },
     },
-    onMoveShouldSetPanResponder: (evt, gestureState) => {
-      return Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
-    },
-    onPanResponderMove: (event, gesture) => {
-      if (Math.abs(gesture.dx) > Math.abs(gesture.dy)) {
-        position.setValue({x: gesture.dx, y: 0});
-      } else if (gesture.dy < 0 && cardHistory.length > 0) {
-        position.setValue({x: 0, y: gesture.dy});
-      }
-    },
-    onPanResponderRelease: (event, gesture) => {
-      if (Math.abs(gesture.dx) > Math.abs(gesture.dy)) {
-        if (gesture.dx > 120) {
-          forceSwipe('right');
-        } else if (gesture.dx < -120) {
-          forceSwipe('left');
-        } else {
-          resetPosition();
-        }
-      } else if (gesture.dy < -100 && cardHistory.length > 0) {
-        handleUpSwipe();
-      } else {
-        resetPosition();
-      }
-    },
-  });
-
-  // Custom refresh indicator component
-  const renderRefreshIndicator = () => {
-    const rotateAnimation = refreshAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['0deg', '360deg'],
-    });
-
-    const scaleAnimation = pullToRefreshAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.5, 1.2],
-    });
-
-    return (
-      <Animated.View
-        style={[
-          styles.refreshIndicator,
-          {
-            opacity: pullToRefreshAnimation,
-            transform: [
-              {scale: scaleAnimation},
-              {rotate: rotateAnimation},
-            ],
-          },
-        ]}>
-        <View style={styles.refreshIcon}>
-          <Text style={styles.refreshEmoji}>🔄</Text>
-        </View>
-        <Text style={styles.refreshText}>
-          {pullDistance > 80 ? 'Release to refresh' : 'Pull to refresh'}
-        </Text>
-      </Animated.View>
-    );
-  };
+  );
 
   const renderCard = (item: any, index: number) => {
-    if (index < currentIndex) {
-      return null;
-    }
+    return (
+      <View style={styles.cardContainer}>
+        <TouchableOpacity
+          style={styles.cardContent}
+          onPress={() =>
+            navigation.navigate('GroupDetails', {
+              groupId: item._id,
+            })
+          }
+          activeOpacity={0.9}>
+          <Image
+            source={{uri: item.image}}
+            style={styles.backgroundImage}
+            resizeMode="cover"
+          />
 
-    if (index === currentIndex) {
-      return (
-        <Animated.View
-          key={item._id}
-          style={[styles.cardStyle, getCardStyle()]}
-          {...panResponder.panHandlers}>
-          
-          <Animated.View style={[styles.likeLabel, {opacity: getLikeOpacity()}]}>
-            <Text style={styles.likeText}>JOIN</Text>
-          </Animated.View>
+          {/* Gradient Overlay */}
+          <View style={styles.gradientOverlay} />
 
-          <Animated.View style={[styles.nopeLabel, {opacity: getNopeOpacity()}]}>
-            <Text style={styles.nopeText}>PASS</Text>
-          </Animated.View>
-
-          {cardHistory.length > 0 && (
-            <Animated.View style={[styles.backLabel, {opacity: getBackOpacity()}]}>
-              <Text style={styles.backText}>BACK</Text>
-            </Animated.View>
-          )}
-
-          <View style={styles.cardContent}>
-            <View style={styles.imageContainer}>
-              <Image source={{uri: item.image}} style={styles.cardImage} />
-
-              {item.todo && item.todo.tasks.length > 0 && (
-                <TouchableOpacity
-                  style={styles.todoButton}
-                  onPress={() => {
-                    setSelectedTasks(item.todo.tasks);
-                    setModalVisible(true);
-                  }}>
-                  <Text style={styles.todoButtonText}>View Tasks</Text>
-                </TouchableOpacity>
-              )}
+          {/* Bottom Content */}
+          <View style={styles.bottomContent}>
+            {/* Group Title */}
+            <View>
+              <View style={styles.cardContentWrapper}>
+                <Image
+                  source={{uri: item.admin.image}}
+                  style={styles.adminImage}
+                  resizeMode="cover"
+                />
+                <Text style={styles.groupTitle}>
+                  {item.title || "Kishore's Gym club"}
+                </Text>
+              </View>
+              <Text style={styles.groupSubtitle}>
+                {item.goal || 'Active Aesthetic physique'}
+              </Text>
             </View>
 
-            <View style={styles.cardInfo}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.groupTitle}>{item.title}</Text>
-                <Text style={styles.groupGoal}>{item.goal}</Text>
-              </View>
-
-              <View style={styles.cardFooter}>
-                <View style={styles.membersContainer}>
-                  {item.members.slice(0, 3).map((member: any, idx: number) => (
-                    <Image
-                      key={idx}
-                      source={{
-                        uri: member.image || 'https://via.placeholder.com/30',
-                      }}
-                      style={[styles.memberAvatar, {marginLeft: idx * -8}]}
-                    />
-                  ))}
-                  {item.members.length > 3 && (
-                    <View style={styles.moreMembers}>
+            {/* Members Avatars */}
+            <View style={styles.membersAvatarsSection}>
+              <View>
+                <View style={styles.membersAvatars}>
+                  {item.members
+                    ?.slice(0, 4)
+                    .map((member: Member, idx: number) => (
+                      <Image
+                        key={member._id || idx}
+                        source={{
+                          uri: member.image || 'https://via.placeholder.com/40',
+                        }}
+                        style={[styles.memberAvatar, {marginLeft: idx * -12}]}
+                      />
+                    ))}
+                  {item.members?.length > 4 && (
+                    <View
+                      style={[
+                        styles.memberAvatar,
+                        styles.moreMembers,
+                        {marginLeft: -12},
+                      ]}>
                       <Text style={styles.moreMembersText}>
-                        +{item.members.length - 3}
+                        +{item.members.length - 4}
                       </Text>
                     </View>
                   )}
                 </View>
-
-                <TouchableOpacity
-                  style={styles.joinButton}
-                  onPress={() =>
-                    navigation.navigate('GroupDetails', {groupId: item._id})
-                  }>
-                  <Text style={styles.joinButtonText}>Join</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Animated.View>
-      );
-    }
-
-    return (
-      <Animated.View
-        key={item._id}
-        style={[
-          styles.cardStyle,
-          {
-            zIndex: -index,
-            transform: [
-              {scale: 1 - (index - currentIndex) * 0.03},
-              {translateY: (index - currentIndex) * 8},
-            ],
-            opacity: 1 - (index - currentIndex) * 0.2,
-          },
-        ]}>
-        <View style={styles.cardContent}>
-          <View style={styles.imageContainer}>
-            <Image source={{uri: item.image}} style={styles.cardImage} />
-          </View>
-
-          <View style={styles.cardInfo}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.groupTitle}>{item.title}</Text>
-              <Text style={styles.groupGoal}>{item.goal}</Text>
-            </View>
-
-            <View style={styles.cardFooter}>
-              <View style={styles.membersContainer}>
-                {item.members.slice(0, 3).map((member: any, idx: number) => (
-                  <Image
-                    key={idx}
-                    source={{
-                      uri: member.image || 'https://via.placeholder.com/30',
-                    }}
-                    style={[styles.memberAvatar, {marginLeft: idx * -8}]}
-                  />
-                ))}
-                {item.members.length > 3 && (
-                  <View style={styles.moreMembers}>
-                    <Text style={styles.moreMembersText}>
-                      +{item.members.length - 3}
-                    </Text>
-                  </View>
-                )}
+                <Text style={styles.membersJoinedText}>
+                  {item.members?.length || 6} members joined
+                </Text>
               </View>
 
+              {/* Join Button */}
               <TouchableOpacity
-                style={styles.joinButton}
-                onPress={() =>
-                  navigation.navigate('GroupDetails', {groupId: item._id})
-                }>
+                style={styles.joinButtonBottom}
+                onPress={e => {
+                  e.stopPropagation(); // Prevent navigation when clicking join
+                  handleJoinGroup(item._id);
+                }}>
                 <Text style={styles.joinButtonText}>Join</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </Animated.View>
+        </TouchableOpacity>
+      </View>
     );
   };
 
-  const renderCards = () => {
-    if (currentIndex >= groups.length) {
-      return (
-        <View style={styles.noMoreCards}>
-          <Text style={styles.noMoreCardsText}>No more groups!</Text>
-          <TouchableOpacity
-            style={styles.refreshButton}
-            onPress={() => {
-              setCurrentIndex(0);
-              setCardHistory([]);
-              fetchGroups();
-            }}>
-            <Text style={styles.refreshButtonText}>Refresh</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
+  const renderItem = ({item, index}: any) => {
+    return renderCard(item, index);
+  };
 
-    return groups.map((item, index) => renderCard(item, index)).reverse();
+  const renderEmptyState = () => {
+    return (
+      <View style={styles.noMoreCards}>
+        <Text style={styles.noMoreCardsText}>No more groups!</Text>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={() => {
+            fetchGroups();
+          }}>
+          <Text style={styles.refreshButtonText}>Refresh</Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   if (loading && !refreshing) {
@@ -407,72 +188,43 @@ const HomeScreen = ({navigation}: any) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+      <StatusBar barStyle="light-content" backgroundColor="#000" translucent />
 
-      {/* Custom refresh indicator */}
-      {renderRefreshIndicator()}
-
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
+      {/* Full screen scrollable cards */}
+      <FlatList
+        ref={flatListRef}
+        data={groups}
+        renderItem={renderItem}
+        keyExtractor={item => item._id}
+        ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
-        bounces={true}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
+        contentContainerStyle={styles.flatListContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="transparent"
-            colors={['transparent']}
-            style={{backgroundColor: 'transparent'}}
+            tintColor="#fff"
+            colors={['#fff']}
+            progressBackgroundColor="#000"
           />
-        }>
-        
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.userInfo}>
-            <Image source={{uri: user?.image}} style={styles.userAvatar} />
-            <View>
-              <Text style={styles.userName}>Welcome Back</Text>
-              <Text style={styles.userHandle}>@{user?.name}</Text>
-            </View>
-          </View>
-          <TouchableOpacity style={styles.menuButton}>
-            <View style={styles.menuGrid}>
-              <View style={styles.menuDot} />
-              <View style={styles.menuDot} />
-              <View style={styles.menuDot} />
-              <View style={styles.menuDot} />
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Cards Container - Centered */}
-        <View style={styles.cardsContainer}>
-          <View style={styles.cardsWrapper}>{renderCards()}</View>
-        </View>
-
-        {/* Back Button (visible when there's history) */}
-        {cardHistory.length > 0 && (
-          <View style={styles.backButtonContainer}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={goBackToPreviousCard}>
-              <Text style={styles.backButtonText}>← Back</Text>
-            </TouchableOpacity>
-
-            {/* <View style={styles.hintsContainer}>
-              <Text style={styles.hintText}>← Swipe left to pass</Text>
-              <Text style={styles.hintText}>Swipe right to join →</Text>
-            </View> */}
-          </View>
-        )}
-
-        {/* Extra space for scrolling */}
-        <View style={styles.extraSpace} />
-      </ScrollView>
+        }
+        style={styles.flatListStyle}
+        pagingEnabled={true}
+        snapToInterval={CARD_HEIGHT}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+        getItemLayout={(_, index) => ({
+          length: CARD_HEIGHT,
+          offset: CARD_HEIGHT * index,
+          index,
+        })}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={3}
+        windowSize={5}
+        initialNumToRender={2}
+      />
 
       {/* Modal for Tasks */}
       <Modal
@@ -483,14 +235,14 @@ const HomeScreen = ({navigation}: any) => {
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Daily Tasks</Text>
-            <ScrollView style={styles.modalScroll}>
-              {selectedTasks.map((task, index) => (
-                <Text key={index} style={styles.modalTaskText}>
-                  • {task.title}
-                </Text>
-              ))}
-            </ScrollView>
-
+            <FlatList
+              data={selectedTasks}
+              keyExtractor={(_, index) => index.toString()}
+              renderItem={({item}) => (
+                <Text style={styles.modalTaskText}>• {item.title}</Text>
+              )}
+              style={styles.modalScroll}
+            />
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setModalVisible(false)}>
@@ -510,307 +262,247 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 100,
-  },
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#000',
   },
-  refreshIndicator: {
-    position: 'absolute',
-    top: 80,
-    left: '50%',
-    marginLeft: -50,
-    zIndex: 1000,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 100,
-    height: 60,
-  },
-  refreshIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#8B5CF6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 5,
-  },
-  refreshEmoji: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  refreshText: {
-    color: '#8B5CF6',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  userName: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  userHandle: {
-    color: '#888',
-    fontSize: 14,
-  },
-  menuButton: {
-    padding: 5,
-  },
-  menuGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    width: 20,
-    height: 20,
-  },
-  menuDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#fff',
-    margin: 1,
-  },
-  backButtonContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: -25,
-  },
-  backButton: {
-    backgroundColor: '#333',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginBottom: 5,
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  cardsContainer: {
+
+  // FlatList Styles
+  flatListStyle: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: CARD_HEIGHT + 100,
   },
-  cardsWrapper: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
+  adminImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#fff',
+    marginBottom: 10,
   },
-  cardStyle: {
-    position: 'absolute',
-    width: CARD_WIDTH,
+  flatListContent: {
+    flexGrow: 1,
+  },
+  cardContainer: {
     height: CARD_HEIGHT,
+    width: CARD_WIDTH,
   },
   cardContent: {
     flex: 1,
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: '#1a1a1a',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  imageContainer: {
-    flex: 1,
     position: 'relative',
   },
-  cardImage: {
+  backgroundImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    position: 'absolute',
   },
-  cardInfo: {
-    backgroundColor: '#1a1a1a',
-    padding: 20,
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
-  cardHeader: {
-    marginBottom: 15,
-  },
-  groupTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  groupGoal: {
-    color: '#ccc',
-    fontSize: 14,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+
+  // Top Right Section
+  topRightSection: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
     alignItems: 'center',
+    zIndex: 10,
   },
-  membersContainer: {
-    flexDirection: 'row',
+  profileSection: {
     alignItems: 'center',
+    marginBottom: 10, // Reduced from 20 since join button is removed
   },
-  memberAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
+  profileAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
     borderColor: '#fff',
+    marginBottom: 8,
   },
-  moreMembers: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#8B5CF6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: -8,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  moreMembersText: {
+  profileName: {
     color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '600',
   },
   joinButton: {
     backgroundColor: '#8B5CF6',
-    paddingHorizontal: 25,
+    paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
+    marginBottom: 20,
   },
-  joinButtonText: {
+  membersSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  membersCount: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  membersLabel: {
+    color: '#fff',
+    fontSize: 12,
+    opacity: 0.8,
+  },
+  tasksSection: {
+    alignItems: 'center',
+  },
+  tasksIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  tasksEmoji: {
+    fontSize: 20,
+  },
+  tasksLabel: {
+    color: '#fff',
+    fontSize: 12,
+    opacity: 0.8,
+  },
+
+  // Bottom Content
+  bottomContent: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 100,
+  },
+  cardContentWrapper: {
+    // padding: 16,
+    borderRadius: 16,
+    gap: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  groupTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  groupSubtitle: {
+    color: '#fff',
+    fontSize: 16,
+    opacity: 0.9,
+    marginBottom: 20,
+  },
+  membersAvatarsSection: {
+    marginBottom: 15,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+  },
+  membersAvatars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  moreMembers: {
+    backgroundColor: '#8B5CF6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreMembersText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  membersJoinedText: {
+    color: '#fff',
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  streakSection: {
+    marginTop: 10,
+  },
+  streakText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
-  todoButton: {
+
+  // Bottom Navigation
+  bottomNavigation: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  todoButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  likeLabel: {
-    position: 'absolute',
-    top: 50,
-    right: 40,
-    zIndex: 1000,
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 8,
-    transform: [{rotate: '15deg'}],
-  },
-  likeText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  nopeLabel: {
-    position: 'absolute',
-    top: 50,
-    left: 40,
-    zIndex: 1000,
-    backgroundColor: '#F44336',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 8,
-    transform: [{rotate: '-15deg'}],
-  },
-  nopeText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  backLabel: {
-    position: 'absolute',
-    top: 100,
-    left: '50%',
-    marginLeft: -30,
-    zIndex: 1000,
-    backgroundColor: '#FF9800',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  backText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  hintsContainer: {
-    alignItems: 'stretch',
-    display: 'flex',
-  },
-  hintText: {
-    color: '#666',
-    fontSize: 12,
-    marginBottom: 2,
-  },
-  extraSpace: {
-    height: 200,
-  },
-  noMoreCards: {
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    justifyContent: 'center',
-    height: CARD_HEIGHT,
+    paddingBottom: 20,
   },
-  noMoreCardsText: {
-    color: '#fff',
-    fontSize: 18,
-    marginBottom: 20,
+  navItem: {
+    alignItems: 'center',
+    flex: 1,
   },
-  refreshButton: {
+  activeNavItem: {
     backgroundColor: '#8B5CF6',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
-  refreshButtonText: {
+  homeIcon: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchIcon: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addIcon: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileIcon: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navIconText: {
+    fontSize: 20,
+  },
+  navLabel: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 10,
+    marginTop: 2,
+    opacity: 0.7,
   },
+
+  // Modal Styles
   modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -848,6 +540,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+
+  // Empty State
+  noMoreCards: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: CARD_HEIGHT,
+    paddingHorizontal: 20,
+  },
+  noMoreCardsText: {
+    color: '#fff',
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  refreshButton: {
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 25,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  joinButtonBottom: {
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+    alignSelf: 'flex-start',
+    color: 'white',
+    // marginVertical: 12,
+  },
+  joinButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 

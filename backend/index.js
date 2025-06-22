@@ -32,16 +32,27 @@ app.use((err, req, res, next) => {
       message: err.message || "Something went wrong!",
     });
   });
-cron.schedule("30 1 * * *", async () => {
-  console.log("🔔 Morning Reminder: 7:00 AM IST");
-  await sendReminderNotifications();
-});
+cron.schedule(
+  "30 1 * * *", // 7:00 AM IST (1:30 AM UTC)
+  async () => {
+    console.log("🔔 Morning Reminder: 7:00 AM IST");
+    await sendReminderNotifications();
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
-cron.schedule("30 16 * * *", async () => {
-  console.log("🌙 Evening Reminder: 10:00 PM IST");
-  await sendReminderNotifications();
-});
-
+cron.schedule(
+  "30 16 * * *", // 10:00 PM IST (4:30 PM UTC)
+  async () => {
+    console.log("🌙 Evening Reminder: 10:00 PM IST");
+    await sendReminderNotifications();
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (err,res) => {
     console.error('Unhandled Rejection:', err.message);
