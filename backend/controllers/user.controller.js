@@ -79,7 +79,15 @@ const getUserProfile1 = async (req, res) => {
           select: "name email image _id",
         },
       })
-      .populate("createdGroups");
+      .populate("createdGroups")
+       .populate({
+        path: "joinRequests",
+        populate: {
+          path: "admin",
+          select: "name email image",
+        },
+        select: "title image members admin categories goal",
+      });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });

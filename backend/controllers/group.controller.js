@@ -2,7 +2,10 @@ const asyncHandler = require("express-async-handler");
 const Group = require("../models/group.model");
 const Todo = require("../models/todo.model");
 const User = require("../models/user.Model");
-const { dataUri, dataUriMultipleFiles } = require("../middleware/upload.middleware.js");
+const {
+  dataUri,
+  dataUriMultipleFiles,
+} = require("../middleware/upload.middleware.js");
 const { cloudinary } = require("../config/cloudnari.config.js");
 const { default: mongoose } = require("mongoose");
 const hobbies_enum = require("../constant.js");
@@ -58,7 +61,9 @@ const createGroup = asyncHandler(async (req, res) => {
     let bannerImageUrl;
 
     if (req.files?.profileImage?.[0]) {
-      const profileFile = dataUriMultipleFiles(req.files.profileImage[0]).content;
+      const profileFile = dataUriMultipleFiles(
+        req.files.profileImage[0]
+      ).content;
       const result = await cloudinary.uploader.upload(profileFile, {
         folder: "uploads/profile",
         transformation: { width: 500, height: 500, crop: "limit" },
@@ -192,7 +197,9 @@ const updateGroup = asyncHandler(async (req, res) => {
         try {
           parsedCategories = JSON.parse(parsedCategories);
         } catch (err) {
-          parsedCategories = parsedCategories.split(",").map((cat) => cat.trim());
+          parsedCategories = parsedCategories
+            .split(",")
+            .map((cat) => cat.trim());
         }
       }
       group.categories = parsedCategories;
@@ -200,7 +207,9 @@ const updateGroup = asyncHandler(async (req, res) => {
 
     // Handle profile image
     if (req.files?.profileImage?.[0]) {
-      const profileFile = dataUriMultipleFiles(req.files.profileImage[0]).content;
+      const profileFile = dataUriMultipleFiles(
+        req.files.profileImage[0]
+      ).content;
 
       // Remove existing profile image from Cloudinary
       if (group.image) {
@@ -250,7 +259,9 @@ const updateGroup = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Invalid members format" });
       }
 
-      const newMemberIds = parsedMembers.map((id) => new mongoose.Types.ObjectId(id));
+      const newMemberIds = parsedMembers.map(
+        (id) => new mongoose.Types.ObjectId(id)
+      );
       const oldMemberIds = group.members.map((id) => id.toString());
       const newSet = new Set(newMemberIds.map((id) => id.toString()));
 
@@ -289,7 +300,9 @@ const updateGroup = asyncHandler(async (req, res) => {
 
     const updatedGroup = await group.save();
 
-    res.status(200).json({ message: "Group updated successfully", group: updatedGroup });
+    res
+      .status(200)
+      .json({ message: "Group updated successfully", group: updatedGroup });
   } catch (error) {
     console.error("Error in updateGroup:", error);
     res.status(500).json({ message: error.message || "Server Error" });
@@ -585,11 +598,21 @@ const requestToJoinGroup = asyncHandler(async (req, res) => {
       // Pull user from joinRequests (cancel request)
       group.joinRequests.pull(userId);
       await group.save();
+
+      user.joinRequests = user.joinRequests.filter(
+        (id) => id.toString() !== groupId
+      );
+      await user.save();
       return res.status(200).json({ message: "Join request cancelled" });
     } else {
       // Add user to joinRequests
       group.joinRequests.push(userId);
       await group.save();
+
+      if (!user.joinRequests.includes(groupId)) {
+        user.joinRequests.push(groupId);
+        await user.save();
+      }
 
       if (adminUser?.fcmToken) {
         const title = "Join Request";
@@ -637,6 +660,13 @@ const acceptJoinRequest = asyncHandler(async (req, res) => {
     await group.save();
 
     const user = await User.findById(userId);
+
+    if (user) {
+      user.joinRequests = user.joinRequests.filter(
+        (id) => id.toString() !== groupId
+      );
+      await user.save();
+    }
     if (user?.fcmToken) {
       const title = "Request Accepted";
       const body = `Your request to join "${group.title}" has been accepted.`;

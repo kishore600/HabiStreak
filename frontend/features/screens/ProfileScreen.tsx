@@ -36,8 +36,15 @@ const ProfileScreen = ({route, navigation}: any) => {
     pendingRequest,
     isGroupUpdated,
     getPendingRequests,
+    joinRequests,
   }: any = useAuth();
-  const {userGroups, loading: userGroupLoading, fetchUserGroups} = useGroup();
+  const {
+    userGroups,
+    loading: userGroupLoading,
+    fetchUserGroups,
+    handleJoinRequest,
+    fetchGroups,
+  } = useGroup();
   const [menuVisible, setMenuVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -54,6 +61,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     'followers' | 'following' | null
   >(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
+  const [showJoinRequestModal, setShowJoinRequestModal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -176,6 +184,11 @@ const ProfileScreen = ({route, navigation}: any) => {
     setUserListModalVisible(true);
   };
 
+  const handleJoinGroup = async (groupId: string) => {
+    await handleJoinRequest(groupId);
+    await fetchGroups();
+  };
+
   const handleDeleteAccount = () => {
     Dialog.show({
       type: ALERT_TYPE.WARNING,
@@ -232,6 +245,8 @@ const ProfileScreen = ({route, navigation}: any) => {
       },
     });
   };
+
+  console.log(joinRequests)
   return (
     <Provider>
       {/* <ScrollView style={styles.container}></ScrollView> */}
@@ -244,10 +259,10 @@ const ProfileScreen = ({route, navigation}: any) => {
               anchor={
                 <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
                   <Icon name="bars" size={30} color="#333" />
-                  {user?.pendingRequest?.length > 0 && (
+                  {user?.pendingRequest?.length > 0 || user?.joinRequests?.length > 0 && (
                     <View style={styles.badgeContainer}>
                       <Text style={styles.badgeText}>
-                        {user.pendingRequest.length}
+                        {user.pendingRequest.length + user?.joinRequests?.length}
                       </Text>
                     </View>
                   )}
@@ -273,6 +288,12 @@ const ProfileScreen = ({route, navigation}: any) => {
                   title={`Requested Users (${user.pendingRequest.length})`}
                 />
               )}
+
+                <Menu.Item
+                  onPress={() => setShowJoinRequestModal(true)}
+                  title={`GroupJoinRequest (${user.joinRequests.length})`}
+                />
+
             </Menu>
           </>
         )}
@@ -437,6 +458,112 @@ const ProfileScreen = ({route, navigation}: any) => {
           </View>
         </View>
       </Modal>
+
+<Modal
+  visible={showJoinRequestModal}
+  animationType="slide"
+  transparent={true}>
+  <View
+    style={{
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    }}>
+    <View
+      style={{
+        backgroundColor: 'white',
+        padding: 20,
+        width: '85%',
+        borderRadius: 10,
+        maxHeight: '80%',
+      }}>
+      <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>
+        Your Group Join Requests
+      </Text>
+
+      {joinRequests?.length === 0 ? (
+        <Text>No pending requests.</Text>
+      ) : (
+        joinRequests.map((g: any) => (
+          <TouchableOpacity
+            key={g?._id}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginBottom: 15,
+              gap: 10,
+            }}
+            onPress={() => {
+              setShowJoinRequestModal(false); // Close modal
+              navigation.navigate('GroupDetails', { groupId: g._id }); // Navigate
+            }}>
+            {/* Group Image */}
+            <Image
+              source={{ uri: g?.image || 'https://via.placeholder.com/60' }}
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 10,
+                marginRight: 10,
+                backgroundColor: '#eee',
+              }}
+              resizeMode="cover"
+            />
+
+            {/* Group Info */}
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontWeight: '600' }}>{g?.title}</Text>
+              <Text style={{ fontSize: 12, color: 'gray' }}>
+                {g?.goal || 'No goal'}
+              </Text>
+            </View>
+
+            {/* Cancel Button */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#ccc',
+                padding: 6,
+                borderRadius: 5,
+              }}
+              onPress={async (e) => {
+                e.stopPropagation(); // Prevent navigation on cancel
+                try {
+                  setLoading(true);
+                  await handleJoinGroup(g._id); // Cancel request
+                  Dialog.show({
+                    type: ALERT_TYPE.SUCCESS,
+                    title: 'Cancelled',
+                    textBody: 'Join request cancelled.',
+                    button: 'OK',
+                  });
+                  await fetchProfile(); // Refresh data
+                } catch (error) {
+                  Dialog.show({
+                    type: ALERT_TYPE.DANGER,
+                    title: 'Error',
+                    textBody: 'Failed to cancel join request.',
+                    button: 'OK',
+                  });
+                } finally {
+                  setLoading(false);
+                }
+              }}>
+              <Text style={{ fontSize: 12 }}>Cancel</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        ))
+      )}
+
+      <TouchableOpacity
+        onPress={() => setShowJoinRequestModal(false)}
+        style={{ marginTop: 10 }}>
+        <Text style={{ color: 'blue', textAlign: 'center' }}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
 
       <View style={styles.container}>
         <View>

@@ -37,6 +37,7 @@ interface AuthContextType {
   handleFollowRequest:any,
   fetchProfile:any,
   pendingRequest:any
+  joinRequests:any
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -48,6 +49,7 @@ export const AuthProvider = ({children}: any) => {
   const [currentUser,setIsCurrentUser] = useState(true)
   const [profileUser, setProfileUser] = useState<any>(null);
   const [pendingRequest,setPendingRequest] = useState(null)
+  const [joinRequests,setJoinRequest] = useState(null)
 
   const loadUserData = async () => {
     try {
@@ -240,6 +242,7 @@ const fetchProfile = async () => {
       },
     });
     setUser(res.data)
+      setJoinRequest(res.data?.joinRequests)
   } catch (err) {
     console.error(err);
   }
@@ -314,7 +317,7 @@ const handleFollowRequest = async (requesterId: string, action: string ) => {
 
   return (
     <AuthContext.Provider
-      value={{user,getPendingRequests, isAuthenticated, login, signup, logout, updateUser,fetchUserProfile,currentUser,profileUser,token,setIsCurrentUser,setProfileUser,loadUserData,sendFollowRequest,unfollowUser,handleFollowRequest,fetchProfile,pendingRequest,}}>
+      value={{user,getPendingRequests,joinRequests, isAuthenticated, login, signup, logout, updateUser,fetchUserProfile,currentUser,profileUser,token,setIsCurrentUser,setProfileUser,loadUserData,sendFollowRequest,unfollowUser,handleFollowRequest,fetchProfile,pendingRequest,}}>
       {children}
     </AuthContext.Provider>
   );

@@ -116,7 +116,7 @@ const HomeScreen = ({navigation}: any) => {
                 <View style={styles.membersAvatars}>
                   {item.members
                     ?.slice(0, 4)
-                    .map((member: Member, idx: number) => (
+                    .map((member: any, idx: number) => (
                       <Image
                         key={member._id || idx}
                         source={{

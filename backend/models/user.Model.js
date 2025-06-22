@@ -51,6 +51,12 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpire: {
     type: Date,
   },
+  joinRequests: [  
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Group",
+  },
+],
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
