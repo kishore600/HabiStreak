@@ -26,9 +26,17 @@ const pendingRequestSchema = mongoose.Schema(
 );
 
 const userSchema = new mongoose.Schema({
-  name: { type: String },
-  email: { type: String, unique: true },
-  image: { type: String, required: false },
+  name: {
+    type: String,
+  },
+  email: {
+    type: String,
+    unique: true,
+  },
+  image: {
+    type: String,
+    required: false,
+  },
   password: String,
   hobbies: [
     {
@@ -36,27 +44,114 @@ const userSchema = new mongoose.Schema({
       enum: hobbies_enum,
     },
   ],
-  followedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Can be removed if replaced
-  following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  createdGroups: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],
-  joinedGroups: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],
+  followedUsers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ], // Can be removed if replaced
+  following: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+  followers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+  createdGroups: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Group",
+    },
+  ],
+  joinedGroups: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Group",
+    },
+  ],
   pendingRequest: [pendingRequestSchema],
-  totalStreak: { type: Number, default: 0 },
-  lastStreakDate: { type: Date },
-  fcmToken: { type: String },
+  totalStreak: {
+    type: Number,
+    default: 0,
+  },
+  lastStreakDate: {
+    type: Date,
+  },
+  fcmToken: {
+    type: String,
+  },
   resetPasswordToken: {
     type: String,
   },
   resetPasswordExpire: {
     type: Date,
   },
-  joinRequests: [  
-  {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Group",
+  joinRequests: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Group",
+    },
+  ],
+
+  weeklyStats: {
+    mon: {
+      rest: {
+        type: Boolean,
+        default: false,
+      },
+    },
+    tue: {
+      rest: {
+        type: Boolean,
+        default: false,
+      },
+    },
+    wed: {
+      rest: {
+        type: Boolean,
+        default: false,
+      },
+    },
+    thu: {
+      rest: {
+        type: Boolean,
+        default: false,
+      },
+    },
+    fri: {
+      rest: {
+        type: Boolean,
+        default: false,
+      },
+    },
+    sat: {
+      rest: {
+        type: Boolean,
+        default: false,
+      },
+    },
+    sun: {
+      rest: {
+        type: Boolean,
+        default: false,
+      },
+    },
   },
-],
+  weeklyOption: {
+    weekdays: {
+      type: Boolean,
+      default: false,
+    },
+    weekend: {
+      type: Boolean,
+      default: false,
+    },
+  },
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {

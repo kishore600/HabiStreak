@@ -80,7 +80,7 @@ const getUserProfile1 = async (req, res) => {
         },
       })
       .populate("createdGroups")
-       .populate({
+      .populate({
         path: "joinRequests",
         populate: {
           path: "admin",
@@ -266,6 +266,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
   user.name = req.body.name || user.name;
   user.email = req.body.email || user.email;
+
   if (req.body.hobbies && Array.isArray(req.body.hobbies)) {
     const invalidHobbies = req.body.hobbies.filter(
       (hobby) => !hobbies_enum.includes(hobby)
@@ -301,6 +302,33 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
     if (req.body.password && req.body.password.length > 1) {
       user.password = req.body.password;
+    }
+
+    //   "weeklyOption": {
+    //   "weekdays": true,
+    //   "weekend": false
+    // }
+
+    if (req.body.weeklyOption) {
+      const { weekdays, weekend } = req.body.weeklyOption;
+
+      if (typeof weekdays === "boolean") {
+        user.weeklyOption = user.weeklyOption || {};
+        user.weeklyOption.weekdays = weekdays;
+      }
+
+      if (typeof weekend === "boolean") {
+        user.weeklyOption = user.weeklyOption || {};
+        user.weeklyOption.weekend = weekend;
+      }
+
+      if (
+        user.weeklyOption.weekdays !== true &&
+        user.weeklyOption.weekend !== true
+      ) {
+        user.weeklyOption.weekdays = true;
+        user.weeklyOption.weekend = true;
+      }
     }
 
     const updatedUser = await user.save();

@@ -341,7 +341,19 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   const { groupId, taskId } = req.params;
   const userId = req.user._id.toString();
   const { proofUrls } = req.body;
-  console.log("ib");
+  const weekdayMap = {
+    Sun: "sun",
+    Mon: "mon",
+    Tue: "tue",
+    Wed: "wed",
+    Thu: "thu",
+    Fri: "fri",
+    Sat: "sat",
+  };
+  const currentDayShort = new Date().toLocaleString("en-US", {
+    weekday: "short",
+  });
+  const currentDayKey = weekdayMap[currentDayShort];
   const group = await Group.findById(groupId);
   if (!group) return res.status(404).json({ message: "Group not found" });
 
@@ -354,7 +366,15 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const userDateKey = `${userId}_${today}`;
   const user = await User.findById(userId);
-
+  if (!user.weeklyOption) {
+    user.weeklyOption = { weekdays: true, weekend: true };
+  } else if (
+    user.weeklyOption.weekdays !== true &&
+    user.weeklyOption.weekend !== true
+  ) {
+    user.weeklyOption.weekdays = true;
+    user.weeklyOption.weekend = true;
+  }
   const isAlreadyCompleted = task.completedBy.some(
     (c) => c.userDateKey === userDateKey
   );
@@ -363,11 +383,6 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     const currentDay = new Date().toLocaleString("en-US", { weekday: "short" });
     const todayTasks = todo.tasks.filter((t) => t.days.includes(currentDay));
 
-    console.log(
-      todayTasks.every((t) =>
-        t.completedBy.some((c) => console.log(c.userDateKey, userDateKey))
-      )
-    );
     const userHadCompletedAllTodayTasks = todayTasks.every((t) =>
       t.completedBy.some((c) => c.userDateKey === userDateKey)
     );
@@ -385,6 +400,18 @@ const markTaskComplete = asyncHandler(async (req, res) => {
     if (userHadCompletedAllTodayTasks) {
       user.totalStreak = Math.max(user.totalStreak - 1, 0);
       user.lastStreakDate = null;
+
+      if (
+        user.weeklyOption?.weekdays &&
+        ["mon", "tue", "wed", "thu", "fri"].includes(currentDayKey)
+      ) {
+        user.weeklyStats[currentDayKey] = { rest: false };
+      } else if (
+        user.weeklyOption?.weekend &&
+        ["sat", "sun"].includes(currentDayKey)
+      ) {
+        user.weeklyStats[currentDayKey] = { rest: false };
+      }
       await user.save();
 
       const currentUserStreak = group.userStreaks.get(userId) || 0;
@@ -463,6 +490,19 @@ const markTaskComplete = asyncHandler(async (req, res) => {
   ) {
     user.totalStreak += 1;
     user.lastStreakDate = new Date();
+
+    if (
+      user.weeklyOption?.weekdays &&
+      ["mon", "tue", "wed", "thu", "fri"].includes(currentDayKey)
+    ) {
+      user.weeklyStats[currentDayKey] = { rest: true };
+    } else if (
+      user.weeklyOption?.weekend &&
+      ["sat", "sun"].includes(currentDayKey)
+    ) {
+      user.weeklyStats[currentDayKey] = { rest: true };
+    }
+
     await user.save();
 
     const currentStreak = group.userStreaks.get(userId) || 0;
@@ -518,6 +558,7 @@ const markTaskComplete = asyncHandler(async (req, res) => {
       err?.response?.data || err.message
     );
   }
+
   res.json({
     message: "Task marked as complete",
     userCompletedAllTasks: userCompletedAllTodayTasks,

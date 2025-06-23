@@ -246,10 +246,8 @@ const ProfileScreen = ({route, navigation}: any) => {
     });
   };
 
-  console.log(joinRequests)
   return (
     <Provider>
-      {/* <ScrollView style={styles.container}></ScrollView> */}
       <View style={styles.menuContainer}>
         {currentUser && (
           <>
@@ -259,13 +257,15 @@ const ProfileScreen = ({route, navigation}: any) => {
               anchor={
                 <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
                   <Icon name="bars" size={30} color="#333" />
-                  {user?.pendingRequest?.length > 0 || user?.joinRequests?.length > 0 && (
-                    <View style={styles.badgeContainer}>
-                      <Text style={styles.badgeText}>
-                        {user.pendingRequest.length + user?.joinRequests?.length}
-                      </Text>
-                    </View>
-                  )}
+                  {user?.pendingRequest?.length > 0 ||
+                    (user?.joinRequests?.length > 0 && (
+                      <View style={styles.badgeContainer}>
+                        <Text style={styles.badgeText}>
+                          {user.pendingRequest.length +
+                            user?.joinRequests?.length}
+                        </Text>
+                      </View>
+                    ))}
                 </TouchableOpacity>
               }
               contentStyle={styles.menuContent}>
@@ -289,11 +289,10 @@ const ProfileScreen = ({route, navigation}: any) => {
                 />
               )}
 
-                <Menu.Item
-                  onPress={() => setShowJoinRequestModal(true)}
-                  title={`GroupJoinRequest (${user.joinRequests.length})`}
-                />
-
+              <Menu.Item
+                onPress={() => setShowJoinRequestModal(true)}
+                title={`GroupJoinRequest (${user.joinRequests.length})`}
+              />
             </Menu>
           </>
         )}
@@ -459,111 +458,110 @@ const ProfileScreen = ({route, navigation}: any) => {
         </View>
       </Modal>
 
-<Modal
-  visible={showJoinRequestModal}
-  animationType="slide"
-  transparent={true}>
-  <View
-    style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    }}>
-    <View
-      style={{
-        backgroundColor: 'white',
-        padding: 20,
-        width: '85%',
-        borderRadius: 10,
-        maxHeight: '80%',
-      }}>
-      <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>
-        Your Group Join Requests
-      </Text>
-
-      {joinRequests?.length === 0 ? (
-        <Text>No pending requests.</Text>
-      ) : (
-        joinRequests.map((g: any) => (
-          <TouchableOpacity
-            key={g?._id}
+      <Modal
+        visible={showJoinRequestModal}
+        animationType="slide"
+        transparent={true}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}>
+          <View
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginBottom: 15,
-              gap: 10,
-            }}
-            onPress={() => {
-              setShowJoinRequestModal(false); // Close modal
-              navigation.navigate('GroupDetails', { groupId: g._id }); // Navigate
+              backgroundColor: 'white',
+              padding: 20,
+              width: '85%',
+              borderRadius: 10,
+              maxHeight: '80%',
             }}>
-            {/* Group Image */}
-            <Image
-              source={{ uri: g?.image || 'https://via.placeholder.com/60' }}
-              style={{
-                width: 60,
-                height: 60,
-                borderRadius: 10,
-                marginRight: 10,
-                backgroundColor: '#eee',
-              }}
-              resizeMode="cover"
-            />
+            <Text style={{fontWeight: 'bold', fontSize: 18, marginBottom: 10}}>
+              Your Group Join Requests
+            </Text>
 
-            {/* Group Info */}
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '600' }}>{g?.title}</Text>
-              <Text style={{ fontSize: 12, color: 'gray' }}>
-                {g?.goal || 'No goal'}
-              </Text>
-            </View>
+            {joinRequests?.length === 0 ? (
+              <Text>No pending requests.</Text>
+            ) : (
+              joinRequests.map((g: any) => (
+                <TouchableOpacity
+                  key={g?._id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 15,
+                    gap: 10,
+                  }}
+                  onPress={() => {
+                    setShowJoinRequestModal(false); // Close modal
+                    navigation.navigate('GroupDetails', {groupId: g._id}); // Navigate
+                  }}>
+                  {/* Group Image */}
+                  <Image
+                    source={{uri: g?.image || 'https://via.placeholder.com/60'}}
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 10,
+                      marginRight: 10,
+                      backgroundColor: '#eee',
+                    }}
+                    resizeMode="cover"
+                  />
 
-            {/* Cancel Button */}
+                  {/* Group Info */}
+                  <View style={{flex: 1}}>
+                    <Text style={{fontWeight: '600'}}>{g?.title}</Text>
+                    <Text style={{fontSize: 12, color: 'gray'}}>
+                      {g?.goal || 'No goal'}
+                    </Text>
+                  </View>
+
+                  {/* Cancel Button */}
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#ccc',
+                      padding: 6,
+                      borderRadius: 5,
+                    }}
+                    onPress={async e => {
+                      e.stopPropagation(); // Prevent navigation on cancel
+                      try {
+                        setLoading(true);
+                        await handleJoinGroup(g._id); // Cancel request
+                        Dialog.show({
+                          type: ALERT_TYPE.SUCCESS,
+                          title: 'Cancelled',
+                          textBody: 'Join request cancelled.',
+                          button: 'OK',
+                        });
+                        await fetchProfile(); // Refresh data
+                      } catch (error) {
+                        Dialog.show({
+                          type: ALERT_TYPE.DANGER,
+                          title: 'Error',
+                          textBody: 'Failed to cancel join request.',
+                          button: 'OK',
+                        });
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}>
+                    <Text style={{fontSize: 12}}>Cancel</Text>
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))
+            )}
+
             <TouchableOpacity
-              style={{
-                backgroundColor: '#ccc',
-                padding: 6,
-                borderRadius: 5,
-              }}
-              onPress={async (e) => {
-                e.stopPropagation(); // Prevent navigation on cancel
-                try {
-                  setLoading(true);
-                  await handleJoinGroup(g._id); // Cancel request
-                  Dialog.show({
-                    type: ALERT_TYPE.SUCCESS,
-                    title: 'Cancelled',
-                    textBody: 'Join request cancelled.',
-                    button: 'OK',
-                  });
-                  await fetchProfile(); // Refresh data
-                } catch (error) {
-                  Dialog.show({
-                    type: ALERT_TYPE.DANGER,
-                    title: 'Error',
-                    textBody: 'Failed to cancel join request.',
-                    button: 'OK',
-                  });
-                } finally {
-                  setLoading(false);
-                }
-              }}>
-              <Text style={{ fontSize: 12 }}>Cancel</Text>
+              onPress={() => setShowJoinRequestModal(false)}
+              style={{marginTop: 10}}>
+              <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
             </TouchableOpacity>
-          </TouchableOpacity>
-        ))
-      )}
-
-      <TouchableOpacity
-        onPress={() => setShowJoinRequestModal(false)}
-        style={{ marginTop: 10 }}>
-        <Text style={{ color: 'blue', textAlign: 'center' }}>Close</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.container}>
         <View>
