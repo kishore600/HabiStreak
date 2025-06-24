@@ -53,6 +53,7 @@ const GroupDetailsScreen = ({route}: any) => {
     MemberAnalytics,
     ComparisonAnalytisc,
     leaveGroup,
+    deductStreakFromUI,
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
@@ -73,6 +74,60 @@ const GroupDetailsScreen = ({route}: any) => {
   const [showJoinRequests, setShowJoinRequests] = useState(false);
   const [proofMap, setProofMap] = useState<any>({});
   const [modalVisible, setModalVisible] = useState(false);
+  const [countdown, setCountdown] = useState('');
+
+  useEffect(() => {
+    const now = new Date();
+    const endOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
+    const msUntilEndOfDay = endOfDay.getTime() - now.getTime();
+    const msBefore5MinToEnd = msUntilEndOfDay - 5 * 60 * 1000;
+
+    // ⏱ Countdown Update Every Second
+    const updateCountdown = () => {
+      const current = new Date();
+      const diff = endOfDay.getTime() - current.getTime();
+
+      if (diff <= 0) {
+        setCountdown('00:00:00');
+      } else {
+        const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(
+          2,
+          '0',
+        );
+        const minutes = String(Math.floor((diff / (1000 * 60)) % 60)).padStart(
+          2,
+          '0',
+        );
+        const seconds = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
+        setCountdown(`${hours}:${minutes}:${seconds}`);
+      }
+    };
+
+    updateCountdown(); // Run once immediately
+    const countdownInterval = setInterval(updateCountdown, 1000);
+
+    // ⛔ Trigger streak deduction 5 minutes before day end
+    let streakTimer: NodeJS.Timeout | null = null;
+    if (msBefore5MinToEnd > 0) {
+      streakTimer = setTimeout(() => {
+        deductStreakFromUI(groupId, user?._id); // Make sure groupId & user?._id are available
+      }, msBefore5MinToEnd);
+    }
+
+    return () => {
+      clearInterval(countdownInterval);
+      if (streakTimer) clearTimeout(streakTimer);
+    };
+  }, [deductStreakFromUI, groupId, user?._id]); // Add dependencies
+
   const isUserInGroup =
     group?.members?.some((member: any) => member._id === user?._id) ?? false;
 
@@ -98,8 +153,8 @@ const GroupDetailsScreen = ({route}: any) => {
       setTitle(group.title);
       setGoal(group.goal);
       setMembers(group.members || []);
-      setProfileImageUri({uri:group.image});
-      setBannerImageUri({uri:group.banner});
+      setProfileImageUri({uri: group.image});
+      setBannerImageUri({uri: group.banner});
       setSelectedMembers(group.members?.map((m: any) => m._id) || []);
       setTasks(group.todo?.tasks || []);
       setEndDate(group.endDate);
@@ -136,38 +191,38 @@ const GroupDetailsScreen = ({route}: any) => {
     return text && text.trim().length > 0;
   };
 
- const handlePickProfileImage = async () => {
+  const handlePickProfileImage = async () => {
     const result: any = await launchImageLibrary({
       mediaType: 'photo',
       includeBase64: false,
     });
 
     if (result?.assets && result.assets.length > 0) {
-       const asset = result.assets[0];
-       console.log(asset)
-    setProfileImageUri({
-      uri: asset.uri,
-      fileName: asset.fileName || 'profile.jpg',
-      type: asset.type || 'image/jpeg',
-    });
+      const asset = result.assets[0];
+      console.log(asset);
+      setProfileImageUri({
+        uri: asset.uri,
+        fileName: asset.fileName || 'profile.jpg',
+        type: asset.type || 'image/jpeg',
+      });
     }
   };
 
-   const handlePickBannerImage = async () => {
-     const result: any = await launchImageLibrary({
-       mediaType: 'photo',
-       includeBase64: false,
-     });
- 
-     if (result?.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-    setBannerImageUri({
-      uri: asset.uri,
-      fileName: asset.fileName || 'banner.jpg',
-      type: asset.type || 'image/jpeg',
+  const handlePickBannerImage = async () => {
+    const result: any = await launchImageLibrary({
+      mediaType: 'photo',
+      includeBase64: false,
     });
-     }
-   };
+
+    if (result?.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      setBannerImageUri({
+        uri: asset.uri,
+        fileName: asset.fileName || 'banner.jpg',
+        type: asset.type || 'image/jpeg',
+      });
+    }
+  };
 
   const toggleMemberSelection = (id: string) => {
     setSelectedMembers((prev: any) =>
@@ -353,7 +408,7 @@ const GroupDetailsScreen = ({route}: any) => {
   const uniqueUsers = combinedUsers.filter(
     (user, index, self) => index === self.findIndex(u => u._id === user._id),
   );
-  console.log(group);
+
   return (
     <ScrollView
       style={styles.container}
@@ -753,6 +808,12 @@ const GroupDetailsScreen = ({route}: any) => {
           <Text style={styles.goal}>Goal: {group?.goal}</Text>
           <Text style={styles.goal}>End Date: {formattedDate}</Text>
           <Text style={styles.streak}>Group Streak: {group?.streak} 🐦‍🔥</Text>
+          <View style={{alignItems: 'center', marginBottom: 10}}>
+            <Text style={{fontSize: 16, fontWeight: '600', color: '#555'}}>
+              ⏳ Time Left Today:{' '}
+              <Text style={{color: '#ff3b30'}}>{countdown}</Text>
+            </Text>
+          </View>
           <CategoryList
             categories={group?.categories}
             setSelectedCategories={setSelectedCategories}

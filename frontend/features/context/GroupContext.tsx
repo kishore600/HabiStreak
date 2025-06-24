@@ -50,6 +50,7 @@ interface GroupContextType {
   createLoading: any;
   leaveGroup: any;
   ComparisonAnalytisc: any;
+  deductStreakFromUI:any
 }
 export type RootStackParamList = {
   Home: undefined;
@@ -285,6 +286,7 @@ const fetchGroups = useCallback(async () => {
       });
     }
   };
+
   const leaveGroup = async (groupId: string) => {
     try {
       setLoading(true);
@@ -591,6 +593,21 @@ const fetchGroups = useCallback(async () => {
     }
   };
 
+  const deductStreakFromUI = async (groupId:string,userId:string) => {
+  try {
+
+     const headers = await getAuthHeaders(); 
+    const response = await axios.post(
+      `${API_URL}/groups/${groupId}/deduct-streak/${userId}`,
+      {}, // no body needed
+        headers,
+    );
+    console.log("⛔️ Streak Deducted:", response.data);
+  } catch (error:any) {
+    console.error("Error deducting streak:", error?.response?.data || error);
+  }
+};
+
   useEffect(() => {
     fetchGroups();
     fetchUserGroups();
@@ -632,6 +649,7 @@ const fetchGroups = useCallback(async () => {
         ComparisonAnalytisc,
         comparisonData,
         createLoading,
+        deductStreakFromUI
       }}>
       {children}
     </GroupContext.Provider>
