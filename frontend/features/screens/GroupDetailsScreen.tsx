@@ -53,7 +53,7 @@ const GroupDetailsScreen = ({route}: any) => {
     MemberAnalytics,
     ComparisonAnalytisc,
     leaveGroup,
-    deductStreakFromUI,
+    deductStreakFromUI
   }: any = useGroup();
 
   const [editMode, setEditMode] = useState(false);
@@ -76,57 +76,51 @@ const GroupDetailsScreen = ({route}: any) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [countdown, setCountdown] = useState('');
 
-  useEffect(() => {
-    const now = new Date();
-    const endOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
-    const msUntilEndOfDay = endOfDay.getTime() - now.getTime();
-    const msBefore5MinToEnd = msUntilEndOfDay - 5 * 60 * 1000;
+useEffect(() => {
+  const now = new Date();
+  const endOfDay = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
+  const msUntilEndOfDay = endOfDay.getTime() - now.getTime();
+  const msBefore5MinToEnd = msUntilEndOfDay - 5 * 60 * 1000;
 
-    // ⏱ Countdown Update Every Second
-    const updateCountdown = () => {
-      const current = new Date();
-      const diff = endOfDay.getTime() - current.getTime();
+  // ⏱ Countdown Update Every Second
+  const updateCountdown = () => {
+    const current = new Date();
+    const diff = endOfDay.getTime() - current.getTime();
 
-      if (diff <= 0) {
-        setCountdown('00:00:00');
-      } else {
-        const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(
-          2,
-          '0',
-        );
-        const minutes = String(Math.floor((diff / (1000 * 60)) % 60)).padStart(
-          2,
-          '0',
-        );
-        const seconds = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
-        setCountdown(`${hours}:${minutes}:${seconds}`);
-      }
-    };
-
-    updateCountdown(); // Run once immediately
-    const countdownInterval = setInterval(updateCountdown, 1000);
-
-    // ⛔ Trigger streak deduction 5 minutes before day end
-    let streakTimer: NodeJS.Timeout | null = null;
-    if (msBefore5MinToEnd > 0) {
-      streakTimer = setTimeout(() => {
-        deductStreakFromUI(groupId, user?._id); // Make sure groupId & user?._id are available
-      }, msBefore5MinToEnd);
+    if (diff <= 0) {
+      setCountdown('00:00:00');
+    } else {
+      const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
+      const minutes = String(Math.floor((diff / (1000 * 60)) % 60)).padStart(2, '0');
+      const seconds = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
+      setCountdown(`${hours}:${minutes}:${seconds}`);
     }
+  };
 
-    return () => {
-      clearInterval(countdownInterval);
-      if (streakTimer) clearTimeout(streakTimer);
-    };
-  }, [deductStreakFromUI, groupId, user?._id]); // Add dependencies
+  updateCountdown(); // Run once immediately
+  const countdownInterval = setInterval(updateCountdown, 1000);
+
+  // ⛔ Trigger streak deduction 5 minutes before day end
+  let streakTimer: NodeJS.Timeout | null = null;
+  if (msBefore5MinToEnd > 0) {
+    streakTimer = setTimeout(() => {
+      deductStreakFromUI(groupId, user._id); // Make sure groupId & user._id are available
+    }, msBefore5MinToEnd);
+  }
+
+  return () => {
+    clearInterval(countdownInterval);
+    if (streakTimer) clearTimeout(streakTimer);
+  };
+}, [deductStreakFromUI, groupId, user._id]); // Add dependencies
 
   const isUserInGroup =
     group?.members?.some((member: any) => member._id === user?._id) ?? false;
