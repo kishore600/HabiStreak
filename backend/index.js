@@ -17,7 +17,7 @@ const app = express();
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 cron.schedule(
- "*/10 * * * *",
+ "0 */2 * * *",
   async () => {
     console.log("🔔 Morning Reminder: 7:00 AM IST");
     await sendReminderNotifications();
@@ -27,16 +27,16 @@ cron.schedule(
   }
 );
 
-cron.schedule(
-  "*/10 * * * *",
-  async () => {
-    console.log("🌙 Evening Reminder: 10:00 PM IST");
-    await sendReminderNotifications();
-  },
-  {
-    timezone: "Asia/Kolkata",
-  }
-);
+// cron.schedule(
+//   "*/10 * * * *",
+//   async () => {
+//     console.log("🌙 Evening Reminder: 10:00 PM IST");
+//     await sendReminderNotifications();
+//   },
+//   {
+//     timezone: "Asia/Kolkata",
+//   }
+// );
 
 // Routes
 app.use('/api/auth', authRoutes);
