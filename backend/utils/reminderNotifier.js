@@ -10,8 +10,8 @@ async function sendReminderNotifications() {
   try {
     const users = await User.find({ fcmToken: { $exists: true, $ne: null } });
 
-    const today = getTodayString();
-    const weekDay = getWeekDay();
+    const today = getTodayString(); // e.g. "2025-06-25"
+    const weekDay = getWeekDay();   // e.g. "Wed"
 
     for (const user of users) {
       const createdGroups = await Group.find({ admin: user._id })
@@ -25,8 +25,6 @@ async function sendReminderNotifications() {
 
       const allGroups = [...createdGroups, ...joinedGroups];
 
-      let uncompletedTasks = [];
-
       for (const group of allGroups) {
         if (!group.todo) continue;
 
@@ -36,35 +34,31 @@ async function sendReminderNotifications() {
 
         const userDateKey = `${user._id}_${today}`;
 
-        const incomplete = todayTasks.filter((task) =>
+        const incompleteTasks = todayTasks.filter((task) =>
           !task.completedBy.some((entry) => entry.userDateKey === userDateKey)
         );
 
-        if (incomplete.length) {
-          uncompletedTasks.push({
-            groupTitle: group.title,
-            tasks: incomplete.map((t) => t.title)
-          });
+        if (incompleteTasks.length) {
+          const taskTitles = incompleteTasks.map((t) => t.title).join(', ');
+
+          await sendNotificationToTokens(
+            [user.fcmToken],
+            `🕒 ${group.title} Tasks Pending`,
+            `You still need to complete: ${taskTitles}`,
+            {
+              groupId: group._id.toString(), // 👉 include custom data
+              type: 'groupReminder'
+            }
+          );
+
+          console.log(`✅ Sent reminder to ${user.name} for group "${group.title}"`);
         }
-      }
-
-      if (uncompletedTasks.length) {
-        const taskSummary = uncompletedTasks
-          .map(group => `📌 ${group.groupTitle}:\n• ` + group.tasks.join('\n• '))
-          .join('\n\n');
-
-        await sendNotificationToTokens(
-          [user.fcmToken],
-          "🚨 Task Reminder",
-          `You have pending tasks:\n\n${taskSummary}`
-        );
-
-        console.log(`✅ Sent reminder to ${user.name}`);
       }
     }
   } catch (error) {
     console.error("❌ Error sending task reminders:", error);
   }
 }
+
 
 module.exports = sendReminderNotifications;

@@ -16,6 +16,7 @@ import {
 import {useGroup} from '../context/GroupContext';
 import ForceUpdateCheck from '../components/ForceUpdateCheck';
 import React from 'react';
+import {useAuth} from '../context/AuthContext';
 
 const {height: screenHeight, width: screenWidth} = Dimensions.get('window');
 
@@ -26,6 +27,9 @@ export const CARD_WIDTH = screenWidth;
 const HomeScreen = ({navigation}: any) => {
   const {groups, loading, fetchGroups, fetchUserGroups, handleJoinRequest} =
     useGroup();
+
+  const {fetchUserProfile}: any = useAuth();
+
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,6 +43,7 @@ const HomeScreen = ({navigation}: any) => {
   const handleJoinGroup = async (groupId: string) => {
     await handleJoinRequest(groupId);
     await fetchGroups();
+    await fetchUserProfile();
   };
 
   useEffect(() => {
@@ -72,6 +77,7 @@ const HomeScreen = ({navigation}: any) => {
   );
 
   const renderCard = (item: any, index: number) => {
+    console.log(index);
     return (
       <View style={styles.cardContainer}>
         <TouchableOpacity
@@ -114,17 +120,15 @@ const HomeScreen = ({navigation}: any) => {
             <View style={styles.membersAvatarsSection}>
               <View>
                 <View style={styles.membersAvatars}>
-                  {item.members
-                    ?.slice(0, 4)
-                    .map((member: any, idx: number) => (
-                      <Image
-                        key={member._id || idx}
-                        source={{
-                          uri: member.image || 'https://via.placeholder.com/40',
-                        }}
-                        style={[styles.memberAvatar, {marginLeft: idx * -12}]}
-                      />
-                    ))}
+                  {item.members?.slice(0, 4).map((member: any, idx: number) => (
+                    <Image
+                      key={member._id || idx}
+                      source={{
+                        uri: member.image || 'https://via.placeholder.com/40',
+                      }}
+                      style={[styles.memberAvatar, {marginLeft: idx * -12}]}
+                    />
+                  ))}
                   {item.members?.length > 4 && (
                     <View
                       style={[

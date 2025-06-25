@@ -56,15 +56,34 @@ const sendBulkFCM = async (fcmTokens, title, body) => {
   }
 };
 
-const sendNotificationToTokens = async (tokens, title, body) => {
+const sendNotificationToTokens = async (tokens, title, body, data = {}) => {
   if (!tokens.length) return;
 
   for (const token of tokens) {
+    const message = {
+      token,
+      notification: {
+        title,
+        body,
+      },
+      data: {
+        ...Object.entries(data).reduce((acc, [key, value]) => {
+          acc[key] = typeof value === "string" ? value : JSON.stringify(value);
+          return acc;
+        }, {}),
+      },
+      android: {
+        priority: "high",
+      },
+      apns: {
+        headers: {
+          "apns-priority": "10",
+        },
+      },
+    };
+
     try {
-      await admin.messaging().send({
-        token,
-        notification: { title, body },
-      });
+      await admin.messaging().send(message);
       console.log(`✅ Sent to ${token}`);
     } catch (err) {
       console.error(`❌ Error sending to ${token}:`, err.message);

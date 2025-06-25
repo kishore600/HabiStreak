@@ -845,7 +845,6 @@ const leaveGroup = asyncHandler(async (req, res) => {
 
   try {
     const group = await Group.findById(groupId);
-
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
@@ -855,20 +854,29 @@ const leaveGroup = asyncHandler(async (req, res) => {
       return res.status(400).json({ message: "Admin cannot leave the group." });
     }
 
-    // Remove user from members array
+    // Remove user from group members
     group.members = group.members.filter(
       (memberId) => memberId.toString() !== userId.toString()
     );
 
-    // Remove user from joinRequests if exists
+    // Remove user from joinRequests if present
     group.joinRequests = group.joinRequests.filter(
       (requestId) => requestId.toString() !== userId.toString()
     );
 
-    // Remove user's streak entry
+    // Remove user's streak entry from group
     group.userStreaks.delete(userId.toString());
 
     await group.save();
+
+    // Remove groupId from user's joinedGroups
+    const user = await User.findById(userId);
+    if (user) {
+      user.joinedGroups = user.joinedGroups.filter(
+        (joinedGroupId) => joinedGroupId.toString() !== groupId.toString()
+      );
+      await user.save();
+    }
 
     res.status(200).json({ message: "You have left the group successfully." });
   } catch (err) {
@@ -876,119 +884,6 @@ const leaveGroup = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "Server error while leaving the group." });
   }
 });
-
-const deductStreak = async ({ user, group, userId, todayTasks, userDateKey, currentDayKey }) => {
-  const todayDateStr = new Date().toISOString().split("T")[0];
-
-  // Remove completedDate from group if present
-  group.completedDates = group.completedDates?.filter(d => d !== userDateKey) || [];
-
-  // Reduce user streak
-  user.totalStreak = Math.max(user.totalStreak - 1, 0);
-  user.lastStreakDate = null;
-
-  if (
-    user.weeklyOption?.weekdays &&
-    ["mon", "tue", "wed", "thu", "fri"].includes(currentDayKey)
-  ) {
-    user.weeklyStats[currentDayKey] = { rest: false };
-  } else if (
-    user.weeklyOption?.weekend &&
-    ["sat", "sun"].includes(currentDayKey)
-  ) {
-    user.weeklyStats[currentDayKey] = { rest: false };
-  }
-
-  await user.save();
-
-  // Reduce user streak inside the group
-  const currentUserStreak = group.userStreaks.get(userId) || 0;
-  group.userStreaks.set(userId, Math.max(currentUserStreak - 1, 0));
-
-  // Deduct group streak only if other users haven't completed
-  const allUsersStillCompletedToday = group.members.every((memberId) => {
-    const memberKey = memberId.toString();
-    const memberDateKey = `${memberKey}_${todayDateStr}`;
-    return todayTasks.every((task) =>
-      task.completedBy.some((c) => c.userDateKey === memberDateKey)
-    );
-  });
-
-  group.streakDeductedDates = group.streakDeductedDates || [];
-
-  if (!allUsersStillCompletedToday && !group.streakDeductedDates.includes(todayDateStr)) {
-    group.streak = Math.max((group.streak || 0) - 1, 0);
-    group.streakDeductedDates.push(todayDateStr);
-  }
-
-  await group.save();
-
-  return {
-    userStreak: group.userStreaks.get(userId) || 0,
-    groupStreak: group.streak,
-  };
-};
-
-const deductStreakController = asyncHandler(async (req, res) => {
-  const { groupId, userId } = req.params;
-  const today = new Date().toISOString().slice(0, 10);
-  const userDateKey = `${userId}_${today}`;
-
-  const weekdayMap = {
-    Sun: "sun",
-    Mon: "mon",
-    Tue: "tue",
-    Wed: "wed",
-    Thu: "thu",
-    Fri: "fri",
-    Sat: "sat",
-  };
-  const currentDayShort = new Date().toLocaleString("en-US", { weekday: "short" });
-  const currentDayKey = weekdayMap[currentDayShort];
-
-  const group = await Group.findById(groupId);
-  if (!group) return res.status(404).json({ message: "Group not found" });
-
-  const todo = await Todo.findById(group.todo);
-  if (!todo) return res.status(404).json({ message: "Todo not found" });
-
-  const todayTasks = todo.tasks.filter((t) => t.days.includes(currentDayShort));
-
-  const user = await User.findById(userId);
-  if (!user) return res.status(404).json({ message: "User not found" });
-
-  const result = await deductStreak({
-    user,
-    group,
-    userId,
-    todayTasks,
-    userDateKey,
-    currentDayKey,
-  });
-
-  // 🔔 Send FCM notification if streak deducted
-  if ((user.totalStreak || 0) === result.userStreak) {
-    try {
-      const title = "⛔️ Streak Deducted!";
-      const body = `Your streak in group "${group.title}" has been reduced. Stay consistent!`;
-
-      if (user.fcmToken) {
-        await sendNotificationToTokens([user.fcmToken], title, body);
-        console.log("📣 Deduction notification sent to user.");
-      } else {
-        console.log("⚠️ No FCM token found for user.");
-      }
-    } catch (error) {
-      console.error("❌ Error sending deduction notification:", error.message);
-    }
-  }
-
-  return res.status(200).json({
-    message: "Streak deducted",
-    ...result,
-  });
-});
-
 
 module.exports = {
   leaveGroup,
@@ -1006,5 +901,4 @@ module.exports = {
   updateTodoForGroup,
   requestToJoinGroup,
   acceptJoinRequest,
-  deductStreakController
 };

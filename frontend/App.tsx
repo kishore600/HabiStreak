@@ -19,6 +19,8 @@ import {SearchProvider} from './features/context/SearchContext';
 import SearchScreen from './features/screens/SearchScreen';
 import {useNotifications} from './features/notifications/useNotifications';
 import {MenuProvider} from 'react-native-popup-menu';
+import messaging from '@react-native-firebase/messaging';
+import {navigationRef} from './features/service/NavigationService';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -26,7 +28,7 @@ const Tab = createBottomTabNavigator();
 // Enhanced Custom Tab Bar with Animations
 const CustomTabBar = ({state, descriptors, navigation}: any) => {
   const [animatedValues] = useState(
-    state.routes.map(() => new Animated.Value(0))
+    state.routes.map(() => new Animated.Value(0)),
   );
 
   const animateTab = (index: number, isFocused: boolean) => {
@@ -117,16 +119,15 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
                     color={isFocused ? '#fff' : '#666'}
                   />
                 </View>
-              {!isFocused && (
-  <Text
-    style={[
-      styles.tabLabel,
-      isFocused && styles.tabLabelActive,
-    ]}>
-    {label}
-  </Text>
-)}
-
+                {!isFocused && (
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      isFocused && styles.tabLabelActive,
+                    ]}>
+                    {label}
+                  </Text>
+                )}
               </Animated.View>
               {isFocused && (
                 <Animated.View
@@ -149,33 +150,33 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
 const TabNavigator = () => {
   return (
     <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} />}
+      tabBar={props => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
       }}>
-      <Tab.Screen 
-        name="Home" 
+      <Tab.Screen
+        name="Home"
         component={HomeScreen}
         options={{
           tabBarLabel: 'Home',
         }}
       />
-      <Tab.Screen 
-        name="Search" 
+      <Tab.Screen
+        name="Search"
         component={SearchScreen}
         options={{
           tabBarLabel: 'Search',
         }}
       />
-      <Tab.Screen 
-        name="Create" 
+      <Tab.Screen
+        name="Create"
         component={CreateScreen}
         options={{
           tabBarLabel: 'Create',
         }}
       />
-      <Tab.Screen 
-        name="Profile" 
+      <Tab.Screen
+        name="Profile"
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
@@ -187,8 +188,34 @@ const TabNavigator = () => {
 
 const AppNavigator = () => {
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
+
   useNotifications();
   
+  useEffect(() => {
+    // ✅ When app is opened from background
+    const unsubscribe = messaging().onNotificationOpenedApp(remoteMessage => {
+      const {groupId, type} = remoteMessage?.data || {};
+      if (type === 'groupReminder' && typeof groupId === 'string') {
+        if (navigationRef.isReady()) {
+          navigationRef.navigate('GroupDetails', {groupId});
+        }
+      }
+    });
+
+    // ✅ When app is opened from quit state
+    messaging()
+      .getInitialNotification()
+      .then(remoteMessage => {
+        const {groupId, type} = remoteMessage?.data || {};
+        if (type === 'groupReminder' && typeof groupId === 'string') {
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('GroupDetails', {groupId});
+          }
+        }
+      });
+    return unsubscribe;
+  }, []);
+
   useEffect(() => {
     const checkUserSession = async () => {
       try {

@@ -291,7 +291,7 @@ const ProfileScreen = ({route, navigation}: any) => {
 
               <Menu.Item
                 onPress={() => setShowJoinRequestModal(true)}
-                title={`GroupJoinRequest (${user.joinRequests.length})`}
+                title={`GroupJoinRequest (${user?.joinRequests?.length})`}
               />
             </Menu>
           </>
@@ -484,7 +484,7 @@ const ProfileScreen = ({route, navigation}: any) => {
             {joinRequests?.length === 0 ? (
               <Text>No pending requests.</Text>
             ) : (
-              joinRequests.map((g: any) => (
+              joinRequests?.map((g: any) => (
                 <TouchableOpacity
                   key={g?._id}
                   style={{

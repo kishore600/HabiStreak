@@ -87,8 +87,6 @@ useEffect(() => {
     59,
     999,
   );
-  const msUntilEndOfDay = endOfDay.getTime() - now.getTime();
-  const msBefore5MinToEnd = msUntilEndOfDay - 5 * 60 * 1000;
 
   // ⏱ Countdown Update Every Second
   const updateCountdown = () => {
@@ -110,11 +108,6 @@ useEffect(() => {
 
   // ⛔ Trigger streak deduction 5 minutes before day end
   let streakTimer: NodeJS.Timeout | null = null;
-  if (msBefore5MinToEnd > 0) {
-    streakTimer = setTimeout(() => {
-      deductStreakFromUI(groupId, user._id); // Make sure groupId & user._id are available
-    }, msBefore5MinToEnd);
-  }
 
   return () => {
     clearInterval(countdownInterval);
