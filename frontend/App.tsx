@@ -21,6 +21,7 @@ import {useNotifications} from './features/notifications/useNotifications';
 import {MenuProvider} from 'react-native-popup-menu';
 import messaging from '@react-native-firebase/messaging';
 import {navigationRef} from './features/service/NavigationService';
+import {InteractionManager} from 'react-native';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -190,15 +191,21 @@ const AppNavigator = () => {
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   useNotifications();
-  
+
   useEffect(() => {
     // ✅ When app is opened from background
     const unsubscribe = messaging().onNotificationOpenedApp(remoteMessage => {
       const {groupId, type} = remoteMessage?.data || {};
       if (type === 'groupReminder' && typeof groupId === 'string') {
-        if (navigationRef.isReady()) {
-          navigationRef.navigate('GroupDetails', {groupId});
-        }
+        const navigateToGroup = () => {
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('GroupDetails', {groupId});
+          } else {
+            setTimeout(navigateToGroup, 100); // Try again shortly
+          }
+        };
+
+        InteractionManager.runAfterInteractions(navigateToGroup);
       }
     });
 
@@ -208,9 +215,15 @@ const AppNavigator = () => {
       .then(remoteMessage => {
         const {groupId, type} = remoteMessage?.data || {};
         if (type === 'groupReminder' && typeof groupId === 'string') {
-          if (navigationRef.isReady()) {
-            navigationRef.navigate('GroupDetails', {groupId});
-          }
+          const navigateToGroup = () => {
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('GroupDetails', {groupId});
+            } else {
+              setTimeout(navigateToGroup, 100); // Try again shortly
+            }
+          };
+
+          InteractionManager.runAfterInteractions(navigateToGroup);
         }
       });
     return unsubscribe;

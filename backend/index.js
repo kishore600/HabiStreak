@@ -10,6 +10,9 @@ const globalRoutes = require("./routes/global.Routes.js");
 const notificationRoutes = require("./routes/notification.routes.js");
 const versionRoutes = require("./routes/version.routes.js");
 const sendReminderNotifications = require("./utils/reminderNotifier.js");
+const Group = require("./models/group.model.js");
+const moment = require('moment-timezone');
+
 dotenv.config();
 connectDB();
 
@@ -19,15 +22,16 @@ app.use(express.json());
 
 //ever 4hrs reminder
 cron.schedule(
-  "0 */4 * * *", // every 4 hours at 0 minutes
+  '0 * * * *', // Every hour at 0 minutes
   async () => {
-    console.log("🔔 Reminder triggered at", new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }));
-    await sendReminderNotifications();
+    console.log('⏰ Hourly streak reminder job running');
+    await sendReminderNotifications(); // Your reminder function
   },
   {
-    timezone: "Asia/Kolkata",
+    timezone: 'Asia/Kolkata',
   }
 );
+
 
 //weekly reset
 cron.schedule(
@@ -75,79 +79,90 @@ cron.schedule(
 );
 
 //dedcut streak from user
-cron.schedule(
-  '55 23 * * *', // 11:55 PM IST
-  async () => {
-    console.log('⏰ Running daily streak deduction job at 11:55 PM IST');
+async function runStreakDeductionJob() {
+  const groups = await Group.find({}).populate('todo');
+  const currentDayShort = new Date().toLocaleString('en-US', {
+    weekday: 'short',
+    timeZone: 'Asia/Kolkata',
+  });
 
-    const groups = await Group.find({}).populate('todo');
+  const weekdayMap = {
+    Sun: 'sun',
+    Mon: 'mon',
+    Tue: 'tue',
+    Wed: 'wed',
+    Thu: 'thu',
+    Fri: 'fri',
+    Sat: 'sat',
+  };
+  const currentDayKey = weekdayMap[currentDayShort];
+  const today = new Date().toISOString().slice(0, 10);
 
-    for (const group of groups) {
-      const todo = group.todo;
-      if (!todo) continue;
+  for (const group of groups) {
+    const todo = group.todo;
+    if (!todo) continue;
 
-      const currentDayShort = new Date().toLocaleString('en-US', {
-        weekday: 'short',
-        timeZone: 'Asia/Kolkata',
-      });
+    const todayTasks = todo.tasks.filter((t) => t.days.includes(currentDayShort));
 
-      const weekdayMap = {
-        Sun: 'sun',
-        Mon: 'mon',
-        Tue: 'tue',
-        Wed: 'wed',
-        Thu: 'thu',
-        Fri: 'fri',
-        Sat: 'sat',
-      };
+    for (const memberId of group.members) {
+      const userId = memberId.toString();
+      const userDateKey = `${userId}_${today}`;
+      const user = await User.findById(userId);
+      if (!user) continue;
 
-      const currentDayKey = weekdayMap[currentDayShort];
-      const todayTasks = todo.tasks.filter((t) => t.days.includes(currentDayShort));
-      const today = new Date().toISOString().slice(0, 10);
+      const alreadyCompleted = todayTasks.every((task) =>
+        task.completedBy.some((c) => c.userDateKey === userDateKey)
+      );
 
-      for (const memberId of group.members) {
-        const userId = memberId.toString();
-        const userDateKey = `${userId}_${today}`;
-        const user = await User.findById(userId);
-        if (!user) continue;
+      if (!alreadyCompleted) {
+        const result = await deductStreak({
+          user,
+          group,
+          userId,
+          todayTasks,
+          userDateKey,
+          currentDayKey,
+        });
 
-        // Check if user already completed all today’s tasks
-        const alreadyCompleted = todayTasks.every((task) =>
-          task.completedBy.some((c) => c.userDateKey === userDateKey)
-        );
-
-        if (!alreadyCompleted) {
-          const result = await deductStreak({
-            user,
-            group,
-            userId,
-            todayTasks,
-            userDateKey,
-            currentDayKey,
-          });
-
-          // Send FCM Notification
-          if ((user.totalStreak || 0) === result.userStreak && user.fcmToken) {
-            try {
-              const title = '⛔️ Streak Deducted!';
-              const body = `Your streak in group "${group.title}" has been reduced. Stay consistent!`;
-              await sendNotificationToTokens([user.fcmToken], title, body);
-              console.log(`📣 Notified ${user.name} for streak deduction.`);
-            } catch (error) {
-              console.error('❌ Error sending FCM notification:', error.message);
-            }
+        if ((user.totalStreak || 0) === result.userStreak && user.fcmToken) {
+          try {
+            const title = '⛔️ Streak Deducted!';
+            const body = `Your streak in group "${group.title}" has been reduced. Stay consistent!`;
+            await sendNotificationToTokens([user.fcmToken], title, body);
+            console.log(`📣 Notified ${user.name} for streak deduction.`);
+          } catch (err) {
+            console.error('❌ Error sending notification:', err.message);
           }
         }
       }
-
-      await group.save(); // Save final group streak changes
     }
-  },
-  {
-    timezone: 'Asia/Kolkata',
-  }
-);
 
+    await group.save();
+  }
+}
+
+const now = moment().tz('Asia/Kolkata');
+const targetTime = moment().tz('Asia/Kolkata').set({ hour: 23, minute: 0, second: 0, millisecond: 0 });
+
+// If target time already passed today, schedule for tomorrow
+if (now.isAfter(targetTime)) {
+  targetTime.add(1, 'day');
+}
+
+const delayInMilliseconds = targetTime.diff(now);
+
+console.log(`✅ Streak deduction test scheduled at ${targetTime.format('HH:mm:ss')} IST`);
+
+setTimeout(async () => {
+  const nowRun = moment().tz('Asia/Kolkata').format('HH:mm:ss');
+  console.log(`⏰ Running test streak deduction at ${nowRun} IST`);
+
+  try {
+    await runStreakDeductionJob(); // Replace with your actual function
+  } catch (err) {
+    console.error('❌ Error in streak deduction job:', err);
+  }
+}, delayInMilliseconds);
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);

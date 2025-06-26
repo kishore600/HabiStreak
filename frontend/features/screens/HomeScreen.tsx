@@ -27,8 +27,7 @@ export const CARD_WIDTH = screenWidth;
 const HomeScreen = ({navigation}: any) => {
   const {groups, loading, fetchGroups, fetchUserGroups, handleJoinRequest} =
     useGroup();
-
-  const {fetchUserProfile}: any = useAuth();
+  const {user, fetchUserProfile}: any = useAuth();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<any[]>([]);
@@ -75,7 +74,7 @@ const HomeScreen = ({navigation}: any) => {
       },
     },
   );
-
+  console.log(user);
   const renderCard = (item: any, index: number) => {
     console.log(index);
     return (
@@ -195,6 +194,20 @@ const HomeScreen = ({navigation}: any) => {
       <StatusBar barStyle="light-content" backgroundColor="#000" translucent />
 
       {/* Full screen scrollable cards */}
+      <View style={styles.headerContainer}>
+        <View style={styles.TopcardContentWrapper}>
+          <Image
+            source={{uri: user.image}}
+            style={styles.userImage}
+            resizeMode="cover"
+          />
+        </View>
+        <Text style={styles.userTitle}>#{user.name}</Text>
+        <Text style={styles.useremail}>{user.email}</Text>
+        {/* <Text style={styles.groupSubtitle}>
+                {item.goal || 'Active Aesthetic physique'}
+                </Text> */}
+      </View>
       <FlatList
         ref={flatListRef}
         data={groups}
@@ -264,7 +277,12 @@ const HomeScreen = ({navigation}: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: 'rgba(31, 30, 30, 0.94)',
+  },
+  headerContainer: {
+    // backgroundColor: 'tra',
+    marginTop: '20%',
+    marginLeft: '6%',
   },
   loaderContainer: {
     flex: 1,
@@ -276,6 +294,31 @@ const styles = StyleSheet.create({
   // FlatList Styles
   flatListStyle: {
     flex: 1,
+  },
+  TopcardContentWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  userImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  userTitle: {
+    color: 'white',
+    marginLeft: '20%',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: -23,
+  },
+  useremail: {
+    color: 'white',
+    marginLeft: '20%',
+    fontSize: 15,
+    // fontWeight:'bold',
+    // marginTop:-10
   },
   adminImage: {
     width: 60,
@@ -291,23 +334,41 @@ const styles = StyleSheet.create({
   cardContainer: {
     height: CARD_HEIGHT,
     width: CARD_WIDTH,
+    padding: 20,
   },
   cardContent: {
     flex: 1,
     position: 'relative',
   },
-  backgroundImage: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
+backgroundImage: {
+  width: '100%',
+  height: '75%',
+  position: 'absolute',
+  top: 20,
+  borderRadius: 20,
+  backgroundColor: '#222', // required for shadow to show
+  overflow: 'hidden',
+
+  // iOS shadow
+  shadowColor: '#000',
+  shadowOffset: {
+    width: 10,
+    height: 10,
   },
+  shadowOpacity: 0.3,
+  shadowRadius: 10,
+
+  // Android shadow
+  elevation: 8,
+},
+
   gradientOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    // backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
 
   // Top Right Section
@@ -380,7 +441,7 @@ const styles = StyleSheet.create({
   // Bottom Content
   bottomContent: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 200,
     left: 20,
     right: 100,
   },
@@ -571,16 +632,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   joinButtonBottom: {
-    backgroundColor: '#8B5CF6',
+    backgroundColor: 'white',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 25,
-    alignSelf: 'flex-start',
     color: 'white',
-    // marginVertical: 12,
+    marginVertical: 12,
+    marginLeft:'40%'
   },
   joinButtonText: {
-    color: 'white',
+    color: 'black',
     fontWeight: 'bold',
   },
 });
