@@ -20,18 +20,16 @@ const app = express();
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 
-//ever 4hrs reminder
 cron.schedule(
-  '0 * * * *', // Every hour at 0 minutes
+  '0 */2 * * *', // every 2 hours at minute 0
   async () => {
-    console.log('⏰ Hourly streak reminder job running');
-    await sendReminderNotifications(); // Your reminder function
+    console.log('⏰ 2-hour streak reminder job running');
+    await sendReminderNotifications();
   },
   {
     timezone: 'Asia/Kolkata',
   }
 );
-
 
 //weekly reset
 cron.schedule(
@@ -141,28 +139,20 @@ async function runStreakDeductionJob() {
   }
 }
 
-const now = moment().tz('Asia/Kolkata');
-const targetTime = moment().tz('Asia/Kolkata').set({ hour: 23, minute: 0, second: 0, millisecond: 0 });
-
-// If target time already passed today, schedule for tomorrow
-if (now.isAfter(targetTime)) {
-  targetTime.add(1, 'day');
-}
-
-const delayInMilliseconds = targetTime.diff(now);
-
-console.log(`✅ Streak deduction test scheduled at ${targetTime.format('HH:mm:ss')} IST`);
-
-setTimeout(async () => {
-  const nowRun = moment().tz('Asia/Kolkata').format('HH:mm:ss');
-  console.log(`⏰ Running test streak deduction at ${nowRun} IST`);
-
-  try {
-    await runStreakDeductionJob(); // Replace with your actual function
-  } catch (err) {
-    console.error('❌ Error in streak deduction job:', err);
+cron.schedule(
+  '0 23 * * *', // every day at 23:00 IST
+  async () => {
+    console.log('⏰ Running streak deduction job at 11 PM IST');
+    try {
+      await runStreakDeductionJob();
+    } catch (err) {
+      console.error('❌ Error in streak deduction job:', err);
+    }
+  },
+  {
+    timezone: 'Asia/Kolkata',
   }
-}, delayInMilliseconds);
+);
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);

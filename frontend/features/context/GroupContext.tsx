@@ -161,43 +161,44 @@ export const GroupProvider = ({children}: any) => {
     }
   };
 
-const fetchGroups = useCallback(async () => {
-  setLoading(true);
-  try {
-    const headers = await getAuthHeaders();
-    const response = await axios.get(`${API_URL}/groups`, headers);
+  const fetchGroups = useCallback(async () => {
+    setLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const response = await axios.get(`${API_URL}/groups`, headers);
 
-    const userId = user?._id; // Get logged-in user's ID
-    const joinedGroupIds = joinedGroup.map(String); // Ensure string format
+      const userId = user?._id; // Get logged-in user's ID
+      const joinedGroupIds = joinedGroup.map(String); // Ensure string format
 
+      const unJoinedGroups = response?.data.filter((group: any) => {
+        const groupId = String(group._id);
 
-    const unJoinedGroups = response?.data.filter((group: any) => {
-      const groupId = String(group._id);
+        const joinRequestIds = group.joinRequests?.map((r: any) =>
+          typeof r === 'string' ? r : r.$oid,
+        );
 
-      const joinRequestIds = group.joinRequests?.map((r: any) =>
-        typeof r === 'string' ? r : r.$oid
-      );
+        const memberIds = group.members.map((m: any) => m._id);
 
-      // Check: user hasn't joined + hasn't requested
-      const isNotJoined = !joinedGroupIds.includes(groupId);
-      const hasNotRequested = !joinRequestIds?.includes(userId);
+        // Check: user hasn't joined + hasn't requested
+        const isNotJoined = !joinedGroupIds.includes(groupId);
+        const hasNotRequested = !joinRequestIds?.includes(userId);
+        const isNotAlreadyMember = !memberIds?.includes(userId);
+        return isNotJoined && hasNotRequested && isNotAlreadyMember;
+      });
+      console.log(unJoinedGroups);
 
-      return isNotJoined && hasNotRequested;
-    });
-    console.log(unJoinedGroups)
-
-    setGroups(unJoinedGroups);
-    setIsGroupUpdated(false);
-  } catch (error) {
-    Dialog.show({
-      type: ALERT_TYPE.DANGER,
-      title: 'Error',
-      textBody: 'Failed to load groups',
-    });
-  } finally {
-    setLoading(false);
-  }
-}, [joinedGroup, user?._id]);
+      setGroups(unJoinedGroups);
+      setIsGroupUpdated(false);
+    } catch (error) {
+      Dialog.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Error',
+        textBody: 'Failed to load groups',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [joinedGroup, user?._id]);
 
   const fetchUserGroups = useCallback(async () => {
     setLoading(true);
@@ -411,7 +412,7 @@ const fetchGroups = useCallback(async () => {
         } as any);
       }
 
-      console.log(formData)
+      console.log(formData);
 
       const headers = await getAuthHeaders();
 
@@ -593,7 +594,6 @@ const fetchGroups = useCallback(async () => {
       setLoading(false);
     }
   };
-
 
   useEffect(() => {
     fetchGroups();
