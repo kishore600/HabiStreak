@@ -202,8 +202,8 @@ const HomeScreen = ({navigation}: any) => {
             resizeMode="cover"
           />
         </View>
-        <Text style={styles.userTitle}>#{user.name}</Text>
-        <Text style={styles.useremail}>{user.email}</Text>
+        <Text style={styles.userTitle}>{user.name}</Text>
+        <Text style={styles.useremail}>@{user.email}</Text>
         {/* <Text style={styles.groupSubtitle}>
                 {item.goal || 'Active Aesthetic physique'}
                 </Text> */}
@@ -303,22 +303,21 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    borderWidth: 2,
-    borderColor: '#fff',
+
   },
   userTitle: {
     color: 'white',
     marginLeft: '20%',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: 700,
     marginTop: -23,
   },
   useremail: {
-    color: 'white',
     marginLeft: '20%',
-    fontSize: 15,
-    // fontWeight:'bold',
+    fontSize: 12,
+    fontWeight:500,
     // marginTop:-10
+    color:'#6E6E6E'
   },
   adminImage: {
     width: 60,

@@ -193,42 +193,39 @@ const AppNavigator = () => {
   useNotifications();
 
   useEffect(() => {
-    // ✅ When app is opened from background
-    const unsubscribe = messaging().onNotificationOpenedApp(remoteMessage => {
+    const handleNavigation = (remoteMessage: any) => {
       const {groupId, type} = remoteMessage?.data || {};
       if (type === 'groupReminder' && typeof groupId === 'string') {
         const navigateToGroup = () => {
           if (navigationRef.isReady()) {
             navigationRef.navigate('GroupDetails', {groupId});
           } else {
-            setTimeout(navigateToGroup, 100); // Try again shortly
+            console.log('⏳ Navigation not ready, retrying...');
+            setTimeout(navigateToGroup, 100);
           }
         };
 
         InteractionManager.runAfterInteractions(navigateToGroup);
       }
-    });
+    };
 
-    // ✅ When app is opened from quit state
+    // When app is in background and opened by tapping notification
+    const unsubscribeOpened =
+      messaging().onNotificationOpenedApp(handleNavigation);
+
+    // When app is launched from quit state via notification
     messaging()
       .getInitialNotification()
       .then(remoteMessage => {
-        const {groupId, type} = remoteMessage?.data || {};
-        if (type === 'groupReminder' && typeof groupId === 'string') {
-          const navigateToGroup = () => {
-            if (navigationRef.isReady()) {
-              navigationRef.navigate('GroupDetails', {groupId});
-            } else {
-              setTimeout(navigateToGroup, 100); // Try again shortly
-            }
-          };
-
-          InteractionManager.runAfterInteractions(navigateToGroup);
+        if (remoteMessage) {
+          handleNavigation(remoteMessage);
         }
       });
-    return unsubscribe;
-  }, []);
 
+    return () => {
+      unsubscribeOpened(); // clean up
+    };
+  }, []);
   useEffect(() => {
     const checkUserSession = async () => {
       try {
@@ -251,7 +248,7 @@ const AppNavigator = () => {
   if (initialRoute === null) return null;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <AlertNotificationRoot>
         <AuthProvider>
           <GroupProvider>
