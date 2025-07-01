@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import {useAuth} from '../context/AuthContext';
 import {Menu, Provider, Button, ActivityIndicator} from 'react-native-paper';
@@ -19,6 +20,7 @@ import {FlatList} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useCallback} from 'react';
 import {API_URL} from '@env';
+import WeeklyStatsDisplay from '../components/WeeklyStatsDisplay';
 
 const ProfileScreen = ({route, navigation}: any) => {
   const {
@@ -245,562 +247,584 @@ const ProfileScreen = ({route, navigation}: any) => {
       },
     });
   };
-
+  console.log(user);
   return (
     <Provider>
-      <View style={styles.menuContainer}>
-        {currentUser && (
-          <>
-            <Menu
-              visible={menuVisible}
-              onDismiss={closeMenu}
-              anchor={
-                <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
-                  <Icon name="bars" size={30} color="#333" />
-                  {user?.pendingRequest?.length > 0 ||
-                    (user?.joinRequests?.length > 0 && (
-                      <View style={styles.badgeContainer}>
-                        <Text style={styles.badgeText}>
-                          {user.pendingRequest.length +
-                            user?.joinRequests?.length}
-                        </Text>
-                      </View>
-                    ))}
-                </TouchableOpacity>
-              }
-              contentStyle={styles.menuContent}>
-              <Menu.Item onPress={openEditModal} title="Edit Profile" />
-              <Menu.Item
-                onPress={() => {
-                  logout();
-                  navigation.navigate('Login');
-                }}
-                title="Logout"
-              />
-              <Menu.Item
-                onPress={handleDeleteAccount}
-                title="Delete Account"
-                titleStyle={{color: 'red'}}
-              />
-              {user?.pendingRequest?.length > 0 && (
+      <ScrollView
+        contentContainerStyle={{flexGrow: 1}}
+        style={{flex: 1}}
+        keyboardShouldPersistTaps="handled">
+        <View style={styles.menuContainer}>
+          {currentUser && (
+            <>
+              <Menu
+                visible={menuVisible}
+                onDismiss={closeMenu}
+                anchor={
+                  <TouchableOpacity
+                    onPress={openMenu}
+                    style={styles.menuButton}>
+                    <Icon name="bars" size={30} color="#333" />
+                    {user?.pendingRequest?.length > 0 ||
+                      (user?.joinRequests?.length > 0 && (
+                        <View style={styles.badgeContainer}>
+                          <Text style={styles.badgeText}>
+                            {user.pendingRequest.length +
+                              user?.joinRequests?.length}
+                          </Text>
+                        </View>
+                      ))}
+                  </TouchableOpacity>
+                }
+                contentStyle={styles.menuContent}>
+                <Menu.Item onPress={openEditModal} title="Edit Profile" />
                 <Menu.Item
-                  onPress={() => setShowPendingModal(true)}
-                  title={`Requested Users (${user.pendingRequest.length})`}
+                  onPress={() => {
+                    logout();
+                    navigation.navigate('Login');
+                  }}
+                  title="Logout"
                 />
-              )}
+                <Menu.Item
+                  onPress={handleDeleteAccount}
+                  title="Delete Account"
+                  titleStyle={{color: 'red'}}
+                />
+                {user?.pendingRequest?.length > 0 && (
+                  <Menu.Item
+                    onPress={() => setShowPendingModal(true)}
+                    title={`Requested Users (${user.pendingRequest.length})`}
+                  />
+                )}
 
-              <Menu.Item
-                onPress={() => setShowJoinRequestModal(true)}
-                title={`GroupJoinRequest (${user?.joinRequests?.length})`}
-              />
-            </Menu>
-          </>
-        )}
-      </View>
-
-      <Modal
-        visible={showPendingModal}
-        animationType="slide"
-        transparent={true}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          }}>
-          <View
-            style={{
-              backgroundColor: 'white',
-              padding: 20,
-              width: '85%',
-              borderRadius: 10,
-            }}>
-            <Text style={{fontWeight: 'bold', fontSize: 18, marginBottom: 10}}>
-              Pending Follow Requests
-            </Text>
-            {pendingRequest?.map((item: any) => (
-              <View
-                key={item?._id}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 10,
-                }}>
-                <Text>{item?.user.name}</Text>
-                <View style={{flexDirection: 'row', gap: 10}}>
-                  <Button
-                    onPress={async () => {
-                      try {
-                        setLoading(true);
-                        await handleFollowRequest(item?.user._id, 'accept');
-                        Dialog.show({
-                          type: ALERT_TYPE.SUCCESS,
-                          title: 'Accepted',
-                          textBody: 'You have accepted the follow request.',
-                          button: 'OK',
-                        });
-                        setShowPendingModal(false);
-                      } catch (error) {
-                      } finally {
-                        setShowPendingModal(false);
-
-                        setLoading(false);
-                      }
-                    }}>
-                    Accept
-                  </Button>
-                  <Button
-                    onPress={async () => {
-                      try {
-                        await handleFollowRequest(item?.user._id, 'reject');
-                        Dialog.show({
-                          type: ALERT_TYPE.SUCCESS,
-                          title: 'Rejected',
-                          textBody: 'You have rejected the follow request.',
-                          button: 'OK',
-                        });
-                        setShowPendingModal(false);
-                      } catch (error) {
-                        // The error dialog is already handled inside handleFollowRequest
-                      } finally {
-                        await fetchProfile();
-                        setShowPendingModal(false);
-                        setLoading(false);
-                      }
-                    }}>
-                    Reject
-                  </Button>
-                </View>
-              </View>
-            ))}
-            <TouchableOpacity
-              onPress={() => setShowPendingModal(false)}
-              style={{marginTop: 10}}>
-              <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
-            </TouchableOpacity>
-          </View>
+                <Menu.Item
+                  onPress={() => setShowJoinRequestModal(true)}
+                  title={`GroupJoinRequest (${user?.joinRequests?.length})`}
+                />
+              </Menu>
+            </>
+          )}
         </View>
-      </Modal>
 
-      <Modal
-        visible={userListModalVisible}
-        animationType="slide"
-        transparent={true}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          }}>
+        <Modal
+          visible={showPendingModal}
+          animationType="slide"
+          transparent={true}>
           <View
             style={{
-              backgroundColor: 'white',
-              padding: 20,
-              width: '80%',
-              borderRadius: 10,
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
             }}>
-            <Text style={{fontSize: 18, fontWeight: 'bold', marginBottom: 10}}>
-              User List
-            </Text>
-            <FlatList
-              data={
-                userListType === 'followers' ? user?.followers : user?.following
-              }
-              keyExtractor={item => item?._id}
-              renderItem={({item}) => (
+            <View
+              style={{
+                backgroundColor: 'white',
+                padding: 20,
+                width: '85%',
+                borderRadius: 10,
+              }}>
+              <Text
+                style={{fontWeight: 'bold', fontSize: 18, marginBottom: 10}}>
+                Pending Follow Requests
+              </Text>
+              {pendingRequest?.map((item: any) => (
                 <View
+                  key={item?._id}
                   style={{
                     flexDirection: 'row',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    padding: 10,
+                    marginBottom: 10,
                   }}>
-                  <Text>{item.name}</Text>
-                  {userListType === 'following' && (
-                    <TouchableOpacity
-                      style={styles.unfollowButton}
+                  <Text>{item?.user.name}</Text>
+                  <View style={{flexDirection: 'row', gap: 10}}>
+                    <Button
                       onPress={async () => {
                         try {
-                          await unfollowUser(item?._id);
+                          setLoading(true);
+                          await handleFollowRequest(item?.user._id, 'accept');
                           Dialog.show({
                             type: ALERT_TYPE.SUCCESS,
-                            title: 'Unfollowed',
-                            textBody: 'You have unfollowed this user.',
+                            title: 'Accepted',
+                            textBody: 'You have accepted the follow request.',
+                            button: 'OK',
                           });
-                          fetchUserProfile(user?._id);
+                          setShowPendingModal(false);
+                        } catch (error) {
+                        } finally {
+                          setShowPendingModal(false);
+
+                          setLoading(false);
+                        }
+                      }}>
+                      Accept
+                    </Button>
+                    <Button
+                      onPress={async () => {
+                        try {
+                          await handleFollowRequest(item?.user._id, 'reject');
+                          Dialog.show({
+                            type: ALERT_TYPE.SUCCESS,
+                            title: 'Rejected',
+                            textBody: 'You have rejected the follow request.',
+                            button: 'OK',
+                          });
+                          setShowPendingModal(false);
+                        } catch (error) {
+                          // The error dialog is already handled inside handleFollowRequest
+                        } finally {
+                          await fetchProfile();
+                          setShowPendingModal(false);
+                          setLoading(false);
+                        }
+                      }}>
+                      Reject
+                    </Button>
+                  </View>
+                </View>
+              ))}
+              <TouchableOpacity
+                onPress={() => setShowPendingModal(false)}
+                style={{marginTop: 10}}>
+                <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={userListModalVisible}
+          animationType="slide"
+          transparent={true}>
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            }}>
+            <View
+              style={{
+                backgroundColor: 'white',
+                padding: 20,
+                width: '80%',
+                borderRadius: 10,
+              }}>
+              <Text
+                style={{fontSize: 18, fontWeight: 'bold', marginBottom: 10}}>
+                User List
+              </Text>
+              <FlatList
+                data={
+                  userListType === 'followers'
+                    ? user?.followers
+                    : user?.following
+                }
+                keyExtractor={item => item?._id}
+                renderItem={({item}) => (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: 10,
+                    }}>
+                    <Text>{item.name}</Text>
+                    {userListType === 'following' && (
+                      <TouchableOpacity
+                        style={styles.unfollowButton}
+                        onPress={async () => {
+                          try {
+                            await unfollowUser(item?._id);
+                            Dialog.show({
+                              type: ALERT_TYPE.SUCCESS,
+                              title: 'Unfollowed',
+                              textBody: 'You have unfollowed this user.',
+                            });
+                            fetchUserProfile(user?._id);
+                          } catch (err: any) {
+                            console.log(err);
+                            Dialog.show({
+                              type: ALERT_TYPE.DANGER,
+                              title: 'Error',
+                              textBody:
+                                err.response?.data?.message ||
+                                'Something went wrong.',
+                            });
+                          }
+                        }}>
+                        <Text style={styles.unfollowText}>❌</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              />
+
+              <TouchableOpacity
+                onPress={closeUserListModal}
+                style={{marginTop: 10}}>
+                <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={showJoinRequestModal}
+          animationType="slide"
+          transparent={true}>
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            }}>
+            <View
+              style={{
+                backgroundColor: 'white',
+                padding: 20,
+                width: '85%',
+                borderRadius: 10,
+                maxHeight: '80%',
+              }}>
+              <Text
+                style={{fontWeight: 'bold', fontSize: 18, marginBottom: 10}}>
+                Your Group Join Requests
+              </Text>
+
+              {joinRequests?.length === 0 ? (
+                <Text>No pending requests.</Text>
+              ) : (
+                joinRequests?.map((g: any) => (
+                  <TouchableOpacity
+                    key={g?._id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginBottom: 15,
+                      gap: 10,
+                    }}
+                    onPress={() => {
+                      setShowJoinRequestModal(false); // Close modal
+                      navigation.navigate('GroupDetails', {groupId: g._id}); // Navigate
+                    }}>
+                    {/* Group Image */}
+                    <Image
+                      source={{
+                        uri: g?.image || 'https://via.placeholder.com/60',
+                      }}
+                      style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 10,
+                        marginRight: 10,
+                        backgroundColor: '#eee',
+                      }}
+                      resizeMode="cover"
+                    />
+
+                    {/* Group Info */}
+                    <View style={{flex: 1}}>
+                      <Text style={{fontWeight: '600'}}>{g?.title}</Text>
+                      <Text style={{fontSize: 12, color: 'gray'}}>
+                        {g?.goal || 'No goal'}
+                      </Text>
+                    </View>
+
+                    {/* Cancel Button */}
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: '#ccc',
+                        padding: 6,
+                        borderRadius: 5,
+                      }}
+                      onPress={async e => {
+                        e.stopPropagation(); // Prevent navigation on cancel
+                        try {
+                          setLoading(true);
+                          await handleJoinGroup(g._id); // Cancel request
+                          Dialog.show({
+                            type: ALERT_TYPE.SUCCESS,
+                            title: 'Cancelled',
+                            textBody: 'Join request cancelled.',
+                            button: 'OK',
+                          });
+                          await fetchProfile(); // Refresh data
+                        } catch (error) {
+                          Dialog.show({
+                            type: ALERT_TYPE.DANGER,
+                            title: 'Error',
+                            textBody: 'Failed to cancel join request.',
+                            button: 'OK',
+                          });
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}>
+                      <Text style={{fontSize: 12}}>Cancel</Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ))
+              )}
+
+              <TouchableOpacity
+                onPress={() => setShowJoinRequestModal(false)}
+                style={{marginTop: 10}}>
+                <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        <View style={styles.container}>
+          <View>
+            {/* Menu Button */}
+
+            {/* Profile Info */}
+            <View style={styles.topGrid}>
+              <View>
+                <Image source={{uri: image}} style={styles.avatar} />
+              </View>
+              <View>
+                <Text style={styles.name}>{name || 'Guest User'} </Text>
+                {currentUser && <Text>{user?.totalStreak} 🐦‍🔥</Text>}
+              </View>
+              <View>
+                {currentUser && (
+                  <View>
+                    <View
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}>
+                      <Button onPress={() => openUserListModal('followers')}>
+                        {user?.followers?.length}Followers
+                      </Button>
+                      <Button onPress={() => openUserListModal('following')}>
+                        {user?.following?.length}Fllowing
+                      </Button>
+                    </View>
+
+                    {/* Weekly Stats Display - Only show if user has weeklyStats */}
+                    {user?.weeklyStats && user?.weeklyOption && (
+                      <WeeklyStatsDisplay
+                        weeklyStats={user.weeklyStats}
+                        weeklyOption={user.weeklyOption}
+                      />
+                    )}
+                  </View>
+                )}
+              </View>
+              {!currentUser && (
+                <View style={{marginTop: 0}}>
+                  {user?.followers.some(
+                    (f: {_id: {toString: () => any}}) =>
+                      f._id.toString() === profileUser?._id.toString(),
+                  ) &&
+                  !user?.following.some(
+                    (f: {_id: {toString: () => any}}) =>
+                      f._id.toString() === profileUser?._id.toString(),
+                  ) ? (
+                    <Button
+                      onPress={async () => {
+                        try {
+                          await sendFollowRequest(profileUser?._id);
+                          fetchProfile();
+                          Dialog.show({
+                            type: ALERT_TYPE.SUCCESS,
+                            title: 'Follow Requested',
+                            textBody: 'Follow request sent.',
+                          });
                         } catch (err: any) {
                           console.log(err);
                           Dialog.show({
                             type: ALERT_TYPE.DANGER,
                             title: 'Error',
-                            textBody:
-                              err.response?.data?.message ||
-                              'Something went wrong.',
+                            textBody: err.data.message,
                           });
                         }
                       }}>
-                      <Text style={styles.unfollowText}>❌</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-            />
-
-            <TouchableOpacity
-              onPress={closeUserListModal}
-              style={{marginTop: 10}}>
-              <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={showJoinRequestModal}
-        animationType="slide"
-        transparent={true}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          }}>
-          <View
-            style={{
-              backgroundColor: 'white',
-              padding: 20,
-              width: '85%',
-              borderRadius: 10,
-              maxHeight: '80%',
-            }}>
-            <Text style={{fontWeight: 'bold', fontSize: 18, marginBottom: 10}}>
-              Your Group Join Requests
-            </Text>
-
-            {joinRequests?.length === 0 ? (
-              <Text>No pending requests.</Text>
-            ) : (
-              joinRequests?.map((g: any) => (
-                <TouchableOpacity
-                  key={g?._id}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    marginBottom: 15,
-                    gap: 10,
-                  }}
-                  onPress={() => {
-                    setShowJoinRequestModal(false); // Close modal
-                    navigation.navigate('GroupDetails', {groupId: g._id}); // Navigate
-                  }}>
-                  {/* Group Image */}
-                  <Image
-                    source={{uri: g?.image || 'https://via.placeholder.com/60'}}
-                    style={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 10,
-                      marginRight: 10,
-                      backgroundColor: '#eee',
-                    }}
-                    resizeMode="cover"
-                  />
-
-                  {/* Group Info */}
-                  <View style={{flex: 1}}>
-                    <Text style={{fontWeight: '600'}}>{g?.title}</Text>
-                    <Text style={{fontSize: 12, color: 'gray'}}>
-                      {g?.goal || 'No goal'}
-                    </Text>
-                  </View>
-
-                  {/* Cancel Button */}
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: '#ccc',
-                      padding: 6,
-                      borderRadius: 5,
-                    }}
-                    onPress={async e => {
-                      e.stopPropagation(); // Prevent navigation on cancel
-                      try {
-                        setLoading(true);
-                        await handleJoinGroup(g._id); // Cancel request
-                        Dialog.show({
-                          type: ALERT_TYPE.SUCCESS,
-                          title: 'Cancelled',
-                          textBody: 'Join request cancelled.',
-                          button: 'OK',
-                        });
-                        await fetchProfile(); // Refresh data
-                      } catch (error) {
-                        Dialog.show({
-                          type: ALERT_TYPE.DANGER,
-                          title: 'Error',
-                          textBody: 'Failed to cancel join request.',
-                          button: 'OK',
-                        });
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}>
-                    <Text style={{fontSize: 12}}>Cancel</Text>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              ))
-            )}
-
-            <TouchableOpacity
-              onPress={() => setShowJoinRequestModal(false)}
-              style={{marginTop: 10}}>
-              <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <View style={styles.container}>
-        <View>
-          {/* Menu Button */}
-
-          {/* Profile Info */}
-          <View style={styles.topGrid}>
-            <View>
-              <Image source={{uri: image}} style={styles.avatar} />
-            </View>
-            <View>
-              <Text style={styles.name}>{name || 'Guest User'} </Text>
-              {currentUser && <Text>{user?.totalStreak} 🐦‍🔥</Text>}
-            </View>
-            <View>
-              {currentUser && (
-                <View>
-                  <View
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}>
-                    <Button onPress={() => openUserListModal('followers')}>
-                      {user?.followers?.length}Followers
+                      Follow Back
                     </Button>
-                    <Button onPress={() => openUserListModal('following')}>
-                      {user?.following?.length}Fllowing
+                  ) : user?.following.some(
+                      (f: {_id: {toString: () => any}}) =>
+                        f._id.toString() === profileUser?._id.toString(),
+                    ) ? (
+                    <Button
+                      onPress={async () => {
+                        try {
+                          await unfollowUser(profileUser._id);
+                          Dialog.show({
+                            type: ALERT_TYPE.SUCCESS,
+                            title: 'Unfollowed',
+                            textBody: 'You have unfollowed this user.',
+                          });
+                          fetchUserProfile(profileUser._id); // Refresh state
+                        } catch (err: any) {
+                          Dialog.show({
+                            type: ALERT_TYPE.DANGER,
+                            title: 'Error',
+                            textBody: err.message,
+                          });
+                        }
+                      }}>
+                      Unfollow
                     </Button>
-                  </View>
-                </View>
-              )}
-            </View>
-            {!currentUser && (
-              <View style={{marginTop: 0}}>
-                {user?.followers.some(
-                  (f: {_id: {toString: () => any}}) =>
-                    f._id.toString() === profileUser?._id.toString(),
-                ) &&
-                !user?.following.some(
-                  (f: {_id: {toString: () => any}}) =>
-                    f._id.toString() === profileUser?._id.toString(),
-                ) ? (
-                  <Button
-                    onPress={async () => {
-                      try {
-                        await sendFollowRequest(profileUser?._id);
-                        fetchProfile();
-                        Dialog.show({
-                          type: ALERT_TYPE.SUCCESS,
-                          title: 'Follow Requested',
-                          textBody: 'Follow request sent.',
-                        });
-                      } catch (err: any) {
-                        console.log(err);
-                        Dialog.show({
-                          type: ALERT_TYPE.DANGER,
-                          title: 'Error',
-                          textBody: err.data.message,
-                        });
-                      }
-                    }}>
-                    Follow Back
-                  </Button>
-                ) : user?.following.some(
-                    (f: {_id: {toString: () => any}}) =>
-                      f._id.toString() === profileUser?._id.toString(),
-                  ) ? (
-                  <Button
-                    onPress={async () => {
-                      try {
-                        await unfollowUser(profileUser._id);
-                        Dialog.show({
-                          type: ALERT_TYPE.SUCCESS,
-                          title: 'Unfollowed',
-                          textBody: 'You have unfollowed this user.',
-                        });
-                        fetchUserProfile(profileUser._id); // Refresh state
-                      } catch (err: any) {
-                        Dialog.show({
-                          type: ALERT_TYPE.DANGER,
-                          title: 'Error',
-                          textBody: err.message,
-                        });
-                      }
-                    }}>
-                    Unfollow
-                  </Button>
-                ) : (
-                  <Button
-                    onPress={async () => {
-                      try {
-                        await sendFollowRequest(profileUser._id);
-                        fetchProfile();
-                        Dialog.show({
-                          type: ALERT_TYPE.SUCCESS,
-                          title: 'Follow Requested',
-                          textBody: 'Follow request sent.',
-                        });
-                      } catch (err: any) {
-                        console.log(err);
-                        Dialog.show({
-                          type: ALERT_TYPE.DANGER,
-                          title: 'Error',
-                          textBody: err.data.message,
-                        });
-                      }
-                    }}>
-                    Follow
-                  </Button>
-                )}
-              </View>
-            )}
-          </View>
-
-          <Modal
-            visible={editModalVisible}
-            animationType="slide"
-            transparent={true}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Edit Profile</Text>
-                {/* Image Input */}
-                <TouchableOpacity
-                  style={styles.imagePicker}
-                  onPress={selectImage}>
-                  {image ? (
-                    <Image source={{uri: image}} style={styles.image} />
                   ) : (
-                    <Image source={{uri: user?.image}} style={styles.image} />
+                    <Button
+                      onPress={async () => {
+                        try {
+                          await sendFollowRequest(profileUser._id);
+                          fetchProfile();
+                          Dialog.show({
+                            type: ALERT_TYPE.SUCCESS,
+                            title: 'Follow Requested',
+                            textBody: 'Follow request sent.',
+                          });
+                        } catch (err: any) {
+                          console.log(err);
+                          Dialog.show({
+                            type: ALERT_TYPE.DANGER,
+                            title: 'Error',
+                            textBody: err.data.message,
+                          });
+                        }
+                      }}>
+                      Follow
+                    </Button>
                   )}
-                </TouchableOpacity>
+                </View>
+              )}
+            </View>
 
-                {/* Name Input */}
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter Name"
-                  value={name}
-                  onChangeText={setName}
-                />
+            <Modal
+              visible={editModalVisible}
+              animationType="slide"
+              transparent={true}>
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>Edit Profile</Text>
+                  {/* Image Input */}
+                  <TouchableOpacity
+                    style={styles.imagePicker}
+                    onPress={selectImage}>
+                    {image ? (
+                      <Image source={{uri: image}} style={styles.image} />
+                    ) : (
+                      <Image source={{uri: user?.image}} style={styles.image} />
+                    )}
+                  </TouchableOpacity>
 
-                {/* Email Input */}
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter Email"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor="#999"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(prev => !prev)}
-                  style={styles.eyeIcon}>
-                  <Icon
-                    name={showPassword ? 'eye-slash' : 'eye'}
-                    size={20}
-                    color="#999"
+                  {/* Name Input */}
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter Name"
+                    value={name}
+                    onChangeText={setName}
                   />
-                </TouchableOpacity>
 
-                {/* Buttons */}
-                <View style={styles.buttonContainer}>
-                  <Button
-                    mode="contained"
-                    style={{backgroundColor: 'tomato'}}
-                    onPress={saveProfileChanges}>
-                    Save
-                  </Button>
-                  <Button
-                    mode="outlined"
-                    onPress={() => {
-                      setName(user?.name);
-                      setEmail(user?.email);
-                      setImage(user?.image);
-                      setEditModalVisible(false);
-                    }}>
-                    Cancel
-                  </Button>
+                  {/* Email Input */}
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter Email"
+                    value={email}
+                    onChangeText={setEmail}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    placeholderTextColor="#999"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(prev => !prev)}
+                    style={styles.eyeIcon}>
+                    <Icon
+                      name={showPassword ? 'eye-slash' : 'eye'}
+                      size={20}
+                      color="#999"
+                    />
+                  </TouchableOpacity>
+
+                  {/* Buttons */}
+                  <View style={styles.buttonContainer}>
+                    <Button
+                      mode="contained"
+                      style={{backgroundColor: 'tomato'}}
+                      onPress={saveProfileChanges}>
+                      Save
+                    </Button>
+                    <Button
+                      mode="outlined"
+                      onPress={() => {
+                        setName(user?.name);
+                        setEmail(user?.email);
+                        setImage(user?.image);
+                        setEditModalVisible(false);
+                      }}>
+                      Cancel
+                    </Button>
+                  </View>
                 </View>
               </View>
-            </View>
-          </Modal>
-        </View>
+            </Modal>
+          </View>
 
-        <View>
-          {userGroupLoading ? (
-            <ActivityIndicator size="small" color="#1c1c1e" />
-          ) : (
-            <View>
-              {/* User Groups */}
-              <View style={styles.groupContainer}>
-                <Text style={styles.sectionTitle}>Groups:</Text>
-                {groups?.length > 0 ? (
-                  <FlatList
-                    data={groups}
-                    numColumns={3}
-                    keyExtractor={item => item._id}
-                    renderItem={({item}) => (
-                      <TouchableOpacity
-                        style={styles.gridItem}
-                        onPress={() =>
-                          navigation.navigate('GroupDetails', {
-                            groupId: item._id,
-                          })
-                        }>
-                        <View style={styles.imageContainer}>
-                          <Image
-                            source={{uri: item.image}}
-                            style={styles.groupImage}
-                            resizeMode="cover"
-                          />
-                          {currentUser && item?.joinRequests.length > 0 && (
-                            <View style={styles.badge}>
-                              <Text style={styles.badgeText}>
-                                {item?.joinRequests?.length}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                    )}
-                  />
-                ) : (
-                  <Text style={styles.noGroupText}>
-                    You are not part of any groups yet.
-                  </Text>
-                )}
+          <View>
+            {userGroupLoading ? (
+              <ActivityIndicator size="small" color="#1c1c1e" />
+            ) : (
+              <View>
+                {/* User Groups */}
+                <View style={styles.groupContainer}>
+                  <Text style={styles.sectionTitle}>Groups:</Text>
+                  {groups?.length > 0 ? (
+                    <FlatList
+                      data={groups}
+                      numColumns={3}
+                      keyExtractor={item => item._id}
+                      renderItem={({item}) => (
+                        <TouchableOpacity
+                          style={styles.gridItem}
+                          onPress={() =>
+                            navigation.navigate('GroupDetails', {
+                              groupId: item._id,
+                            })
+                          }>
+                          <View style={styles.imageContainer}>
+                            <Image
+                              source={{uri: item.image}}
+                              style={styles.groupImage}
+                              resizeMode="cover"
+                            />
+                            {currentUser && item?.joinRequests.length > 0 && (
+                              <View style={styles.badge}>
+                                <Text style={styles.badgeText}>
+                                  {item?.joinRequests?.length}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                    />
+                  ) : (
+                    <Text style={styles.noGroupText}>
+                      You are not part of any groups yet.
+                    </Text>
+                  )}
+                </View>
               </View>
-            </View>
-          )}
+            )}
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </Provider>
   );
 };

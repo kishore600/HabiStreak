@@ -68,28 +68,29 @@ const sendNotificationToTokens = async (tokens, title, body, data = {}) => {
       },
       data: {
         ...Object.entries(data).reduce((acc, [key, value]) => {
-          acc[key] = typeof value === "string" ? value : JSON.stringify(value);
+          acc[key] = typeof value === 'string' ? value : JSON.stringify(value);
           return acc;
         }, {}),
       },
       android: {
-        priority: "high",
+        priority: 'high',
       },
       apns: {
         headers: {
-          "apns-priority": "10",
+          'apns-priority': '10',
         },
       },
     };
 
     try {
       await admin.messaging().send(message);
-      console.log(`✅ Sent to ${token}`);
+      console.log(`✅ Notification sent to token: ${token}`);
     } catch (err) {
       console.error(`❌ Error sending to ${token}:`, err.message);
     }
   }
 };
+
 
 
 module.exports = {

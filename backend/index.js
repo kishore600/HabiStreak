@@ -11,7 +11,9 @@ const notificationRoutes = require("./routes/notification.routes.js");
 const versionRoutes = require("./routes/version.routes.js");
 const sendReminderNotifications = require("./utils/reminderNotifier.js");
 const Group = require("./models/group.model.js");
-const moment = require('moment-timezone');
+const moment = require("moment-timezone");
+const User = require("./models/user.Model.js");
+const { sendNotificationToTokens } = require("./services/fcmSender.js");
 
 dotenv.config();
 connectDB();
@@ -21,13 +23,13 @@ app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 
 cron.schedule(
-  '0 */2 * * *', // every 2 hours at minute 0
+  "0 */2 * * *", // every 2 hours at minute 0
   async () => {
-    console.log('⏰ 2-hour streak reminder job running');
+    console.log("⏰ 2-hour streak reminder job running");
     await sendReminderNotifications();
   },
   {
-    timezone: 'Asia/Kolkata',
+    timezone: "Asia/Kolkata",
   }
 );
 
@@ -76,22 +78,64 @@ cron.schedule(
   }
 );
 
+const deductStreak = async ({
+  user,
+  group,
+  userId,
+  todayTasks,
+  userDateKey,
+  currentDayKey,
+}) => {
+  let userStreak = user.totalStreak || 0;
+
+  // 1. Prevent duplicate deduction: track if already deducted
+  if (group.streakDeductedDates?.includes(userDateKey)) {
+    console.log(
+      `⚠️ Already deducted streak for user ${userId} on ${userDateKey}`
+    );
+    return { userStreak };
+  }
+
+  // 2. Decrease streak count
+  if (userStreak > 0) {
+    userStreak -= 1;
+    user.totalStreak = userStreak;
+
+    // Optional: Update user's lastStreakDate
+    user.lastStreakDate = new Date();
+
+    await user.save();
+  }
+
+  // 3. Update group to track streak deduction
+  group.streakDeductedDates = group.streakDeductedDates || [];
+  group.streakDeductedDates.push(userDateKey);
+
+  // 4. Optionally track per-user streak if using group.userStreaks
+  group.userStreaks = group.userStreaks || {};
+  group.userStreaks[userId] = userStreak;
+
+  console.log(`❌ Streak deducted for ${user.name} in group "${group.title}"`);
+
+  return { userStreak };
+};
+
 //dedcut streak from user
 async function runStreakDeductionJob() {
-  const groups = await Group.find({}).populate('todo');
-  const currentDayShort = new Date().toLocaleString('en-US', {
-    weekday: 'short',
-    timeZone: 'Asia/Kolkata',
+  const groups = await Group.find({}).populate("todo");
+  const currentDayShort = new Date().toLocaleString("en-US", {
+    weekday: "short",
+    timeZone: "Asia/Kolkata",
   });
 
   const weekdayMap = {
-    Sun: 'sun',
-    Mon: 'mon',
-    Tue: 'tue',
-    Wed: 'wed',
-    Thu: 'thu',
-    Fri: 'fri',
-    Sat: 'sat',
+    Sun: "sun",
+    Mon: "mon",
+    Tue: "tue",
+    Wed: "wed",
+    Thu: "thu",
+    Fri: "fri",
+    Sat: "sat",
   };
   const currentDayKey = weekdayMap[currentDayShort];
   const today = new Date().toISOString().slice(0, 10);
@@ -100,7 +144,9 @@ async function runStreakDeductionJob() {
     const todo = group.todo;
     if (!todo) continue;
 
-    const todayTasks = todo.tasks.filter((t) => t.days.includes(currentDayShort));
+    const todayTasks = todo.tasks.filter((t) =>
+      t.days.includes(currentDayShort)
+    );
 
     for (const memberId of group.members) {
       const userId = memberId.toString();
@@ -124,12 +170,16 @@ async function runStreakDeductionJob() {
 
         if ((user.totalStreak || 0) === result.userStreak && user.fcmToken) {
           try {
-            const title = '⛔️ Streak Deducted!';
+            const title = "⛔️ Streak Deducted!";
             const body = `Your streak in group "${group.title}" has been reduced. Stay consistent!`;
-            await sendNotificationToTokens([user.fcmToken], title, body);
+            await sendNotificationToTokens([user.fcmToken], title, body, {
+              groupId: group._id.toString(), // ✅ include groupId
+              type: "groupReminder",
+            });
+
             console.log(`📣 Notified ${user.name} for streak deduction.`);
           } catch (err) {
-            console.error('❌ Error sending notification:', err.message);
+            console.error("❌ Error sending notification:", err.message);
           }
         }
       }
@@ -140,19 +190,20 @@ async function runStreakDeductionJob() {
 }
 
 cron.schedule(
-  '0 23 * * *', // every day at 23:00 IST
+  "0 23 * * *",
   async () => {
-    console.log('⏰ Running streak deduction job at 11 PM IST');
+    console.log("⏰ Running streak deduction job at 11 PM IST");
     try {
       await runStreakDeductionJob();
     } catch (err) {
-      console.error('❌ Error in streak deduction job:', err);
+      console.error("❌ Error in streak deduction job:", err);
     }
   },
   {
-    timezone: 'Asia/Kolkata',
+    timezone: "Asia/Kolkata",
   }
 );
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);

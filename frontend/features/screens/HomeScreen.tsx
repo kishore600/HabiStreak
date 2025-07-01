@@ -74,11 +74,13 @@ const HomeScreen = ({navigation}: any) => {
       },
     },
   );
-  console.log(user);
   const renderCard = (item: any, index: number) => {
-    console.log(index);
     return (
-      <View style={styles.cardContainer}>
+      <View
+        style={[
+          styles.cardContainer,
+          index === groups?.length - 1 && {marginBottom: -100}, // 👈 Only for last card
+        ]}>
         <TouchableOpacity
           style={styles.cardContent}
           onPress={() =>
@@ -303,7 +305,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-
   },
   userTitle: {
     color: 'white',
@@ -315,9 +316,9 @@ const styles = StyleSheet.create({
   useremail: {
     marginLeft: '20%',
     fontSize: 12,
-    fontWeight:500,
+    fontWeight: 500,
     // marginTop:-10
-    color:'#6E6E6E'
+    color: '#6E6E6E',
   },
   adminImage: {
     width: 60,
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   flatListContent: {
-    flexGrow: 1,
+    flexGrow: 0,
   },
   cardContainer: {
     height: CARD_HEIGHT,
@@ -339,27 +340,27 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-backgroundImage: {
-  width: '100%',
-  height: '75%',
-  position: 'absolute',
-  top: 20,
-  borderRadius: 20,
-  backgroundColor: '#222', // required for shadow to show
-  overflow: 'hidden',
+  backgroundImage: {
+    width: '100%',
+    height: '75%',
+    position: 'absolute',
+    top: 20,
+    borderRadius: 20,
+    backgroundColor: '#222', // required for shadow to show
+    overflow: 'hidden',
 
-  // iOS shadow
-  shadowColor: '#000',
-  shadowOffset: {
-    width: 10,
-    height: 10,
+    // iOS shadow
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 10,
+      height: 10,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+
+    // Android shadow
+    elevation: 8,
   },
-  shadowOpacity: 0.3,
-  shadowRadius: 10,
-
-  // Android shadow
-  elevation: 8,
-},
 
   gradientOverlay: {
     position: 'absolute',
@@ -637,7 +638,7 @@ backgroundImage: {
     borderRadius: 25,
     color: 'white',
     marginVertical: 12,
-    marginLeft:'40%'
+    marginLeft: '40%',
   },
   joinButtonText: {
     color: 'black',

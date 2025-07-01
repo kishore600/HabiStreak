@@ -1,6 +1,6 @@
 // controllers/version.controller.js
 const getLatestVersion = (req, res) => {
-  res.status(200).json({ latestVersion: "1.0.0.13" });
+  res.status(200).json({ latestVersion: "1.0.0.14" });
 };
 
 module.exports = { getLatestVersion };
