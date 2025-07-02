@@ -82,7 +82,7 @@ const ProfileScreen = ({route, navigation}: any) => {
 
   useFocusEffect(
     useCallback(() => {
-      let uid = route?.params?.user?._id;
+      let uid = route?.params?.user?._id || route?.params?.userId;;
       if (uid && uid !== user?._id) {
         fetchUserProfile(uid);
         setIsCurrentUser(false);
@@ -598,8 +598,9 @@ const ProfileScreen = ({route, navigation}: any) => {
                       style={{
                         display: 'flex',
                         flexDirection: 'row',
-                        justifyContent: 'center',
+                        justifyContent: 'flex-start',
                         alignItems: 'center',
+                        marginTop:-40
                       }}>
                       <Button onPress={() => openUserListModal('followers')}>
                         {user?.followers?.length}Followers

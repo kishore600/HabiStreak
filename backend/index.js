@@ -78,75 +78,30 @@ cron.schedule(
   }
 );
 
-const deductStreak = async ({
-  user,
-  group,
-  userId,
-  todayTasks,
-  userDateKey,
-  currentDayKey,
-}) => {
-  let userStreak = user.totalStreak || 0;
-
-  // 1. Prevent duplicate deduction: track if already deducted
-  if (group.streakDeductedDates?.includes(userDateKey)) {
-    console.log(
-      `⚠️ Already deducted streak for user ${userId} on ${userDateKey}`
-    );
-    return { userStreak };
-  }
-
-  // 2. Decrease streak count
-  if (userStreak > 0) {
-    userStreak -= 1;
-    user.totalStreak = userStreak;
-
-    // Optional: Update user's lastStreakDate
-    user.lastStreakDate = new Date();
-
-    await user.save();
-  }
-
-  // 3. Update group to track streak deduction
-  group.streakDeductedDates = group.streakDeductedDates || [];
-  group.streakDeductedDates.push(userDateKey);
-
-  // 4. Optionally track per-user streak if using group.userStreaks
-  group.userStreaks = group.userStreaks || {};
-  group.userStreaks[userId] = userStreak;
-
-  console.log(`❌ Streak deducted for ${user.name} in group "${group.title}"`);
-
-  return { userStreak };
-};
-
-//dedcut streak from user
-
 async function runStreakDeductionJob() {
   const groups = await Group.find({}).populate("todo");
+  const utcNow = moment.utc();
 
   for (const group of groups) {
     const todo = group.todo;
     if (!todo) continue;
-
-    const today = new Date().toISOString().slice(0, 10);
 
     for (const memberId of group.members) {
       const userId = memberId.toString();
       const user = await User.findById(userId);
       if (!user || !user.timezone) continue;
 
-      // 🕐 Get user local hour (24hr format)
-      const userHour = moment().tz(user.timezone).hour();
+      // Get user's local time
+      const userNow = utcNow.clone().tz(user.timezone);
+      const userHour = userNow.hour();
+      const today = userNow.format("YYYY-MM-DD");
+      const currentDayShort = userNow.format("ddd");
 
-      // ✅ Proceed only if it's 23:00 (11 PM) in user's local time
-      if (userHour !== 23) continue;
+      if (userHour !== 23) continue; // only run if it's 11PM in user's time
 
       const userDateKey = `${userId}_${today}`;
-      if (group.streakDeductedDates.includes(userDateKey)) continue; // already deducted
+      if (group.streakDeductedDates.includes(userDateKey)) continue;
 
-      // Get weekday in user's timezone
-      const currentDayShort = moment().tz(user.timezone).format("ddd");
       const todayTasks = todo.tasks.filter((t) =>
         t.days.includes(currentDayShort)
       );
@@ -156,44 +111,41 @@ async function runStreakDeductionJob() {
       );
 
       if (!alreadyCompleted) {
-        // 🧨 Deduct user total streak
+        // Deduct user streak
         user.totalStreak = Math.max(0, (user.totalStreak || 0) - 1);
         await user.save();
 
-        // 🧨 Deduct from group userStreaks
-        const currentGroupStreak = group.userStreaks?.[userId] || 0;
-        group.userStreaks[userId] = Math.max(0, currentGroupStreak - 1);
+        // Deduct group streak
+        const groupStreak = group.userStreaks?.[userId] || 0;
+        group.userStreaks[userId] = Math.max(0, groupStreak - 1);
 
-        // 🧩 Track deduction to prevent repeating
         group.streakDeductedDates.push(userDateKey);
 
-        // 📣 Send notification
+        // Send notification
         if (user.fcmToken) {
           try {
             const title = "⛔️ Streak Deducted!";
             const body = `Your streak in group "${group.title}" has been reduced. Stay consistent!`;
             await sendNotificationToTokens([user.fcmToken], title, body, {
-              groupId: group._id.toString(),
+              Id: group._id.toString(),
               type: "groupReminder",
             });
-
             console.log(`📣 Notified ${user.name} for streak deduction.`);
           } catch (err) {
-            console.error("❌ Error sending notification:", err.message);
+            console.error("❌ Notification error:", err.message);
           }
         }
       }
     }
 
-    await group.save(); // Save after processing all users
+    await group.save();
   }
 }
 
-
 cron.schedule(
-  "0 23 * * *",
+  "*/15 * * * *", // every 15 minutes
   async () => {
-    console.log("⏰ Running streak deduction job at 11 PM IST");
+    console.log("🕒 Running streak deduction job by user timezones...");
     try {
       await runStreakDeductionJob();
     } catch (err) {
@@ -201,9 +153,10 @@ cron.schedule(
     }
   },
   {
-    timezone: "Asia/Kolkata",
+    timezone: "UTC", // leave this in UTC since you're using moment-timezone per user
   }
 );
+
 
 // Routes
 app.use("/api/auth", authRoutes);

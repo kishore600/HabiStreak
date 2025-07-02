@@ -546,7 +546,11 @@ const markTaskComplete = asyncHandler(async (req, res) => {
       await sendNotificationToTokens(
         tokens,
         notificationTitle,
-        notificationBody
+        notificationBody,
+        {
+          Id: group._id.toString(), // ✅ include groupId
+          type: "taskCompleted", // optional custom type
+        }
       );
       console.log("✅ Notifications sent to group members.");
     } else {
@@ -660,7 +664,10 @@ const requestToJoinGroup = asyncHandler(async (req, res) => {
         const body = `${user.name} has requested to join your group "${group.title}"`;
 
         try {
-          await sendNotificationToTokens([adminUser.fcmToken], title, body);
+          await sendNotificationToTokens([adminUser.fcmToken], title, body, {
+            Id: group._id.toString(), // ✅ include groupId
+            type: "joinRequest", // optional custom type
+          });
           console.log("✅ Notification sent to group admin.");
         } catch (err) {
           console.error(
@@ -713,7 +720,10 @@ const acceptJoinRequest = asyncHandler(async (req, res) => {
       const body = `Your request to join "${group.title}" has been accepted.`;
 
       try {
-        await sendNotificationToTokens([user.fcmToken], title, body);
+        await sendNotificationToTokens([user.fcmToken], title, body, {
+          Id: group._id.toString(), // ✅ include groupId
+          type: "taskCompleted", // optional custom type
+        });
         console.log("✅ Notification sent to accepted user.");
       } catch (err) {
         console.error("❌ Failed to send notification:", err.message);

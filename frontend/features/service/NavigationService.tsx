@@ -3,7 +3,8 @@ export type RootStackParamList = {
   Login: undefined;
   Signup: undefined;
   Main: undefined;
-  GroupDetails: any
+  GroupDetails: any;
+  Profile:any
 };
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();

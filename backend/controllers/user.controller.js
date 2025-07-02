@@ -144,7 +144,12 @@ const sendFollowRequest = asyncHandler(async (req, res) => {
       const body = `${requestingUser.name} wants to follow you.`;
 
       try {
-        await sendNotificationToTokens([targetUser.fcmToken], title, body);
+        await sendNotificationToTokens([targetUser.fcmToken], title, body,
+           {
+          Id: targetUser._id.toString(), // ✅ include groupId
+          type: "userProfile", // optional custom type
+        }
+        );
         console.log("✅ Notification sent to target user.");
       } catch (err) {
         console.error(
@@ -241,7 +246,12 @@ const handleFollowRequest = asyncHandler(async (req, res) => {
       const body = `${user.name} accepted your follow request.`;
 
       try {
-        await sendNotificationToTokens([requestingUser.fcmToken], title, body);
+        await sendNotificationToTokens([requestingUser.fcmToken], title, body,
+            {
+          Id: requestingUser._id.toString(), // ✅ include groupId
+          type: "userProfile", // optional custom type
+        }
+        );
         console.log("✅ Notification sent to requesting user.");
       } catch (err) {
         console.error("❌ Failed to send notification:", err.message);

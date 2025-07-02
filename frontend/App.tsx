@@ -194,11 +194,15 @@ const AppNavigator = () => {
 
   useEffect(() => {
     const handleNavigation = (remoteMessage: any) => {
-      const {groupId, type} = remoteMessage?.data || {};
-      if (type === 'groupReminder' && typeof groupId === 'string') {
+      const {Id, type} = remoteMessage?.data || {};
+      if (
+        type === 'groupReminder' ||
+        type === 'joinRequest' ||
+        (type === 'taskCompleted' && typeof Id === 'string')
+      ) {
         const navigateToGroup = () => {
           if (navigationRef.isReady()) {
-            navigationRef.navigate('GroupDetails', {groupId});
+            navigationRef.navigate('GroupDetails', {groupId:Id});
           } else {
             console.log('⏳ Navigation not ready, retrying...');
             setTimeout(navigateToGroup, 100);
@@ -206,6 +210,19 @@ const AppNavigator = () => {
         };
 
         InteractionManager.runAfterInteractions(navigateToGroup);
+      } else {
+        if (type === 'userProfile' && typeof Id === 'string') {
+          const navigateToProfile = () => {
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('Profile', {user: Id});
+            } else {
+              console.log('⏳ Navigation not ready, retrying...');
+              setTimeout(navigateToProfile, 100);
+            }
+          };
+
+          InteractionManager.runAfterInteractions(navigateToProfile);
+        }
       }
     };
 

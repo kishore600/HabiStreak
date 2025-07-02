@@ -46,7 +46,7 @@ async function sendReminderNotifications() {
             `🕒 ${group.title} Tasks Pending`,
             `You still need to complete: ${taskTitles}`,
             {
-              groupId: group._id.toString(), // 👉 include custom data
+              Id: group._id.toString(), // 👉 include custom data
               type: 'groupReminder'
             }
           );
