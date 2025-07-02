@@ -97,7 +97,10 @@ const userSchema = new mongoose.Schema({
       ref: "Group",
     },
   ],
-
+  timezone: {
+    type: String,
+    default: "Asia/Kolkata", // optional fallback
+  },
   weeklyStats: {
     mon: {
       rest: {

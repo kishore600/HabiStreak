@@ -121,59 +121,59 @@ const deductStreak = async ({
 };
 
 //dedcut streak from user
+
 async function runStreakDeductionJob() {
   const groups = await Group.find({}).populate("todo");
-  const currentDayShort = new Date().toLocaleString("en-US", {
-    weekday: "short",
-    timeZone: "Asia/Kolkata",
-  });
-
-  const weekdayMap = {
-    Sun: "sun",
-    Mon: "mon",
-    Tue: "tue",
-    Wed: "wed",
-    Thu: "thu",
-    Fri: "fri",
-    Sat: "sat",
-  };
-  const currentDayKey = weekdayMap[currentDayShort];
-  const today = new Date().toISOString().slice(0, 10);
 
   for (const group of groups) {
     const todo = group.todo;
     if (!todo) continue;
 
-    const todayTasks = todo.tasks.filter((t) =>
-      t.days.includes(currentDayShort)
-    );
+    const today = new Date().toISOString().slice(0, 10);
 
     for (const memberId of group.members) {
       const userId = memberId.toString();
-      const userDateKey = `${userId}_${today}`;
       const user = await User.findById(userId);
-      if (!user) continue;
+      if (!user || !user.timezone) continue;
+
+      // 🕐 Get user local hour (24hr format)
+      const userHour = moment().tz(user.timezone).hour();
+
+      // ✅ Proceed only if it's 23:00 (11 PM) in user's local time
+      if (userHour !== 23) continue;
+
+      const userDateKey = `${userId}_${today}`;
+      if (group.streakDeductedDates.includes(userDateKey)) continue; // already deducted
+
+      // Get weekday in user's timezone
+      const currentDayShort = moment().tz(user.timezone).format("ddd");
+      const todayTasks = todo.tasks.filter((t) =>
+        t.days.includes(currentDayShort)
+      );
 
       const alreadyCompleted = todayTasks.every((task) =>
         task.completedBy.some((c) => c.userDateKey === userDateKey)
       );
 
       if (!alreadyCompleted) {
-        const result = await deductStreak({
-          user,
-          group,
-          userId,
-          todayTasks,
-          userDateKey,
-          currentDayKey,
-        });
+        // 🧨 Deduct user total streak
+        user.totalStreak = Math.max(0, (user.totalStreak || 0) - 1);
+        await user.save();
 
-        if ((user.totalStreak || 0) === result.userStreak && user.fcmToken) {
+        // 🧨 Deduct from group userStreaks
+        const currentGroupStreak = group.userStreaks?.[userId] || 0;
+        group.userStreaks[userId] = Math.max(0, currentGroupStreak - 1);
+
+        // 🧩 Track deduction to prevent repeating
+        group.streakDeductedDates.push(userDateKey);
+
+        // 📣 Send notification
+        if (user.fcmToken) {
           try {
             const title = "⛔️ Streak Deducted!";
             const body = `Your streak in group "${group.title}" has been reduced. Stay consistent!`;
             await sendNotificationToTokens([user.fcmToken], title, body, {
-              groupId: group._id.toString(), // ✅ include groupId
+              groupId: group._id.toString(),
               type: "groupReminder",
             });
 
@@ -185,9 +185,10 @@ async function runStreakDeductionJob() {
       }
     }
 
-    await group.save();
+    await group.save(); // Save after processing all users
   }
 }
+
 
 cron.schedule(
   "0 23 * * *",

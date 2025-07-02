@@ -7,7 +7,7 @@ const sendEmail = require("../config/sendMail.config.js");
 const crypto = require('crypto')
 
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password,fcmToken } = req.body;
+  const { name, email, password,fcmToken,timezone} = req.body;
   console.log(name, email, password)
   if (!name || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
@@ -42,7 +42,8 @@ const register = asyncHandler(async (req, res) => {
       email,
       password,
       image: imageUrl,
-      fcmToken
+      fcmToken,
+      timezone
     });
 
     if (user) {
@@ -81,7 +82,7 @@ const register = asyncHandler(async (req, res) => {
 });
 
 const login = asyncHandler(async (req, res) => {
-  const { email, password , fcmToken } = req.body;
+  const { email, password , fcmToken,timezone } = req.body;
   const user = await User.findOne({ email })
     .populate("followers", "name email image")
     .populate("following", "name email image")
@@ -93,7 +94,10 @@ const login = asyncHandler(async (req, res) => {
       },
     })
     .populate("createdGroups");
-
+    if(user.timezone){
+      user.timezone = timezone
+      await user.save()
+    }
   if (user.fcmToken !== "" && (await user.matchPassword(password))) {
      if (fcmToken) {
       user.fcmToken = fcmToken;

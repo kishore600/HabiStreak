@@ -80,11 +80,13 @@ export const AuthProvider = ({children}: any) => {
   const login = async (email: any, password: any) => {
     try {
       const fcmToken = await messaging().getToken();
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
       const response = await axios.post(`${API_URL}/auth/login`, {
         email,
         password,
         fcmToken,
+        timezone
       });
       console.log(response);
       const {user: resuser, token: restoken} = response.data;
@@ -117,11 +119,13 @@ export const AuthProvider = ({children}: any) => {
     try {
       const fcmToken = await messaging().getToken();
       const formData = new FormData();
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       formData.append('name', name);
       formData.append('email', email);
       formData.append('password', password);
       formData.append('fcmToken', fcmToken);
-
+      formData.append('timezone', timezone);
       if (imageUri) {
         formData.append('image', {
           uri: imageUri,
