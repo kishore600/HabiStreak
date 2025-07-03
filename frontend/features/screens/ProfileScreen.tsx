@@ -1,5 +1,7 @@
+'use client';
+
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {
   View,
   Text,
@@ -9,9 +11,11 @@ import {
   Modal,
   TextInput,
   ScrollView,
+  Dimensions,
+  SafeAreaView,
 } from 'react-native';
 import {useAuth} from '../context/AuthContext';
-import {Menu, Provider, Button, ActivityIndicator} from 'react-native-paper';
+import {Menu, Provider, ActivityIndicator} from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
@@ -21,6 +25,9 @@ import {useFocusEffect} from '@react-navigation/native';
 import {useCallback} from 'react';
 import {API_URL} from '@env';
 import WeeklyStatsDisplay from '../components/WeeklyStatsDisplay';
+import React from 'react';
+
+const {width} = Dimensions.get('window');
 
 const ProfileScreen = ({route, navigation}: any) => {
   const {
@@ -40,6 +47,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     getPendingRequests,
     joinRequests,
   }: any = useAuth();
+
   const {
     userGroups,
     loading: userGroupLoading,
@@ -47,6 +55,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     handleJoinRequest,
     fetchGroups,
   } = useGroup();
+
   const [menuVisible, setMenuVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -56,15 +65,19 @@ const ProfileScreen = ({route, navigation}: any) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [groups, setGroups] = useState(userGroups);
+
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
-  const [userListModalVisible, setUserListModalVisible] = useState(false); // New state for user list modal
+
+  const [userListModalVisible, setUserListModalVisible] = useState(false);
   const [userListType, setUserListType] = useState<
     'followers' | 'following' | null
   >(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showJoinRequestModal, setShowJoinRequestModal] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
+ 
   useFocusEffect(
     useCallback(() => {
       fetchUserGroups();
@@ -118,9 +131,18 @@ const ProfileScreen = ({route, navigation}: any) => {
     setEditModalVisible(true);
     closeMenu();
   };
+  const filteredUsers = useMemo(() => {
+    const list =
+      userListType === 'followers' ? user?.followers : user?.following;
+    // eslint-disable-next-line curly
+    if (!list) return [];
+    return list.filter((u:any) =>
+      u?.name?.toLowerCase().includes(searchText.toLowerCase()),
+    );
+  }, [searchText, userListType, user]);
+
   const saveProfileChanges = async () => {
     setEditModalVisible(false);
-
     if (!user) {
       Dialog.show({
         type: ALERT_TYPE.DANGER,
@@ -133,7 +155,6 @@ const ProfileScreen = ({route, navigation}: any) => {
 
     try {
       setLoading(true);
-
       await updateUser(name, email, password, image)
         .then(() => {
           Dialog.show({
@@ -144,7 +165,7 @@ const ProfileScreen = ({route, navigation}: any) => {
           });
         })
         .then(() => {
-          setLoading(false); // Stop loading
+          setLoading(false);
         });
     } catch (error: any) {
       Dialog.show({
@@ -154,7 +175,7 @@ const ProfileScreen = ({route, navigation}: any) => {
         button: 'OK',
       });
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 
@@ -163,7 +184,7 @@ const ProfileScreen = ({route, navigation}: any) => {
       {mediaType: 'photo', includeBase64: false},
       (response: any) => {
         if (response.didCancel) {
-          setImage(user?.imge);
+          setImage(user?.image);
         } else if (response.errorMessage) {
         } else if (response.assets && response.assets.length > 0) {
           setImage(response.assets[0].uri);
@@ -174,11 +195,12 @@ const ProfileScreen = ({route, navigation}: any) => {
 
   if (loading) {
     return (
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-        <ActivityIndicator size="large" color="tomato" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#8B5CF6" />
       </View>
     );
   }
+
   const closeUserListModal = () => setUserListModalVisible(false);
 
   const openUserListModal = (type: 'followers' | 'following') => {
@@ -200,8 +222,7 @@ const ProfileScreen = ({route, navigation}: any) => {
       button: 'Delete',
       onPressButton: async () => {
         try {
-          const token = user?.token; // Adjust based on how you're storing the token
-
+          const token = user?.token;
           const response = await fetch(`${API_URL}/users/delete-account`, {
             method: 'DELETE',
             headers: {
@@ -209,9 +230,7 @@ const ProfileScreen = ({route, navigation}: any) => {
               Authorization: `Bearer ${token}`,
             },
           });
-
           const data = await response.json();
-
           if (response.ok) {
             Dialog.show({
               type: ALERT_TYPE.SUCCESS,
@@ -219,7 +238,7 @@ const ProfileScreen = ({route, navigation}: any) => {
               textBody: 'Your account has been successfully deleted.',
               button: 'OK',
               onPressButton: () => {
-                logout(); // Clear user state
+                logout();
                 navigation.reset({
                   index: 0,
                   routes: [{name: 'Login'}],
@@ -247,99 +266,263 @@ const ProfileScreen = ({route, navigation}: any) => {
       },
     });
   };
-  console.log(user);
+
   return (
     <Provider>
-      <ScrollView
-        contentContainerStyle={{flexGrow: 1}}
-        style={{flex: 1}}
-        keyboardShouldPersistTaps="handled">
-        <View style={styles.menuContainer}>
-          {currentUser && (
-            <>
-              <Menu
-                visible={menuVisible}
-                onDismiss={closeMenu}
-                anchor={
-                  <TouchableOpacity
-                    onPress={openMenu}
-                    style={styles.menuButton}>
-                    <Icon name="bars" size={30} color="#333" />
-                    {user?.pendingRequest?.length > 0 ||
-                      (user?.joinRequests?.length > 0 && (
-                        <View style={styles.badgeContainer}>
-                          <Text style={styles.badgeText}>
-                            {user.pendingRequest.length +
-                              user?.joinRequests?.length}
-                          </Text>
-                        </View>
-                      ))}
-                  </TouchableOpacity>
-                }
-                contentStyle={styles.menuContent}>
-                <Menu.Item onPress={openEditModal} title="Edit Profile" />
-                <Menu.Item
-                  onPress={() => {
-                    logout();
-                    navigation.navigate('Login');
-                  }}
-                  title="Logout"
-                />
-                <Menu.Item
-                  onPress={handleDeleteAccount}
-                  title="Delete Account"
-                  titleStyle={{color: 'red'}}
-                />
-                {user?.pendingRequest?.length > 0 && (
-                  <Menu.Item
-                    onPress={() => setShowPendingModal(true)}
-                    title={`Requested Users (${user.pendingRequest.length})`}
-                  />
-                )}
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <View style={styles.backButtonCircle}>
+              <Text style={styles.backButtonText}>←</Text>
+            </View>
+          </TouchableOpacity>
 
+          {currentUser && (
+            <Menu
+              visible={menuVisible}
+              onDismiss={closeMenu}
+              anchor={
+                <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
+                  <Icon name="bars" size={24} color="#fff" />
+                  {(user?.pendingRequest?.length > 0 ||
+                    user?.joinRequests?.length > 0) && (
+                    <View style={styles.badgeContainer}>
+                      <Text style={styles.badgeText}>
+                        {user.pendingRequest.length +
+                          user?.joinRequests?.length}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              }
+              contentStyle={styles.menuContent}>
+              <Menu.Item
+                onPress={openEditModal}
+                title="Edit Profile"
+                titleStyle={{color: 'white'}}
+              />
+              <Menu.Item
+                onPress={() => {
+                  logout();
+                  navigation.navigate('Login');
+                }}
+                title="Logout"
+                titleStyle={{color: 'white'}}
+              />
+              <Menu.Item
+                onPress={handleDeleteAccount}
+                title="Delete Account"
+                titleStyle={{color: 'red'}}
+              />
+              {user?.pendingRequest?.length > 0 && (
                 <Menu.Item
-                  onPress={() => setShowJoinRequestModal(true)}
-                  title={`GroupJoinRequest (${user?.joinRequests?.length})`}
+                  onPress={() => setShowPendingModal(true)}
+                  title={`Requested Users (${user.pendingRequest.length})`}
+                  titleStyle={{color: 'white'}}
                 />
-              </Menu>
-            </>
+              )}
+              <Menu.Item
+                onPress={() => setShowJoinRequestModal(true)}
+                title={`GroupJoinRequest (${user?.joinRequests?.length})`}
+                titleStyle={{color: 'white'}}
+              />
+            </Menu>
           )}
         </View>
 
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+          {/* Profile Section */}
+          <View style={styles.profileSection}>
+            <Image source={{uri: image}} style={styles.avatar} />
+            <Text style={styles.name}>{name || 'Guest User'}</Text>
+            {currentUser && (
+              <View style={styles.streakContainer}>
+                <Text style={styles.streakText}>{user?.totalStreak}</Text>
+                <Text style={styles.fireEmoji}>🔥</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Followers/Following */}
+          {currentUser && (
+            <View style={styles.followSection}>
+              <TouchableOpacity
+                style={styles.followButton}
+                onPress={() => openUserListModal('followers')}>
+                <Text style={styles.followCount}>
+                  {user?.followers?.length}
+                </Text>
+                <Text style={styles.followLabel}>Followers</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.followButton}
+                onPress={() => openUserListModal('following')}>
+                <Text style={styles.followCount}>
+                  {user?.following?.length}
+                </Text>
+                <Text style={styles.followLabel}>Following</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Weekly Stats */}
+          {currentUser && user?.weeklyStats && user?.weeklyOption && (
+            <View style={styles.weeklyStatsContainer}>
+              <WeeklyStatsDisplay
+                weeklyStats={user.weeklyStats}
+                weeklyOption={user.weeklyOption}
+              />
+            </View>
+          )}
+
+          {/* Follow/Unfollow Button for Other Users */}
+          {!currentUser && (
+            <View style={styles.followActionContainer}>
+              {user?.followers.some(
+                (f: {_id: {toString: () => any}}) =>
+                  f._id.toString() === profileUser?._id.toString(),
+              ) &&
+              !user?.following.some(
+                (f: {_id: {toString: () => any}}) =>
+                  f._id.toString() === profileUser?._id.toString(),
+              ) ? (
+                <TouchableOpacity
+                  style={styles.followActionButton}
+                  onPress={async () => {
+                    try {
+                      await sendFollowRequest(profileUser?._id);
+                      fetchProfile();
+                      Dialog.show({
+                        type: ALERT_TYPE.SUCCESS,
+                        title: 'Follow Requested',
+                        textBody: 'Follow request sent.',
+                      });
+                    } catch (err: any) {
+                      console.log(err);
+                      Dialog.show({
+                        type: ALERT_TYPE.DANGER,
+                        title: 'Error',
+                        textBody: err.data.message,
+                      });
+                    }
+                  }}>
+                  <Text style={styles.followActionText}>Follow Back</Text>
+                </TouchableOpacity>
+              ) : user?.following.some(
+                  (f: {_id: {toString: () => any}}) =>
+                    f._id.toString() === profileUser?._id.toString(),
+                ) ? (
+                <TouchableOpacity
+                  style={[
+                    styles.followActionButton,
+                    styles.unfollowActionButton,
+                  ]}
+                  onPress={async () => {
+                    try {
+                      await unfollowUser(profileUser._id);
+                      Dialog.show({
+                        type: ALERT_TYPE.SUCCESS,
+                        title: 'Unfollowed',
+                        textBody: 'You have unfollowed this user.',
+                      });
+                      fetchUserProfile(profileUser._id);
+                    } catch (err: any) {
+                      Dialog.show({
+                        type: ALERT_TYPE.DANGER,
+                        title: 'Error',
+                        textBody: err.message,
+                      });
+                    }
+                  }}>
+                  <Text style={styles.followActionText}>Unfollow</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.followActionButton}
+                  onPress={async () => {
+                    try {
+                      await sendFollowRequest(profileUser._id);
+                      fetchProfile();
+                      Dialog.show({
+                        type: ALERT_TYPE.SUCCESS,
+                        title: 'Follow Requested',
+                        textBody: 'Follow request sent.',
+                      });
+                    } catch (err: any) {
+                      console.log(err);
+                      Dialog.show({
+                        type: ALERT_TYPE.DANGER,
+                        title: 'Error',
+                        textBody: err.data.message,
+                      });
+                    }
+                  }}>
+                  <Text style={styles.followActionText}>Follow</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Groups Section */}
+          <View style={styles.groupsSection}>
+            <Text style={styles.groupsTitle}>Groups:</Text>
+            {userGroupLoading ? (
+              <ActivityIndicator size="small" color="#8B5CF6" />
+            ) : groups?.length > 0 ? (
+              <View style={styles.groupsGrid}>
+                {groups.map((item: any) => (
+                  <TouchableOpacity
+                    key={item._id}
+                    style={styles.groupItem}
+                    onPress={() =>
+                      navigation.navigate('GroupDetails', {
+                        groupId: item._id,
+                      })
+                    }>
+                    <View style={styles.imageContainer}>
+                      <Image
+                        source={{uri: item.image}}
+                        style={styles.groupImage}
+                        resizeMode="cover"
+                      />
+                      {currentUser && item?.joinRequests.length > 0 && (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>
+                            {item?.joinRequests?.length}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.noGroupText}>
+                You are not part of any groups yet.
+              </Text>
+            )}
+          </View>
+        </ScrollView>
+
+        {/* All Modals with Dark Theme */}
         <Modal
           visible={showPendingModal}
           animationType="slide"
           transparent={true}>
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            }}>
-            <View
-              style={{
-                backgroundColor: 'white',
-                padding: 20,
-                width: '85%',
-                borderRadius: 10,
-              }}>
-              <Text
-                style={{fontWeight: 'bold', fontSize: 18, marginBottom: 10}}>
-                Pending Follow Requests
-              </Text>
+          <View style={styles.modalOverlay}>
+            <View style={styles.darkModalContent}>
+              <Text style={styles.darkModalTitle}>Pending Follow Requests</Text>
               {pendingRequest?.map((item: any) => (
-                <View
-                  key={item?._id}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                  }}>
-                  <Text>{item?.user.name}</Text>
-                  <View style={{flexDirection: 'row', gap: 10}}>
-                    <Button
+                <View key={item?._id} style={styles.requestItem}>
+                  <Text style={styles.requestText}>{item?.user.name}</Text>
+                  <View style={styles.requestButtons}>
+                    <TouchableOpacity
+                      style={styles.acceptButton}
                       onPress={async () => {
                         try {
                           setLoading(true);
@@ -354,13 +537,13 @@ const ProfileScreen = ({route, navigation}: any) => {
                         } catch (error) {
                         } finally {
                           setShowPendingModal(false);
-
                           setLoading(false);
                         }
                       }}>
-                      Accept
-                    </Button>
-                    <Button
+                      <Text style={styles.buttonText}>Accept</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.rejectButton}
                       onPress={async () => {
                         try {
                           await handleFollowRequest(item?.user._id, 'reject');
@@ -372,65 +555,50 @@ const ProfileScreen = ({route, navigation}: any) => {
                           });
                           setShowPendingModal(false);
                         } catch (error) {
-                          // The error dialog is already handled inside handleFollowRequest
                         } finally {
                           await fetchProfile();
                           setShowPendingModal(false);
                           setLoading(false);
                         }
                       }}>
-                      Reject
-                    </Button>
+                      <Text style={styles.buttonText}>Reject</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               ))}
               <TouchableOpacity
                 onPress={() => setShowPendingModal(false)}
-                style={{marginTop: 10}}>
-                <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
+                style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
-
         <Modal
           visible={userListModalVisible}
           animationType="slide"
           transparent={true}>
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            }}>
-            <View
-              style={{
-                backgroundColor: 'white',
-                padding: 20,
-                width: '80%',
-                borderRadius: 10,
-              }}>
-              <Text
-                style={{fontSize: 18, fontWeight: 'bold', marginBottom: 10}}>
-                User List
+          <View style={styles.modalOverlay}>
+            <View style={styles.darkModalContent}>
+              <Text style={styles.darkModalTitle}>
+                {userListType === 'followers' ? 'Followers' : 'Following'}
               </Text>
+
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search users..."
+                placeholderTextColor="#888"
+                value={searchText}
+                onChangeText={setSearchText}
+              />
+
               <FlatList
-                data={
-                  userListType === 'followers'
-                    ? user?.followers
-                    : user?.following
-                }
+                data={filteredUsers}
                 keyExtractor={item => item?._id}
+                contentContainerStyle={{paddingBottom: 80}}
                 renderItem={({item}) => (
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: 10,
-                    }}>
-                    <Text>{item.name}</Text>
+                  <View style={styles.userListItem}>
+                    <Text style={styles.userListText}>{item.name}</Text>
                     {userListType === 'following' && (
                       <TouchableOpacity
                         style={styles.unfollowButton}
@@ -463,95 +631,59 @@ const ProfileScreen = ({route, navigation}: any) => {
 
               <TouchableOpacity
                 onPress={closeUserListModal}
-                style={{marginTop: 10}}>
-                <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
+                style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
-
         <Modal
           visible={showJoinRequestModal}
           animationType="slide"
           transparent={true}>
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            }}>
-            <View
-              style={{
-                backgroundColor: 'white',
-                padding: 20,
-                width: '85%',
-                borderRadius: 10,
-                maxHeight: '80%',
-              }}>
-              <Text
-                style={{fontWeight: 'bold', fontSize: 18, marginBottom: 10}}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.darkModalContent}>
+              <Text style={styles.darkModalTitle}>
                 Your Group Join Requests
               </Text>
-
               {joinRequests?.length === 0 ? (
-                <Text>No pending requests.</Text>
+                <Text style={styles.noRequestsText}>No pending requests.</Text>
               ) : (
                 joinRequests?.map((g: any) => (
                   <TouchableOpacity
                     key={g?._id}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      marginBottom: 15,
-                      gap: 10,
-                    }}
+                    style={styles.joinRequestItem}
                     onPress={() => {
-                      setShowJoinRequestModal(false); // Close modal
-                      navigation.navigate('GroupDetails', {groupId: g._id}); // Navigate
+                      setShowJoinRequestModal(false);
+                      navigation.navigate('GroupDetails', {groupId: g._id});
                     }}>
-                    {/* Group Image */}
                     <Image
                       source={{
                         uri: g?.image || 'https://via.placeholder.com/60',
                       }}
-                      style={{
-                        width: 60,
-                        height: 60,
-                        borderRadius: 10,
-                        marginRight: 10,
-                        backgroundColor: '#eee',
-                      }}
+                      style={styles.joinRequestImage}
                       resizeMode="cover"
                     />
-
-                    {/* Group Info */}
-                    <View style={{flex: 1}}>
-                      <Text style={{fontWeight: '600'}}>{g?.title}</Text>
-                      <Text style={{fontSize: 12, color: 'gray'}}>
+                    <View style={styles.joinRequestInfo}>
+                      <Text style={styles.joinRequestTitle}>{g?.title}</Text>
+                      <Text style={styles.joinRequestGoal}>
                         {g?.goal || 'No goal'}
                       </Text>
                     </View>
-
-                    {/* Cancel Button */}
                     <TouchableOpacity
-                      style={{
-                        backgroundColor: '#ccc',
-                        padding: 6,
-                        borderRadius: 5,
-                      }}
+                      style={styles.cancelRequestButton}
                       onPress={async e => {
-                        e.stopPropagation(); // Prevent navigation on cancel
+                        e.stopPropagation();
                         try {
                           setLoading(true);
-                          await handleJoinGroup(g._id); // Cancel request
+                          await handleJoinGroup(g._id);
                           Dialog.show({
                             type: ALERT_TYPE.SUCCESS,
                             title: 'Cancelled',
                             textBody: 'Join request cancelled.',
                             button: 'OK',
                           });
-                          await fetchProfile(); // Refresh data
+                          await fetchProfile();
                         } catch (error) {
                           Dialog.show({
                             type: ALERT_TYPE.DANGER,
@@ -563,508 +695,481 @@ const ProfileScreen = ({route, navigation}: any) => {
                           setLoading(false);
                         }
                       }}>
-                      <Text style={{fontSize: 12}}>Cancel</Text>
+                      <Text style={styles.cancelRequestText}>Cancel</Text>
                     </TouchableOpacity>
                   </TouchableOpacity>
                 ))
               )}
-
               <TouchableOpacity
                 onPress={() => setShowJoinRequestModal(false)}
-                style={{marginTop: 10}}>
-                <Text style={{color: 'blue', textAlign: 'center'}}>Close</Text>
+                style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
 
-        <View style={styles.container}>
-          <View>
-            {/* Menu Button */}
+        <Modal
+          visible={editModalVisible}
+          animationType="slide"
+          transparent={true}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.darkModalContent}>
+              <Text style={styles.darkModalTitle}>Edit Profile</Text>
 
-            {/* Profile Info */}
-            <View style={styles.topGrid}>
-              <View>
-                <Image source={{uri: image}} style={styles.avatar} />
-              </View>
-              <View>
-                <Text style={styles.name}>{name || 'Guest User'} </Text>
-                {currentUser && <Text>{user?.totalStreak} 🐦‍🔥</Text>}
-              </View>
-              <View>
-                {currentUser && (
-                  <View>
-                    <View
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        justifyContent: 'flex-start',
-                        alignItems: 'center',
-                        marginTop:-40
-                      }}>
-                      <Button onPress={() => openUserListModal('followers')}>
-                        {user?.followers?.length}Followers
-                      </Button>
-                      <Button onPress={() => openUserListModal('following')}>
-                        {user?.following?.length}Fllowing
-                      </Button>
-                    </View>
-
-                    {/* Weekly Stats Display - Only show if user has weeklyStats */}
-                    {user?.weeklyStats && user?.weeklyOption && (
-                      <WeeklyStatsDisplay
-                        weeklyStats={user.weeklyStats}
-                        weeklyOption={user.weeklyOption}
-                      />
-                    )}
-                  </View>
+              <TouchableOpacity
+                style={styles.imagePicker}
+                onPress={selectImage}>
+                {image ? (
+                  <Image source={{uri: image}} style={styles.image} />
+                ) : (
+                  <Image source={{uri: user?.image}} style={styles.image} />
                 )}
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Enter Name"
+                placeholderTextColor="#666"
+                value={name}
+                onChangeText={setName}
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="Enter Email"
+                placeholderTextColor="#666"
+                value={email}
+                onChangeText={setEmail}
+              />
+
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.input, {flex: 1, marginBottom: 0}]}
+                  placeholder="Password"
+                  placeholderTextColor="#666"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(prev => !prev)}
+                  style={styles.eyeIcon}>
+                  <Icon
+                    name={showPassword ? 'eye-slash' : 'eye'}
+                    size={20}
+                    color="#666"
+                  />
+                </TouchableOpacity>
               </View>
-              {!currentUser && (
-                <View style={{marginTop: 0}}>
-                  {user?.followers.some(
-                    (f: {_id: {toString: () => any}}) =>
-                      f._id.toString() === profileUser?._id.toString(),
-                  ) &&
-                  !user?.following.some(
-                    (f: {_id: {toString: () => any}}) =>
-                      f._id.toString() === profileUser?._id.toString(),
-                  ) ? (
-                    <Button
-                      onPress={async () => {
-                        try {
-                          await sendFollowRequest(profileUser?._id);
-                          fetchProfile();
-                          Dialog.show({
-                            type: ALERT_TYPE.SUCCESS,
-                            title: 'Follow Requested',
-                            textBody: 'Follow request sent.',
-                          });
-                        } catch (err: any) {
-                          console.log(err);
-                          Dialog.show({
-                            type: ALERT_TYPE.DANGER,
-                            title: 'Error',
-                            textBody: err.data.message,
-                          });
-                        }
-                      }}>
-                      Follow Back
-                    </Button>
-                  ) : user?.following.some(
-                      (f: {_id: {toString: () => any}}) =>
-                        f._id.toString() === profileUser?._id.toString(),
-                    ) ? (
-                    <Button
-                      onPress={async () => {
-                        try {
-                          await unfollowUser(profileUser._id);
-                          Dialog.show({
-                            type: ALERT_TYPE.SUCCESS,
-                            title: 'Unfollowed',
-                            textBody: 'You have unfollowed this user.',
-                          });
-                          fetchUserProfile(profileUser._id); // Refresh state
-                        } catch (err: any) {
-                          Dialog.show({
-                            type: ALERT_TYPE.DANGER,
-                            title: 'Error',
-                            textBody: err.message,
-                          });
-                        }
-                      }}>
-                      Unfollow
-                    </Button>
-                  ) : (
-                    <Button
-                      onPress={async () => {
-                        try {
-                          await sendFollowRequest(profileUser._id);
-                          fetchProfile();
-                          Dialog.show({
-                            type: ALERT_TYPE.SUCCESS,
-                            title: 'Follow Requested',
-                            textBody: 'Follow request sent.',
-                          });
-                        } catch (err: any) {
-                          console.log(err);
-                          Dialog.show({
-                            type: ALERT_TYPE.DANGER,
-                            title: 'Error',
-                            textBody: err.data.message,
-                          });
-                        }
-                      }}>
-                      Follow
-                    </Button>
-                  )}
-                </View>
-              )}
+
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={saveProfileChanges}>
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setName(user?.name);
+                    setEmail(user?.email);
+                    setImage(user?.image);
+                    setEditModalVisible(false);
+                  }}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-
-            <Modal
-              visible={editModalVisible}
-              animationType="slide"
-              transparent={true}>
-              <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
-                  <Text style={styles.modalTitle}>Edit Profile</Text>
-                  {/* Image Input */}
-                  <TouchableOpacity
-                    style={styles.imagePicker}
-                    onPress={selectImage}>
-                    {image ? (
-                      <Image source={{uri: image}} style={styles.image} />
-                    ) : (
-                      <Image source={{uri: user?.image}} style={styles.image} />
-                    )}
-                  </TouchableOpacity>
-
-                  {/* Name Input */}
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter Name"
-                    value={name}
-                    onChangeText={setName}
-                  />
-
-                  {/* Email Input */}
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter Email"
-                    value={email}
-                    onChangeText={setEmail}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Password"
-                    placeholderTextColor="#999"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(prev => !prev)}
-                    style={styles.eyeIcon}>
-                    <Icon
-                      name={showPassword ? 'eye-slash' : 'eye'}
-                      size={20}
-                      color="#999"
-                    />
-                  </TouchableOpacity>
-
-                  {/* Buttons */}
-                  <View style={styles.buttonContainer}>
-                    <Button
-                      mode="contained"
-                      style={{backgroundColor: 'tomato'}}
-                      onPress={saveProfileChanges}>
-                      Save
-                    </Button>
-                    <Button
-                      mode="outlined"
-                      onPress={() => {
-                        setName(user?.name);
-                        setEmail(user?.email);
-                        setImage(user?.image);
-                        setEditModalVisible(false);
-                      }}>
-                      Cancel
-                    </Button>
-                  </View>
-                </View>
-              </View>
-            </Modal>
           </View>
-
-          <View>
-            {userGroupLoading ? (
-              <ActivityIndicator size="small" color="#1c1c1e" />
-            ) : (
-              <View>
-                {/* User Groups */}
-                <View style={styles.groupContainer}>
-                  <Text style={styles.sectionTitle}>Groups:</Text>
-                  {groups?.length > 0 ? (
-                    <FlatList
-                      data={groups}
-                      numColumns={3}
-                      keyExtractor={item => item._id}
-                      renderItem={({item}) => (
-                        <TouchableOpacity
-                          style={styles.gridItem}
-                          onPress={() =>
-                            navigation.navigate('GroupDetails', {
-                              groupId: item._id,
-                            })
-                          }>
-                          <View style={styles.imageContainer}>
-                            <Image
-                              source={{uri: item.image}}
-                              style={styles.groupImage}
-                              resizeMode="cover"
-                            />
-                            {currentUser && item?.joinRequests.length > 0 && (
-                              <View style={styles.badge}>
-                                <Text style={styles.badgeText}>
-                                  {item?.joinRequests?.length}
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                        </TouchableOpacity>
-                      )}
-                    />
-                  ) : (
-                    <Text style={styles.noGroupText}>
-                      You are not part of any groups yet.
-                    </Text>
-                  )}
-                </View>
-              </View>
-            )}
-          </View>
-        </View>
-      </ScrollView>
+        </Modal>
+      </SafeAreaView>
     </Provider>
   );
 };
 
 const styles = StyleSheet.create({
-  followModel: {
-    fontSize: 12,
-  },
-  topGrid: {
-    flexDirection: 'row', // Arrange items horizontally
-    flexWrap: 'wrap', // Wrap to next line if needed
-    alignItems: 'center', // Center items vertically
-    // marginBottom: 10,
-    gap: 30,
-  },
-  notificationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 10,
-    marginHorizontal: 10,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-
-  notificationText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
   container: {
-    // flex: 1,
-    display: 'flex',
-    marginTop: 40,
-    justifyContent: 'center',
-    // backgroundColor: '#fff',
-    padding: 20,
+    flex: 1,
+    backgroundColor: '#1a1a1a',
   },
-  imageContainer: {
-    position: 'relative',
-    width: 100, // adjust based on your layout
-    height: 100,
-    margin: 5,
-  },
-
-  groupImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 10,
-  },
-
-  badge: {
-    position: 'absolute',
-    top: -6,
-    right: -9,
-    backgroundColor: '#e74c3c',
-    borderRadius: 10,
-    minWidth: 18,
-    minHeight: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
-  },
-  unfollowButton: {
-    padding: 10,
-    backgroundColor: 'lightgray',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-
-  unfollowText: {
-    fontSize: 16,
-    color: 'white',
-  },
-  badgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-
-  menuContainer: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-  },
-  menuButton: {
-    padding: 10,
-  },
-  menuContent: {
-    marginTop: 40,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 15,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 5,
-  },
-  email: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 20,
-  },
-  image: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  modalContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: '#1a1a1a',
   },
-  modalContent: {
-    width: 300,
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  imagePicker: {
-    width: 120,
-    height: 120,
-    backgroundColor: '#333',
-    borderRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 15,
-  },
-  input: {
-    width: '100%',
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    marginBottom: 10,
-  },
-  buttonContainer: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 10,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
+    marginTop: 50,
   },
-  eyeIcon: {
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#2a2a2a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    marginBottom:10,
+  },
+  menuButton: {
+    position: 'relative',
     padding: 10,
   },
-  lottie: {
-    width: 100,
-    height: 100,
-  },
-  convoItem: {
-    alignItems: 'center',
-    margin: 5,
-    width: 90,
-  },
-  convoImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  convoName: {
-    fontSize: 12,
-    marginTop: 5,
-  },
-  pendingRequestText: {
-    color: 'red',
-    fontWeight: 'bold',
-    marginBottom: 5,
-    fontSize: 14,
-    alignSelf: 'flex-end',
-  },
-  groupItem: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
-  },
-  groupTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  groupGoal: {
-    fontSize: 14,
-    color: '#555',
-    marginTop: 4,
-  },
-  groupStreak: {
-    fontSize: 14,
-    color: 'tomato',
-    marginTop: 4,
-  },
-  groupContainer: {
-    marginTop: 5,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  noGroupText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: 'gray',
-  },
-  gridItem: {
-    flex: 1 / 3, // 3 items per row
-    aspectRatio: 1, // make it square
-    padding: 6, // small space between images
+  menuContent: {
+    backgroundColor: '#2a2a2a',
+    marginTop: 40,
   },
   badgeContainer: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: 'red',
+    top: 0,
+    right: 0,
+    backgroundColor: '#ff4444',
     borderRadius: 10,
     minWidth: 18,
     height: 18,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
-    zIndex: 1,
   },
-
-  badgeText1: {
+  badgeText: {
     color: 'white',
     fontSize: 10,
+    fontWeight: 'bold',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  profileSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 10,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  streakContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  streakText: {
+    fontSize: 16,
+    color: '#fff',
+    marginRight: 5,
+  },
+  fireEmoji: {
+    fontSize: 16,
+  },
+  followSection: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+    gap: 40,
+  },
+  followButton: {
+    alignItems: 'center',
+  },
+  followCount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  followLabel: {
+    fontSize: 14,
+    color: 'white',
+  },
+  weeklyStatsContainer: {
+    marginBottom: 20,
+  },
+  followActionContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  followActionButton: {
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  unfollowActionButton: {
+    backgroundColor: '#666',
+  },
+  followActionText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  groupsSection: {
+    marginTop: 20,
+  },
+  searchInput: {
+    height: 40,
+    borderColor: '#555',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    color: '#fff',
+    marginBottom: 12,
+  },
+  groupsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 15,
+  },
+  groupsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  groupItem: {
+    width: (width - 60) / 3,
+    marginBottom: 10,
+  },
+  imageContainer: {
+    position: 'relative',
+  },
+  groupImage: {
+    width: '100%',
+    height: (width - 60) / 3,
+    borderRadius: 10,
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#ff4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  noGroupText: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 16,
+    marginTop: 20,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  darkModalContent: {
+    backgroundColor: '#2a2a2a',
+    padding: 20,
+    width: '85%',
+    borderRadius: 15,
+    maxHeight: '80%',
+  },
+  darkModalTitle: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginBottom: 15,
+    color: '#fff',
+    textAlign: 'center',
+  },
+  requestItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#444',
+  },
+  requestText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  requestButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  acceptButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  rejectButton: {
+    backgroundColor: '#f44336',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    marginTop: 15,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  closeButtonText: {
+    color: '#8B5CF6',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  userListItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#444',
+  },
+  userListText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  unfollowButton: {
+    padding: 8,
+    backgroundColor: '#666',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  unfollowText: {
+    fontSize: 16,
+  },
+  noRequestsText: {
+    color: '#666',
+    textAlign: 'center',
+    fontSize: 16,
+    paddingVertical: 20,
+  },
+  joinRequestItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#444',
+  },
+  joinRequestImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: '#444',
+  },
+  joinRequestInfo: {
+    flex: 1,
+  },
+  joinRequestTitle: {
+    fontWeight: '600',
+    color: '#fff',
+    fontSize: 16,
+  },
+  joinRequestGoal: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  cancelRequestButton: {
+    backgroundColor: '#666',
+    padding: 8,
+    borderRadius: 6,
+  },
+  cancelRequestText: {
+    fontSize: 12,
+    color: '#fff',
+  },
+  // Edit Modal Styles
+  imagePicker: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#444',
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    alignSelf: 'center',
+  },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  input: {
+    width: '100%',
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#444',
+    borderRadius: 8,
+    marginBottom: 15,
+    backgroundColor: '#1a1a1a',
+    color: '#fff',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 15,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 15,
+    padding: 5,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 10,
+    gap: 10,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#8B5CF6',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#666',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#fff',
     fontWeight: 'bold',
   },
 });
