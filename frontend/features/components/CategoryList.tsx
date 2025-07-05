@@ -42,13 +42,16 @@ const CategoryList = ({ categories }: any) => {
 };
 
 const styles = StyleSheet.create({
-  container: {},
+  container: {
+    marginLeft:-10
+  },
   badge: {
     backgroundColor: '#E0E7FF',
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    padding: 12,
     borderRadius: 20,
     marginRight: 8,
+    marginTop:20
   },
   badgeText: {
     color: '#3730A3',
