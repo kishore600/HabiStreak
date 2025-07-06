@@ -80,6 +80,7 @@ const getUserProfile1 = async (req, res) => {
         },
       })
       .populate("createdGroups")
+      .populate("joinedGroups")
       .populate({
         path: "joinRequests",
         populate: {
