@@ -35,9 +35,9 @@ const getUserProfile = async (req, res) => {
       .select("-password -pendingRequest")
       .populate("followers", "name email image")
       .populate("following", "name email image")
-      .populate("createdGroups");
-
-    if (!user) {
+      .populate("createdGroups")
+      .populate("joinedGroups");
+      if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 

@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unstable-nested-components */
 
 /* eslint-disable react-native/no-inline-styles */
-import { useEffect, useMemo, useState } from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {
   View,
   Text,
@@ -14,22 +14,22 @@ import {
   Dimensions,
   SafeAreaView,
 } from 'react-native';
-import { useAuth } from '../context/AuthContext';
-import { Menu, Provider, ActivityIndicator } from 'react-native-paper';
+import {useAuth} from '../context/AuthContext';
+import {Menu, Provider, ActivityIndicator} from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { launchImageLibrary } from 'react-native-image-picker';
-import { ALERT_TYPE, Dialog } from 'react-native-alert-notification';
-import { useGroup } from '../context/GroupContext';
-import { FlatList } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
-import { API_URL } from '@env';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {ALERT_TYPE, Dialog} from 'react-native-alert-notification';
+import {useGroup} from '../context/GroupContext';
+import {FlatList} from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
+import {useCallback} from 'react';
+import {API_URL} from '@env';
 import WeeklyStatsDisplay from '../components/WeeklyStatsDisplay';
 import React from 'react';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
-const ProfileScreen = ({ route, navigation }: any) => {
+const ProfileScreen = ({route, navigation}: any) => {
   const {
     user,
     logout,
@@ -48,7 +48,13 @@ const ProfileScreen = ({ route, navigation }: any) => {
     joinRequests,
   }: any = useAuth();
 
-  const { userGroups, loading: userGroupLoading, fetchUserGroups, handleJoinRequest, fetchGroups } = useGroup();
+  const {
+    userGroups,
+    loading: userGroupLoading,
+    fetchUserGroups,
+    handleJoinRequest,
+    fetchGroups,
+  } = useGroup();
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -60,7 +66,9 @@ const ProfileScreen = ({ route, navigation }: any) => {
   const [loading, setLoading] = useState(false);
   const [groups, setGroups] = useState(userGroups);
   const [userListModalVisible, setUserListModalVisible] = useState(false);
-  const [userListType, setUserListType] = useState<'followers' | 'following' | null>(null);
+  const [userListType, setUserListType] = useState<
+    'followers' | 'following' | null
+  >(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showJoinRequestModal, setShowJoinRequestModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
@@ -94,7 +102,11 @@ const ProfileScreen = ({ route, navigation }: any) => {
         '📅 Flexible task scheduling (daily/weekly)',
         '🔒 Enhanced privacy settings',
       ],
-      fixes: ['Fixed group creation bugs', 'Improved sync across devices', 'Better error handling'],
+      fixes: [
+        'Fixed group creation bugs',
+        'Improved sync across devices',
+        'Better error handling',
+      ],
     },
     {
       version: '2.0.0',
@@ -106,7 +118,11 @@ const ProfileScreen = ({ route, navigation }: any) => {
         '📈 Personal progress tracking',
         '🎯 Category-based habit organization',
       ],
-      fixes: ['Complete backend overhaul', 'Improved data synchronization', 'Enhanced security measures'],
+      fixes: [
+        'Complete backend overhaul',
+        'Improved data synchronization',
+        'Enhanced security measures',
+      ],
     },
   ];
 
@@ -123,7 +139,28 @@ const ProfileScreen = ({ route, navigation }: any) => {
     useCallback(() => {
       fetchUserGroups();
       if (profileUser && !currentUser) {
-        setGroups(profileUser?.createdGroups);
+        console.log(profileUser)
+        // Assuming profileUser is your object containing user data
+        const allGroupsMap = new Map();
+
+        // Add createdGroups
+        profileUser?.createdGroups?.forEach((group: any) => {
+          allGroupsMap.set(group._id, group);
+        });
+
+        // Add joinedGroups (only if not already in createdGroups)
+        profileUser?.joinedGroups?.forEach((groupId: any) => {
+          // If the group is not already present in createdGroups
+          if (!allGroupsMap.has(groupId)) {
+            // You’ll need full group data here, fetch if necessary
+            // For now we store only the id (could be replaced with full group data later)
+            allGroupsMap.set(groupId, {_id: groupId});
+          }
+        });
+
+        const allGroups = Array.from(allGroupsMap.values());
+        setGroups(allGroups);
+
         console.log('in u');
       }
       if (currentUser) {
@@ -136,7 +173,7 @@ const ProfileScreen = ({ route, navigation }: any) => {
 
   useFocusEffect(
     useCallback(() => {
-      let uid = route?.params?.user?._id || route?.params?.userId;;
+      let uid = route?.params?.user?._id || route?.params?.userId;
       if (uid && uid !== user?._id) {
         fetchUserProfile(uid);
         setIsCurrentUser(false);
@@ -169,7 +206,7 @@ const ProfileScreen = ({ route, navigation }: any) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileUser, currentUser, isGroupUpdated, userGroups, navigation]);
 
- const openEditModal = () => {
+  const openEditModal = () => {
     setEditModalVisible(true);
     closeMenu();
   };
@@ -179,7 +216,7 @@ const ProfileScreen = ({ route, navigation }: any) => {
       userListType === 'followers' ? user?.followers : user?.following;
     // eslint-disable-next-line curly
     if (!list) return [];
-    return list.filter((u:any) =>
+    return list.filter((u: any) =>
       u?.name?.toLowerCase().includes(searchText.toLowerCase()),
     );
   }, [searchText, userListType, user]);
@@ -223,14 +260,17 @@ const ProfileScreen = ({ route, navigation }: any) => {
   };
 
   const selectImage = () => {
-    launchImageLibrary({ mediaType: 'photo', includeBase64: false }, (response: any) => {
-      if (response.didCancel) {
-        setImage(user?.image);
-      } else if (response.errorMessage) {
-      } else if (response.assets && response.assets.length > 0) {
-        setImage(response.assets[0].uri);
-      }
-    });
+    launchImageLibrary(
+      {mediaType: 'photo', includeBase64: false},
+      (response: any) => {
+        if (response.didCancel) {
+          setImage(user?.image);
+        } else if (response.errorMessage) {
+        } else if (response.assets && response.assets.length > 0) {
+          setImage(response.assets[0].uri);
+        }
+      },
+    );
   };
 
   if (loading) {
@@ -256,7 +296,8 @@ const ProfileScreen = ({ route, navigation }: any) => {
     Dialog.show({
       type: ALERT_TYPE.WARNING,
       title: 'Confirm Delete',
-      textBody: 'Are you sure you want to permanently delete your account? This action cannot be undone.',
+      textBody:
+        'Are you sure you want to permanently delete your account? This action cannot be undone.',
       button: 'Delete',
       onPressButton: async () => {
         try {
@@ -279,7 +320,7 @@ const ProfileScreen = ({ route, navigation }: any) => {
                 logout();
                 navigation.reset({
                   index: 0,
-                  routes: [{ name: 'Login' }],
+                  routes: [{name: 'Login'}],
                 });
               },
             });
@@ -295,7 +336,9 @@ const ProfileScreen = ({ route, navigation }: any) => {
           Dialog.show({
             type: ALERT_TYPE.DANGER,
             title: 'Error',
-            textBody: error.message || 'Something went wrong while deleting the account.',
+            textBody:
+              error.message ||
+              'Something went wrong while deleting the account.',
             button: 'OK',
           });
         }
@@ -309,39 +352,53 @@ const ProfileScreen = ({ route, navigation }: any) => {
       visible={showAboutModal}
       animationType="slide"
       transparent={true}
-      onRequestClose={() => setShowAboutModal(false)}
-    >
+      onRequestClose={() => setShowAboutModal(false)}>
       <View style={styles.modalOverlay}>
         <View style={styles.aboutModalContent}>
           <View style={styles.aboutModalHeader}>
             <Text style={styles.aboutModalTitle}>About This App</Text>
-            <TouchableOpacity onPress={() => setShowAboutModal(false)} style={styles.aboutCloseButton}>
+            <TouchableOpacity
+              onPress={() => setShowAboutModal(false)}
+              style={styles.aboutCloseButton}>
               <Icon name="times" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.aboutModalScroll} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.aboutModalScroll}
+            showsVerticalScrollIndicator={false}>
             <Text style={styles.aboutWelcomeText}>
-              Welcome to the ultimate social habit-tracking app designed to make habit-building fun, social, and
-              consistent.
+              Welcome to the ultimate social habit-tracking app designed to make
+              habit-building fun, social, and consistent.
             </Text>
 
             <Text style={styles.aboutDescriptionText}>
-              With this app, users can effortlessly create and track personal habits—whether it's drinking more water,
-              working out daily, journaling, or learning a new skill. But the real magic happens when{' '}
-              <Text style={styles.aboutBoldText}>two or more users share the same habit and follow each other.</Text>
-            </Text>
-
-            <Text style={styles.aboutDescriptionText}>
-              When that happens, the app <Text style={styles.aboutBoldText}>automatically forms a habit group.</Text>{' '}
-              These groups unite users with common goals, turning personal growth into a shared journey. Every day,
-              members are prompted to complete a <Text style={styles.aboutBoldText}>daily to-do task</Text> related to
-              their shared habit. The goal?{' '}
+              With this app, users can effortlessly create and track personal
+              habits—whether it's drinking more water, working out daily,
+              journaling, or learning a new skill. But the real magic happens
+              when{' '}
               <Text style={styles.aboutBoldText}>
-                Everyone in the group must complete the task for that day to maintain the streak.
+                two or more users share the same habit and follow each other.
+              </Text>
+            </Text>
+
+            <Text style={styles.aboutDescriptionText}>
+              When that happens, the app{' '}
+              <Text style={styles.aboutBoldText}>
+                automatically forms a habit group.
               </Text>{' '}
-              If even one person misses, the group's streak resets. It's a simple yet powerful system that transforms
-              social accountability into motivation.
+              These groups unite users with common goals, turning personal
+              growth into a shared journey. Every day, members are prompted to
+              complete a{' '}
+              <Text style={styles.aboutBoldText}>daily to-do task</Text> related
+              to their shared habit. The goal?{' '}
+              <Text style={styles.aboutBoldText}>
+                Everyone in the group must complete the task for that day to
+                maintain the streak.
+              </Text>{' '}
+              If even one person misses, the group's streak resets. It's a
+              simple yet powerful system that transforms social accountability
+              into motivation.
             </Text>
 
             <Text style={styles.aboutFeaturesTitle}>Key features include:</Text>
@@ -349,9 +406,12 @@ const ProfileScreen = ({ route, navigation }: any) => {
             <View style={styles.aboutFeatureItem}>
               <Text style={styles.aboutFeatureEmoji}>✅</Text>
               <View style={styles.aboutFeatureContent}>
-                <Text style={styles.aboutFeatureTitle}>Create and track personal habits</Text>
+                <Text style={styles.aboutFeatureTitle}>
+                  Create and track personal habits
+                </Text>
                 <Text style={styles.aboutFeatureDescription}>
-                  Build custom daily, weekly, or flexible habits with reminders and progress visualization.
+                  Build custom daily, weekly, or flexible habits with reminders
+                  and progress visualization.
                 </Text>
               </View>
             </View>
@@ -359,9 +419,12 @@ const ProfileScreen = ({ route, navigation }: any) => {
             <View style={styles.aboutFeatureItem}>
               <Text style={styles.aboutFeatureEmoji}>👥</Text>
               <View style={styles.aboutFeatureContent}>
-                <Text style={styles.aboutFeatureTitle}>Auto-forming Habit Groups</Text>
+                <Text style={styles.aboutFeatureTitle}>
+                  Auto-forming Habit Groups
+                </Text>
                 <Text style={styles.aboutFeatureDescription}>
-                  Follow a friend who shares the same habit, and the app will create a habit group automatically.
+                  Follow a friend who shares the same habit, and the app will
+                  create a habit group automatically.
                 </Text>
               </View>
             </View>
@@ -369,9 +432,12 @@ const ProfileScreen = ({ route, navigation }: any) => {
             <View style={styles.aboutFeatureItem}>
               <Text style={styles.aboutFeatureEmoji}>🔥</Text>
               <View style={styles.aboutFeatureContent}>
-                <Text style={styles.aboutFeatureTitle}>Group Streaks for Motivation</Text>
+                <Text style={styles.aboutFeatureTitle}>
+                  Group Streaks for Motivation
+                </Text>
                 <Text style={styles.aboutFeatureDescription}>
-                  Everyone must complete their daily task to keep the group's streak going. One miss resets it!
+                  Everyone must complete their daily task to keep the group's
+                  streak going. One miss resets it!
                 </Text>
               </View>
             </View>
@@ -379,9 +445,12 @@ const ProfileScreen = ({ route, navigation }: any) => {
             <View style={styles.aboutFeatureItem}>
               <Text style={styles.aboutFeatureEmoji}>📅</Text>
               <View style={styles.aboutFeatureContent}>
-                <Text style={styles.aboutFeatureTitle}>Daily To-Do Reminders</Text>
+                <Text style={styles.aboutFeatureTitle}>
+                  Daily To-Do Reminders
+                </Text>
                 <Text style={styles.aboutFeatureDescription}>
-                  Stay on track with notifications and reminders tailored to your goals and group progress.
+                  Stay on track with notifications and reminders tailored to
+                  your goals and group progress.
                 </Text>
               </View>
             </View>
@@ -389,17 +458,24 @@ const ProfileScreen = ({ route, navigation }: any) => {
             <View style={styles.aboutFeatureItem}>
               <Text style={styles.aboutFeatureEmoji}>📊</Text>
               <View style={styles.aboutFeatureContent}>
-                <Text style={styles.aboutFeatureTitle}>Analytics and Progress Insights</Text>
+                <Text style={styles.aboutFeatureTitle}>
+                  Analytics and Progress Insights
+                </Text>
                 <Text style={styles.aboutFeatureDescription}>
-                  Track your individual progress and compare with your group for extra accountability.
+                  Track your individual progress and compare with your group for
+                  extra accountability.
                 </Text>
               </View>
             </View>
 
             <Text style={styles.aboutClosingText}>
-              The app is designed to boost <Text style={styles.aboutBoldText}>consistency through community.</Text>{' '}
-              Whether you're forming a small accountability group with friends, or joining strangers working on similar
-              goals, you'll find strength in numbers and purpose in progress.
+              The app is designed to boost{' '}
+              <Text style={styles.aboutBoldText}>
+                consistency through community.
+              </Text>{' '}
+              Whether you're forming a small accountability group with friends,
+              or joining strangers working on similar goals, you'll find
+              strength in numbers and purpose in progress.
             </Text>
 
             <Text style={styles.aboutTaglineText}>
@@ -417,27 +493,34 @@ const ProfileScreen = ({ route, navigation }: any) => {
       visible={showReleaseNotesModal}
       animationType="slide"
       transparent={true}
-      onRequestClose={() => setShowReleaseNotesModal(false)}
-    >
+      onRequestClose={() => setShowReleaseNotesModal(false)}>
       <View style={styles.modalOverlay}>
         <View style={styles.aboutModalContent}>
           <View style={styles.aboutModalHeader}>
             <Text style={styles.aboutModalTitle}>Release Notes</Text>
-            <TouchableOpacity onPress={() => setShowReleaseNotesModal(false)} style={styles.aboutCloseButton}>
+            <TouchableOpacity
+              onPress={() => setShowReleaseNotesModal(false)}
+              style={styles.aboutCloseButton}>
               <Icon name="times" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.aboutModalScroll} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.aboutModalScroll}
+            showsVerticalScrollIndicator={false}>
             {releaseNotes.map((release, index) => (
               <View key={index} style={styles.releaseItem}>
                 <View style={styles.releaseHeader}>
-                  <Text style={styles.releaseVersion}>Version {release.version}</Text>
+                  <Text style={styles.releaseVersion}>
+                    Version {release.version}
+                  </Text>
                   <Text style={styles.releaseDate}>{release.date}</Text>
                 </View>
 
                 <View style={styles.releaseSection}>
-                  <Text style={styles.releaseSectionTitle}>🎉 New Features</Text>
+                  <Text style={styles.releaseSectionTitle}>
+                    🎉 New Features
+                  </Text>
                   {release.features.map((feature, featureIndex) => (
                     <Text key={featureIndex} style={styles.releaseFeature}>
                       {feature}
@@ -446,7 +529,9 @@ const ProfileScreen = ({ route, navigation }: any) => {
                 </View>
 
                 <View style={styles.releaseSection}>
-                  <Text style={styles.releaseSectionTitle}>🔧 Bug Fixes & Improvements</Text>
+                  <Text style={styles.releaseSectionTitle}>
+                    🔧 Bug Fixes & Improvements
+                  </Text>
                   {release.fixes.map((fix, fixIndex) => (
                     <Text key={fixIndex} style={styles.releaseFix}>
                       • {fix}
@@ -454,22 +539,26 @@ const ProfileScreen = ({ route, navigation }: any) => {
                   ))}
                 </View>
 
-                {index < releaseNotes.length - 1 && <View style={styles.releaseDivider} />}
+                {index < releaseNotes.length - 1 && (
+                  <View style={styles.releaseDivider} />
+                )}
               </View>
             ))}
           </ScrollView>
         </View>
       </View>
     </Modal>
-  // eslint-disable-next-line semi
-  )
+    // eslint-disable-next-line semi
+  );
 
   return (
     <Provider>
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
             <View style={styles.backButtonCircle}>
               <Text style={styles.backButtonText}>←</Text>
             </View>
@@ -481,19 +570,22 @@ const ProfileScreen = ({ route, navigation }: any) => {
               anchor={
                 <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
                   <Icon name="bars" size={24} color="#fff" />
-                  {(user?.pendingRequest?.length > 0 || user?.joinRequests?.length > 0) && (
+                  {(user?.pendingRequest?.length > 0 ||
+                    user?.joinRequests?.length > 0) && (
                     <View style={styles.badgeContainer}>
-                      <Text style={styles.badgeText}>{user.pendingRequest.length + user?.joinRequests?.length}</Text>
+                      <Text style={styles.badgeText}>
+                        {user.pendingRequest.length +
+                          user?.joinRequests?.length}
+                      </Text>
                     </View>
                   )}
                 </TouchableOpacity>
               }
-              contentStyle={styles.menuContent}
-            >
+              contentStyle={styles.menuContent}>
               <Menu.Item
                 onPress={() => handleMenuAction(openEditModal)}
                 title="Edit Profile"
-                titleStyle={{ color: 'white' }}
+                titleStyle={{color: 'white'}}
               />
               <Menu.Item
                 onPress={() =>
@@ -503,34 +595,40 @@ const ProfileScreen = ({ route, navigation }: any) => {
                   })
                 }
                 title="Logout"
-                titleStyle={{ color: 'white' }}
+                titleStyle={{color: 'white'}}
               />
               <Menu.Item
                 onPress={() => handleMenuAction(handleDeleteAccount)}
                 title="Delete Account"
-                titleStyle={{ color: 'red' }}
+                titleStyle={{color: 'red'}}
               />
               {user?.pendingRequest?.length > 0 && (
                 <Menu.Item
-                  onPress={() => handleMenuAction(() => setShowPendingModal(true))}
+                  onPress={() =>
+                    handleMenuAction(() => setShowPendingModal(true))
+                  }
                   title={`Requested Users (${user.pendingRequest.length})`}
-                  titleStyle={{ color: 'white' }}
+                  titleStyle={{color: 'white'}}
                 />
               )}
               <Menu.Item
-                onPress={() => handleMenuAction(() => setShowJoinRequestModal(true))}
+                onPress={() =>
+                  handleMenuAction(() => setShowJoinRequestModal(true))
+                }
                 title={`GroupJoinRequest (${user?.joinRequests?.length})`}
-                titleStyle={{ color: 'white' }}
+                titleStyle={{color: 'white'}}
               />
               <Menu.Item
                 onPress={() => handleMenuAction(() => setShowAboutModal(true))}
                 title="About App"
-                titleStyle={{ color: 'white' }}
+                titleStyle={{color: 'white'}}
               />
               <Menu.Item
-                onPress={() => handleMenuAction(() => setShowReleaseNotesModal(true))}
+                onPress={() =>
+                  handleMenuAction(() => setShowReleaseNotesModal(true))
+                }
                 title="Release Notes"
-                titleStyle={{ color: 'white' }}
+                titleStyle={{color: 'white'}}
               />
             </Menu>
           )}
@@ -539,11 +637,10 @@ const ProfileScreen = ({ route, navigation }: any) => {
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           {/* Profile Section */}
           <View style={styles.profileSection}>
-            <Image source={{ uri: image }} style={styles.avatar} />
+            <Image source={{uri: image}} style={styles.avatar} />
             <Text style={styles.name}>{name || 'Guest User'}</Text>
             {currentUser && (
               <View style={styles.streakContainer}>
@@ -556,12 +653,20 @@ const ProfileScreen = ({ route, navigation }: any) => {
           {/* Followers/Following */}
           {currentUser && (
             <View style={styles.followSection}>
-              <TouchableOpacity style={styles.followButton} onPress={() => openUserListModal('followers')}>
-                <Text style={styles.followCount}>{user?.followers?.length}</Text>
+              <TouchableOpacity
+                style={styles.followButton}
+                onPress={() => openUserListModal('followers')}>
+                <Text style={styles.followCount}>
+                  {user?.followers?.length}
+                </Text>
                 <Text style={styles.followLabel}>Followers</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.followButton} onPress={() => openUserListModal('following')}>
-                <Text style={styles.followCount}>{user?.following?.length}</Text>
+              <TouchableOpacity
+                style={styles.followButton}
+                onPress={() => openUserListModal('following')}>
+                <Text style={styles.followCount}>
+                  {user?.following?.length}
+                </Text>
                 <Text style={styles.followLabel}>Following</Text>
               </TouchableOpacity>
             </View>
@@ -570,7 +675,10 @@ const ProfileScreen = ({ route, navigation }: any) => {
           {/* Weekly Stats */}
           {currentUser && user?.weeklyStats && user?.weeklyOption && (
             <View style={styles.weeklyStatsContainer}>
-              <WeeklyStatsDisplay weeklyStats={user.weeklyStats} weeklyOption={user.weeklyOption} />
+              <WeeklyStatsDisplay
+                weeklyStats={user.weeklyStats}
+                weeklyOption={user.weeklyOption}
+              />
             </View>
           )}
 
@@ -578,10 +686,12 @@ const ProfileScreen = ({ route, navigation }: any) => {
           {!currentUser && (
             <View style={styles.followActionContainer}>
               {user?.followers.some(
-                (f: { _id: { toString: () => any } }) => f._id.toString() === profileUser?._id.toString(),
+                (f: {_id: {toString: () => any}}) =>
+                  f._id.toString() === profileUser?._id.toString(),
               ) &&
               !user?.following.some(
-                (f: { _id: { toString: () => any } }) => f._id.toString() === profileUser?._id.toString(),
+                (f: {_id: {toString: () => any}}) =>
+                  f._id.toString() === profileUser?._id.toString(),
               ) ? (
                 <TouchableOpacity
                   style={styles.followActionButton}
@@ -602,15 +712,18 @@ const ProfileScreen = ({ route, navigation }: any) => {
                         textBody: err.data.message,
                       });
                     }
-                  }}
-                >
+                  }}>
                   <Text style={styles.followActionText}>Follow Back</Text>
                 </TouchableOpacity>
               ) : user?.following.some(
-                  (f: { _id: { toString: () => any } }) => f._id.toString() === profileUser?._id.toString(),
+                  (f: {_id: {toString: () => any}}) =>
+                    f._id.toString() === profileUser?._id.toString(),
                 ) ? (
                 <TouchableOpacity
-                  style={[styles.followActionButton, styles.unfollowActionButton]}
+                  style={[
+                    styles.followActionButton,
+                    styles.unfollowActionButton,
+                  ]}
                   onPress={async () => {
                     try {
                       await unfollowUser(profileUser._id);
@@ -627,8 +740,7 @@ const ProfileScreen = ({ route, navigation }: any) => {
                         textBody: err.message,
                       });
                     }
-                  }}
-                >
+                  }}>
                   <Text style={styles.followActionText}>Unfollow</Text>
                 </TouchableOpacity>
               ) : (
@@ -651,8 +763,7 @@ const ProfileScreen = ({ route, navigation }: any) => {
                         textBody: err.data.message,
                       });
                     }
-                  }}
-                >
+                  }}>
                   <Text style={styles.followActionText}>Follow</Text>
                 </TouchableOpacity>
               )}
@@ -674,13 +785,18 @@ const ProfileScreen = ({ route, navigation }: any) => {
                       navigation.navigate('GroupDetails', {
                         groupId: item._id,
                       })
-                    }
-                  >
+                    }>
                     <View style={styles.imageContainer}>
-                      <Image source={{ uri: item.image }} style={styles.groupImage} resizeMode="cover" />
+                      <Image
+                        source={{uri: item.image}}
+                        style={styles.groupImage}
+                        resizeMode="cover"
+                      />
                       {currentUser && item?.joinRequests.length > 0 && (
                         <View style={styles.badge}>
-                          <Text style={styles.badgeText}>{item?.joinRequests?.length}</Text>
+                          <Text style={styles.badgeText}>
+                            {item?.joinRequests?.length}
+                          </Text>
                         </View>
                       )}
                     </View>
@@ -688,7 +804,9 @@ const ProfileScreen = ({ route, navigation }: any) => {
                 ))}
               </View>
             ) : (
-              <Text style={styles.noGroupText}>You are not part of any groups yet.</Text>
+              <Text style={styles.noGroupText}>
+                You are not part of any groups yet.
+              </Text>
             )}
           </View>
         </ScrollView>
@@ -700,7 +818,10 @@ const ProfileScreen = ({ route, navigation }: any) => {
         <ReleaseNotesModal />
 
         {/* All existing modals remain the same */}
-        <Modal visible={showPendingModal} animationType="slide" transparent={true}>
+        <Modal
+          visible={showPendingModal}
+          animationType="slide"
+          transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={styles.darkModalContent}>
               <Text style={styles.darkModalTitle}>Pending Follow Requests</Text>
@@ -726,8 +847,7 @@ const ProfileScreen = ({ route, navigation }: any) => {
                           setShowPendingModal(false);
                           setLoading(false);
                         }
-                      }}
-                    >
+                      }}>
                       <Text style={styles.buttonText}>Accept</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -748,24 +868,30 @@ const ProfileScreen = ({ route, navigation }: any) => {
                           setShowPendingModal(false);
                           setLoading(false);
                         }
-                      }}
-                    >
+                      }}>
                       <Text style={styles.buttonText}>Reject</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               ))}
-              <TouchableOpacity onPress={() => setShowPendingModal(false)} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={() => setShowPendingModal(false)}
+                style={styles.closeButton}>
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
 
-        <Modal visible={userListModalVisible} animationType="slide" transparent={true}>
+        <Modal
+          visible={userListModalVisible}
+          animationType="slide"
+          transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={styles.darkModalContent}>
-              <Text style={styles.darkModalTitle}>{userListType === 'followers' ? 'Followers' : 'Following'}</Text>
+              <Text style={styles.darkModalTitle}>
+                {userListType === 'followers' ? 'Followers' : 'Following'}
+              </Text>
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search users..."
@@ -775,9 +901,9 @@ const ProfileScreen = ({ route, navigation }: any) => {
               />
               <FlatList
                 data={filteredUsers}
-                keyExtractor={(item) => item?._id}
-                contentContainerStyle={{ paddingBottom: 80 }}
-                renderItem={({ item }) => (
+                keyExtractor={item => item?._id}
+                contentContainerStyle={{paddingBottom: 80}}
+                renderItem={({item}) => (
                   <View style={styles.userListItem}>
                     <Text style={styles.userListText}>{item.name}</Text>
                     {userListType === 'following' && (
@@ -797,28 +923,36 @@ const ProfileScreen = ({ route, navigation }: any) => {
                             Dialog.show({
                               type: ALERT_TYPE.DANGER,
                               title: 'Error',
-                              textBody: err.response?.data?.message || 'Something went wrong.',
+                              textBody:
+                                err.response?.data?.message ||
+                                'Something went wrong.',
                             });
                           }
-                        }}
-                      >
+                        }}>
                         <Text style={styles.unfollowText}>❌</Text>
                       </TouchableOpacity>
                     )}
                   </View>
                 )}
               />
-              <TouchableOpacity onPress={closeUserListModal} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={closeUserListModal}
+                style={styles.closeButton}>
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
 
-        <Modal visible={showJoinRequestModal} animationType="slide" transparent={true}>
+        <Modal
+          visible={showJoinRequestModal}
+          animationType="slide"
+          transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={styles.darkModalContent}>
-              <Text style={styles.darkModalTitle}>Your Group Join Requests</Text>
+              <Text style={styles.darkModalTitle}>
+                Your Group Join Requests
+              </Text>
               {joinRequests?.length === 0 ? (
                 <Text style={styles.noRequestsText}>No pending requests.</Text>
               ) : (
@@ -828,9 +962,8 @@ const ProfileScreen = ({ route, navigation }: any) => {
                     style={styles.joinRequestItem}
                     onPress={() => {
                       setShowJoinRequestModal(false);
-                      navigation.navigate('GroupDetails', { groupId: g._id });
-                    }}
-                  >
+                      navigation.navigate('GroupDetails', {groupId: g._id});
+                    }}>
                     <Image
                       source={{
                         uri: g?.image || 'https://via.placeholder.com/60',
@@ -840,11 +973,13 @@ const ProfileScreen = ({ route, navigation }: any) => {
                     />
                     <View style={styles.joinRequestInfo}>
                       <Text style={styles.joinRequestTitle}>{g?.title}</Text>
-                      <Text style={styles.joinRequestGoal}>{g?.goal || 'No goal'}</Text>
+                      <Text style={styles.joinRequestGoal}>
+                        {g?.goal || 'No goal'}
+                      </Text>
                     </View>
                     <TouchableOpacity
                       style={styles.cancelRequestButton}
-                      onPress={async (e) => {
+                      onPress={async e => {
                         e.stopPropagation();
                         try {
                           setLoading(true);
@@ -866,29 +1001,35 @@ const ProfileScreen = ({ route, navigation }: any) => {
                         } finally {
                           setLoading(false);
                         }
-                      }}
-                    >
+                      }}>
                       <Text style={styles.cancelRequestText}>Cancel</Text>
                     </TouchableOpacity>
                   </TouchableOpacity>
                 ))
               )}
-              <TouchableOpacity onPress={() => setShowJoinRequestModal(false)} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={() => setShowJoinRequestModal(false)}
+                style={styles.closeButton}>
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
 
-        <Modal visible={editModalVisible} animationType="slide" transparent={true}>
+        <Modal
+          visible={editModalVisible}
+          animationType="slide"
+          transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={styles.darkModalContent}>
               <Text style={styles.darkModalTitle}>Edit Profile</Text>
-              <TouchableOpacity style={styles.imagePicker} onPress={selectImage}>
+              <TouchableOpacity
+                style={styles.imagePicker}
+                onPress={selectImage}>
                 {image ? (
-                  <Image source={{ uri: image }} style={styles.image} />
+                  <Image source={{uri: image}} style={styles.image} />
                 ) : (
-                  <Image source={{ uri: user?.image }} style={styles.image} />
+                  <Image source={{uri: user?.image}} style={styles.image} />
                 )}
               </TouchableOpacity>
               <TextInput
@@ -907,19 +1048,27 @@ const ProfileScreen = ({ route, navigation }: any) => {
               />
               <View style={styles.passwordContainer}>
                 <TextInput
-                  style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                  style={[styles.input, {flex: 1, marginBottom: 0}]}
                   placeholder="Password"
                   placeholderTextColor="#666"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                 />
-                <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)} style={styles.eyeIcon}>
-                  <Icon name={showPassword ? 'eye-slash' : 'eye'} size={20} color="#666" />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(prev => !prev)}
+                  style={styles.eyeIcon}>
+                  <Icon
+                    name={showPassword ? 'eye-slash' : 'eye'}
+                    size={20}
+                    color="#666"
+                  />
                 </TouchableOpacity>
               </View>
               <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.saveButton} onPress={saveProfileChanges}>
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={saveProfileChanges}>
                   <Text style={styles.saveButtonText}>Save</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -929,8 +1078,7 @@ const ProfileScreen = ({ route, navigation }: any) => {
                     setEmail(user?.email);
                     setImage(user?.image);
                     setEditModalVisible(false);
-                  }}
-                >
+                  }}>
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
