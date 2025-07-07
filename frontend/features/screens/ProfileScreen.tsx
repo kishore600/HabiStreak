@@ -778,30 +778,38 @@ const ProfileScreen = ({route, navigation}: any) => {
             ) : groups?.length > 0 ? (
               <View style={styles.groupsGrid}>
                 {groups.map((item: any) => (
-                  <TouchableOpacity
-                    key={item._id}
-                    style={styles.groupItem}
-                    onPress={() =>
-                      navigation.navigate('GroupDetails', {
-                        groupId: item._id,
-                      })
-                    }>
-                    <View style={styles.imageContainer}>
-                      <Image
-                        source={{uri: item.image}}
-                        style={styles.groupImage}
-                        resizeMode="cover"
-                      />
-                      {currentUser && item?.joinRequests.length > 0 && (
-                        <View style={styles.badge}>
-                          <Text style={styles.badgeText}>
-                            {item?.joinRequests?.length}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                ))}
+  <TouchableOpacity
+    key={item._id}
+    style={styles.groupItem}
+    onPress={() =>
+      navigation.navigate('GroupDetails', {
+        groupId: item._id,
+      })
+    }>
+    <View style={styles.imageContainer}>
+      <Image
+        source={{ uri: item.image }}
+        style={styles.groupImage}
+        resizeMode="cover"
+      />
+
+      {/* 👇 Group name centered over image */}
+      <View style={styles.groupNameOverlay}>
+        <Text style={styles.groupNameText}>{item.title}</Text>
+      </View>
+
+      {/* 👇 Badge for join requests */}
+      {currentUser && item?.joinRequests.length > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>
+            {item?.joinRequests?.length}
+          </Text>
+        </View>
+      )}
+    </View>
+  </TouchableOpacity>
+))}
+
               </View>
             ) : (
               <Text style={styles.noGroupText}>
@@ -1250,10 +1258,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  groupItem: {
-    width: (width - 60) / 3,
-    marginBottom: 10,
-  },
+groupItem: {
+  width: '48%', // ~2 items per row with spacing
+  aspectRatio: 1, // makes the item square
+  marginBottom: 15,
+  borderRadius: 10,
+  overflow: 'hidden',
+},
   imageContainer: {
     position: 'relative',
   },
@@ -1262,6 +1273,26 @@ const styles = StyleSheet.create({
     height: (width - 60) / 3,
     borderRadius: 10,
   },
+  groupNameOverlay: {
+  position: 'absolute',
+  top: '50%',
+  left: '30%',
+  transform: [{ translateX: -50 }, { translateY: -50 }],
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: 'rgba(0,0,0,0.4)', // semi-transparent background
+  paddingHorizontal: 6,
+  paddingVertical: 4,
+  borderRadius: 6,
+},
+
+groupNameText: {
+  color: 'white',
+  fontSize: 14,
+  fontWeight: 'bold',
+  textAlign: 'center',
+},
+
   badge: {
     position: 'absolute',
     top: -5,

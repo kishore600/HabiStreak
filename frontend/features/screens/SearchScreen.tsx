@@ -21,6 +21,7 @@ const SearchScreen = () => {
     selectedType,
     setSelectedType,
     results,
+    setResults,
     search,
     loading,
   } = useSearch();
@@ -32,8 +33,12 @@ const SearchScreen = () => {
   const handlePress = (item: any) => {
     if (item.type === 'user') {
       navigation.navigate('Profile', {user: item});
-    }else{
-         navigation.navigate('GroupDetails', {groupId: item._id})
+      setResults([]);
+      setQuery('')
+    } else {
+      navigation.navigate('GroupDetails', {groupId: item._id});
+      setResults([]);
+      setQuery('')
     }
     // You can add similar logic for "group" later
   };

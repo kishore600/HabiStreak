@@ -18,6 +18,7 @@ type SearchContextType = {
   results: ResultType[];
   search: () => Promise<void>;
   loading: boolean;
+  setResults:any
 };
 
 const SearchContext = createContext<SearchContextType | undefined>(undefined);
@@ -75,6 +76,7 @@ export const SearchProvider = ({children}: SearchProviderProps) => {
         results,
         search,
         loading,
+        setResults
       }}>
       {children}
     </SearchContext.Provider>

@@ -164,7 +164,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/global", globalRoutes);
 app.use("/api/notification", notificationRoutes);
-app.use("/api/version", versionRoutes);
+app.use("/api/version", s);
 // Global Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error("Global Error:", err.stack);

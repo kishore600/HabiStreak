@@ -19,8 +19,8 @@ import {MultiSelect} from 'react-native-element-dropdown';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {Platform} from 'react-native';
 import {Switch} from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-const {height,width} = Dimensions.get('window');
+import {useNavigation} from '@react-navigation/native';
+const {height, width} = Dimensions.get('window');
 
 const CreateScreen = () => {
   const [currentTab, setCurrentTab] = useState(0);
@@ -37,12 +37,12 @@ const CreateScreen = () => {
 
   // Carousel setup
   const carouselImages = [
-     require('../../assets/banner1.png'),
-  require('../../assets/banner2.png'),
+    require('../../assets/banner1.png'),
+    require('../../assets/banner2.png'),
   ];
   const flatListRef = useRef<FlatList>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-console.log(currentImageIndex)
+  console.log(currentImageIndex);
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex(prevIndex => {
@@ -56,7 +56,7 @@ console.log(currentImageIndex)
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [carouselImages.length]);
 
   useEffect(() => {
     // Always ensure Task 1 exists when entering tasks tab
@@ -246,8 +246,16 @@ console.log(currentImageIndex)
   const prevTab = () => {
     if (currentTab > 0) {
       setCurrentTab(currentTab - 1);
-    }else{
-        navigation.goBack();
+    } else {
+      navigation.goBack();
+      setGroupTitle('');
+      setGoal('');
+      setProfileImageUri(null);
+      setBannerImageUri(null);
+      setTasks([]);
+      setSelectedCategories([]);
+      setEndDate('');
+      setShowEndDatePicker(false);
     }
   };
 
@@ -260,336 +268,360 @@ console.log(currentImageIndex)
   );
 
   const renderTabContent = () => {
-  // Validation functions for each tab
-  const isTab0Complete = () => {
-    return groupTitle.trim() !== '' && goal.trim() !== '';
-  };
+    // Validation functions for each tab
+    const isTab0Complete = () => {
+      return groupTitle.trim() !== '' && goal.trim() !== '';
+    };
 
-  const isTab1Complete = () => {
-    return profileImageUri !== null && bannerImageUri !== null;
-  };
+    const isTab1Complete = () => {
+      return profileImageUri !== null && bannerImageUri !== null;
+    };
 
-  const isTask1Complete = () => {
-    if (tasks.length === 0) return false;
-    const task1 = tasks[tasks.length - 1]; // Task 1 is at the end of array
-    return task1.title.trim() !== '' && task1.description.trim() !== '';
-  };
+    const isTask1Complete = () => {
+      if (tasks.length === 0) return false;
+      const task1 = tasks[tasks.length - 1]; // Task 1 is at the end of array
+      return task1.title.trim() !== '' && task1.description.trim() !== '';
+    };
 
-  const isTab3Complete = () => {
-    return endDate !== '' && selectedCategories.length > 0;
-  };
+    const isTab3Complete = () => {
+      return endDate !== '' && selectedCategories.length > 0;
+    };
 
-  switch (currentTab) {
-    case 0:
-      return (
-        <View style={styles.tabContent}>
-          <View style={styles.heroSection}>
-            <FlatList
-              ref={flatListRef}
-              data={carouselImages}
-              renderItem={renderCarouselItem}
-              keyExtractor={(item, index) => index.toString()}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={(event) => {
-                const index = Math.round(event.nativeEvent.contentOffset.x / width);
-                setCurrentImageIndex(index);
-              }}
-              style={styles.carousel}
-            />
-          </View>
-
-          <TextInput
-            placeholder="Squad Name *"
-            value={groupTitle}
-            onChangeText={setGroupTitle}
-            style={[
-              styles.input,
-              groupTitle.trim() === '' && styles.inputError,
-            ]}
-            placeholderTextColor="#666"
-          />
-
-          <TextInput
-            placeholder="Squad Goal *"
-            value={goal}
-            onChangeText={setGoal}
-            style={[
-              styles.input,
-              goal.trim() === '' && styles.inputError,
-            ]}
-            placeholderTextColor="#666"
-            multiline
-          />
-
-          <TouchableOpacity
-            onPress={nextTab}
-            style={[
-              styles.continueButtonInline,
-              !isTab0Complete() && styles.disabledButton,
-            ]}
-            disabled={!isTab0Complete()}>
-            <Text style={styles.continueButtonText}>CREATE A NEW SQUAD</Text>
-          </TouchableOpacity>
-        </View>
-      );
-
-    case 1:
-      return (
-        <View style={styles.tabContent}>
-          <Text style={styles.tabTitle}>SQUAD PROFILE IMAGE *</Text>
-
-          <TouchableOpacity
-            onPress={handlePickProfileImage}
-            style={[
-              styles.circularImagePicker,
-              !profileImageUri && styles.imagePickerError,
-            ]}>
-            {profileImageUri ? (
-              <Image
-                source={{uri: profileImageUri}}
-                style={styles.circularImage}
-                resizeMode="cover"
+    switch (currentTab) {
+      case 0:
+        return (
+          <View style={styles.tabContent}>
+            <View style={styles.heroSection}>
+              <FlatList
+                ref={flatListRef}
+                data={carouselImages}
+                renderItem={renderCarouselItem}
+                keyExtractor={(item, index) => index.toString()}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={event => {
+                  const index = Math.round(
+                    event.nativeEvent.contentOffset.x / width,
+                  );
+                  setCurrentImageIndex(index);
+                }}
+                style={styles.carousel}
               />
-            ) : (
-              <View style={styles.circularPlaceholder}>
-                <Text style={styles.plusIcon}>+</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <Text style={styles.tabTitle}>BANNER IMAGE *</Text>
-
-          <TouchableOpacity
-            onPress={handlePickBannerImage}
-            style={[
-              styles.bannerImagePicker,
-              !bannerImageUri && styles.imagePickerError,
-            ]}>
-            {bannerImageUri ? (
-              <Image
-                source={{uri: bannerImageUri}}
-                style={styles.bannerImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={styles.bannerPlaceholder}>
-                <Text style={styles.placeholderText}>Select Banner Image</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-
-          <TouchableOpacity
-            onPress={nextTab}
-            style={[
-              styles.continueButtonInline,
-              !isTab1Complete() && styles.disabledButton,
-            ]}
-            disabled={!isTab1Complete()}>
-            <Text style={styles.continueButtonText}>CONTINUE</Text>
-          </TouchableOpacity>
-        </View>
-      );
-
-    case 2:
-      return (
-        <View style={styles.tabContent}>
-          <Text style={styles.tabTitle}>CREATE TASKS</Text>
-
-          {tasks.length === 0 ? (
-            <View style={styles.noTasksContainer}>
-              <Text style={styles.noTasksText}>No tasks added yet</Text>
-              <TouchableOpacity onPress={handleAddTask} style={styles.addTaskButton}>
-                <Text style={styles.addTaskButtonText}>+ Add Your First Task</Text>
-              </TouchableOpacity>
             </View>
-          ) : (
-            <>
-              <ScrollView style={styles.tasksScrollView} showsVerticalScrollIndicator={true}>
-                {tasks.map((task: any, index: number) => (
-                  <View key={index} style={styles.taskContainer}>
-                    <View style={styles.taskHeader}>
-                      <View style={styles.taskTitleContainer}>
-                        <Text style={styles.taskNumber}>Task {tasks.length - index}</Text>
-                        {tasks.length - index === 1 && (
-                          <Text style={styles.mandatoryLabel}> (Required)</Text>
+
+            <TextInput
+              placeholder="Squad Name *"
+              value={groupTitle}
+              onChangeText={setGroupTitle}
+              style={[
+                styles.input,
+                groupTitle.trim() === '' && styles.inputError,
+              ]}
+              placeholderTextColor="#666"
+            />
+
+            <TextInput
+              placeholder="Squad Goal *"
+              value={goal}
+              onChangeText={setGoal}
+              style={[styles.input, goal.trim() === '' && styles.inputError]}
+              placeholderTextColor="#666"
+              multiline
+            />
+
+            <TouchableOpacity
+              onPress={nextTab}
+              style={[
+                styles.continueButtonInline,
+                !isTab0Complete() && styles.disabledButton,
+              ]}
+              disabled={!isTab0Complete()}>
+              <Text style={styles.continueButtonText}>CREATE A NEW SQUAD</Text>
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 1:
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>SQUAD PROFILE IMAGE *</Text>
+
+            <TouchableOpacity
+              onPress={handlePickProfileImage}
+              style={[
+                styles.circularImagePicker,
+                !profileImageUri && styles.imagePickerError,
+              ]}>
+              {profileImageUri ? (
+                <Image
+                  source={{uri: profileImageUri}}
+                  style={styles.circularImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.circularPlaceholder}>
+                  <Text style={styles.plusIcon}>+</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <Text style={styles.tabTitle}>BANNER IMAGE *</Text>
+
+            <TouchableOpacity
+              onPress={handlePickBannerImage}
+              style={[
+                styles.bannerImagePicker,
+                !bannerImageUri && styles.imagePickerError,
+              ]}>
+              {bannerImageUri ? (
+                <Image
+                  source={{uri: bannerImageUri}}
+                  style={styles.bannerImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.bannerPlaceholder}>
+                  <Text style={styles.placeholderText}>
+                    Select Banner Image
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={nextTab}
+              style={[
+                styles.continueButtonInline,
+                !isTab1Complete() && styles.disabledButton,
+              ]}
+              disabled={!isTab1Complete()}>
+              <Text style={styles.continueButtonText}>CONTINUE</Text>
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 2:
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>CREATE TASKS</Text>
+
+            {tasks.length === 0 ? (
+              <View style={styles.noTasksContainer}>
+                <Text style={styles.noTasksText}>No tasks added yet</Text>
+                <TouchableOpacity
+                  onPress={handleAddTask}
+                  style={styles.addTaskButton}>
+                  <Text style={styles.addTaskButtonText}>
+                    + Add Your First Task
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <ScrollView
+                  style={styles.tasksScrollView}
+                  showsVerticalScrollIndicator={true}>
+                  {tasks.map((task: any, index: number) => (
+                    <View key={index} style={styles.taskContainer}>
+                      <View style={styles.taskHeader}>
+                        <View style={styles.taskTitleContainer}>
+                          <Text style={styles.taskNumber}>
+                            Task {tasks.length - index}
+                          </Text>
+                          {tasks.length - index === 1 && (
+                            <Text style={styles.mandatoryLabel}>
+                              {' '}
+                              (Required)
+                            </Text>
+                          )}
+                        </View>
+                        {/* Only show remove button if it's not Task 1 (not the last item) */}
+                        {index !== tasks.length - 1 && (
+                          <TouchableOpacity
+                            onPress={() => handleRemoveTask(index)}
+                            style={styles.removeButton}>
+                            <Text>×</Text>
+                          </TouchableOpacity>
                         )}
                       </View>
-                      {/* Only show remove button if it's not Task 1 (not the last item) */}
-                      {index !== tasks.length - 1 && (
-                        <TouchableOpacity
-                          onPress={() => handleRemoveTask(index)}
-                          style={styles.removeButton}>
-                          <Text style={styles.removeButton}>×</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
 
-                    <View style={styles.daysContainer}>
-                      <Text style={styles.daysLabel}>Select Days:</Text>
-                      <View style={styles.daysButtonsContainer}>
-                        {weekdays.map(day => (
-                          <TouchableOpacity
-                            key={day}
-                            style={[
-                              styles.dayButton,
-                              task?.days?.includes(day) && styles.dayButtonSelected,
-                            ]}
-                            onPress={() => handleToggleDay(index, day)}>
-                            <Text
+                      <View style={styles.daysContainer}>
+                        <Text style={styles.daysLabel}>Select Days:</Text>
+                        <View style={styles.daysButtonsContainer}>
+                          {weekdays.map(day => (
+                            <TouchableOpacity
+                              key={day}
                               style={[
-                                styles.dayButtonText,
-                                task?.days?.includes(day) && styles.dayButtonTextSelected,
-                              ]}>
-                              {day}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
+                                styles.dayButton,
+                                task?.days?.includes(day) &&
+                                  styles.dayButtonSelected,
+                              ]}
+                              onPress={() => handleToggleDay(index, day)}>
+                              <Text
+                                style={[
+                                  styles.dayButtonText,
+                                  task?.days?.includes(day) &&
+                                    styles.dayButtonTextSelected,
+                                ]}>
+                                {day}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+
+                      <TextInput
+                        placeholder={`Task ${tasks.length - index} Title *`}
+                        value={task.title}
+                        onChangeText={text =>
+                          handleTaskChange(index, 'title', text)
+                        }
+                        style={[
+                          styles.input,
+                          tasks.length - index === 1 &&
+                            task.title.trim() === '' &&
+                            styles.inputError,
+                        ]}
+                        placeholderTextColor="#666"
+                      />
+
+                      <TextInput
+                        placeholder="Description *"
+                        value={task.description}
+                        onChangeText={text =>
+                          handleTaskChange(index, 'description', text)
+                        }
+                        style={[
+                          styles.input,
+                          {marginTop: 8, minHeight: 80},
+                          tasks.length - index === 1 &&
+                            task.description.trim() === '' &&
+                            styles.inputError,
+                        ]}
+                        placeholderTextColor="#666"
+                        multiline
+                        textAlignVertical="top"
+                      />
+
+                      <View style={styles.switchContainer}>
+                        <Text style={styles.switchLabel}>Require Proof</Text>
+                        <Switch
+                          value={task.requireProof}
+                          onValueChange={value =>
+                            handleTaskChange(index, 'requireProof', value)
+                          }
+                        />
                       </View>
                     </View>
+                  ))}
+                </ScrollView>
 
-                    <TextInput
-                      placeholder={`Task ${tasks.length - index} Title *`}
-                      value={task.title}
-                      onChangeText={text => handleTaskChange(index, 'title', text)}
-                      style={[
-                        styles.input,
-                        tasks.length - index === 1 && task.title.trim() === '' && styles.inputError,
-                      ]}
-                      placeholderTextColor="#666"
-                    />
+                <TouchableOpacity
+                  onPress={handleAddTask}
+                  style={styles.addTaskButton}>
+                  <Text style={styles.addTaskButtonText}>
+                    + Add Another Task
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
 
-                    <TextInput
-                      placeholder="Description *"
-                      value={task.description}
-                      onChangeText={text => handleTaskChange(index, 'description', text)}
-                      style={[
-                        styles.input,
-                        {marginTop: 8, minHeight: 80},
-                        tasks.length - index === 1 && task.description.trim() === '' && styles.inputError,
-                      ]}
-                      placeholderTextColor="#666"
-                      multiline
-                      textAlignVertical="top"
-                    />
+            <TouchableOpacity
+              onPress={nextTab}
+              style={[
+                styles.continueButtonInline,
+                !isTask1Complete() && styles.disabledButton,
+              ]}
+              disabled={!isTask1Complete()}>
+              <Text style={styles.continueButtonText}>CONTINUE</Text>
+            </TouchableOpacity>
+          </View>
+        );
 
-                    <View style={styles.switchContainer}>
-                      <Text style={styles.switchLabel}>Require Proof</Text>
-                      <Switch
-                        value={task.requireProof}
-                        onValueChange={value =>
-                          handleTaskChange(index, 'requireProof', value)
-                        }
-                      />
-                    </View>
-                  </View>
-                ))}
-              </ScrollView>
+      case 3:
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>FINALIZE SQUAD</Text>
 
-              <TouchableOpacity onPress={handleAddTask} style={styles.addTaskButton}>
-                <Text style={styles.addTaskButtonText}>+ Add Another Task</Text>
-              </TouchableOpacity>
-            </>
-          )}
+            <TouchableOpacity
+              onPress={() => setShowEndDatePicker(true)}
+              style={[styles.dateInput, endDate === '' && styles.inputError]}>
+              <Text style={{color: endDate ? '#fff' : '#666'}}>
+                {endDate || 'Select End Date *'}
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={nextTab}
-            style={[
-              styles.continueButtonInline,
-              !isTask1Complete() && styles.disabledButton,
-            ]}
-            disabled={!isTask1Complete()}>
-            <Text style={styles.continueButtonText}>CONTINUE</Text>
-          </TouchableOpacity>
-        </View>
-      );
+            {showEndDatePicker && (
+              <DateTimePicker
+                value={endDate ? new Date(endDate) : new Date()}
+                mode="date"
+                display="default"
+                onChange={handleEndDateChange}
+                maximumDate={new Date(2100, 11, 31)}
+              />
+            )}
 
-    case 3:
-      return (
-        <View style={styles.tabContent}>
-          <Text style={styles.tabTitle}>FINALIZE SQUAD</Text>
-
-          <TouchableOpacity
-            onPress={() => setShowEndDatePicker(true)}
-            style={[
-              styles.dateInput,
-              endDate === '' && styles.inputError,
-            ]}>
-            <Text style={{color: endDate ? '#fff' : '#666'}}>
-              {endDate || 'Select End Date *'}
-            </Text>
-          </TouchableOpacity>
-
-          {showEndDatePicker && (
-            <DateTimePicker
-              value={endDate ? new Date(endDate) : new Date()}
-              mode="date"
-              display="default"
-              onChange={handleEndDateChange}
-              maximumDate={new Date(2100, 11, 31)}
+            <Text style={styles.subheading}>Select Categories *</Text>
+            <MultiSelect
+              mode="modal"
+              style={[
+                styles.input,
+                {paddingHorizontal: 10},
+                selectedCategories.length === 0 && styles.inputError,
+              ]}
+              placeholderStyle={{color: '#666'}}
+              selectedTextStyle={{color: '#fff'}}
+              inputSearchStyle={{
+                height: 40,
+                fontSize: 16,
+                backgroundColor: '#2a2a2a',
+                color: '#fff',
+              }}
+              data={categoryOptions}
+              labelField="label"
+              valueField="value"
+              placeholder="Select Categories *"
+              search
+              searchPlaceholder="Search..."
+              value={selectedCategories}
+              onChange={item => {
+                setSelectedCategories(item);
+              }}
+              selectedStyle={{borderRadius: 12, backgroundColor: '#444'}}
+              maxSelect={10}
             />
-          )}
 
-          <Text style={styles.subheading}>Select Categories *</Text>
-          <MultiSelect
-            mode="modal"
-            style={[
-              styles.input,
-              {paddingHorizontal: 10},
-              selectedCategories.length === 0 && styles.inputError,
-            ]}
-            placeholderStyle={{color: '#666'}}
-            selectedTextStyle={{color: '#fff'}}
-            inputSearchStyle={{height: 40, fontSize: 16, backgroundColor: '#2a2a2a', color: '#fff'}}
-            data={categoryOptions}
-            labelField="label"
-            valueField="value"
-            placeholder="Select Categories *"
-            search
-            searchPlaceholder="Search..."
-            value={selectedCategories}
-            onChange={item => {
-              setSelectedCategories(item);
-            }}
-            selectedStyle={{borderRadius: 12, backgroundColor: '#444'}}
-            maxSelect={10}
-          />
+            <TouchableOpacity
+              onPress={handleSubmit}
+              style={[
+                styles.continueButtonInline,
+                (!isTab3Complete() || createLoading) && styles.disabledButton,
+              ]}
+              disabled={!isTab3Complete() || createLoading}>
+              <Text style={styles.continueButtonText}>
+                {createLoading ? 'CREATING...' : 'CREATE YOUR SQUAD'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        );
 
-          <TouchableOpacity
-            onPress={handleSubmit}
-            style={[
-              styles.continueButtonInline,
-              (!isTab3Complete() || createLoading) && styles.disabledButton,
-            ]}
-            disabled={!isTab3Complete() || createLoading}>
-            <Text style={styles.continueButtonText}>
-              {createLoading ? 'CREATING...' : 'CREATE YOUR SQUAD'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      );
-
-    default:
-      return null;
-  }
-};
+      default:
+        return null;
+    }
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={prevTab} style={styles.backButton}>
-          <Text style={styles.backButtonText} >←</Text>
+          <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <View style={styles.progressDots}>
-          {[0, 1, 2, 3].map((index) => (
+          {[0, 1, 2, 3].map(index => (
             <View
               key={index}
-              style={[
-                styles.dot,
-                currentTab === index && styles.activeDot,
-              ]}
+              style={[styles.dot, currentTab === index && styles.activeDot]}
             />
           ))}
         </View>
@@ -670,12 +702,12 @@ const styles = StyleSheet.create({
     width: width,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft:-20,
+    marginLeft: -20,
   },
   carouselImage: {
     width: width * 0.8,
     height: height * 4.4,
-     resizeMode: 'cover',   
+    resizeMode: 'cover',
   },
   carouselDots: {
     flexDirection: 'row',
@@ -801,6 +833,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff4444',
     justifyContent: 'center',
     alignItems: 'center',
+    display: 'flex',
   },
   addTaskButton: {
     backgroundColor: '#8B5CF6',
@@ -879,6 +912,7 @@ const styles = StyleSheet.create({
   taskTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   mandatoryLabel: {
     color: '#ff6b6b',
