@@ -139,7 +139,7 @@ const ProfileScreen = ({route, navigation}: any) => {
     useCallback(() => {
       fetchUserGroups();
       if (profileUser && !currentUser) {
-        console.log(profileUser)
+        console.log(profileUser);
         // Assuming profileUser is your object containing user data
         const allGroupsMap = new Map();
 
@@ -778,38 +778,37 @@ const ProfileScreen = ({route, navigation}: any) => {
             ) : groups?.length > 0 ? (
               <View style={styles.groupsGrid}>
                 {groups.map((item: any) => (
-  <TouchableOpacity
-    key={item._id}
-    style={styles.groupItem}
-    onPress={() =>
-      navigation.navigate('GroupDetails', {
-        groupId: item._id,
-      })
-    }>
-    <View style={styles.imageContainer}>
-      <Image
-        source={{ uri: item.image }}
-        style={styles.groupImage}
-        resizeMode="cover"
-      />
+                  <TouchableOpacity
+                    key={item._id}
+                    style={styles.groupItem}
+                    onPress={() =>
+                      navigation.navigate('GroupDetails', {
+                        groupId: item._id,
+                      })
+                    }>
+                    <View style={styles.imageContainer}>
+                      <Image
+                        source={{uri: item.image}}
+                        style={styles.groupImage}
+                        resizeMode="cover"
+                      />
 
-      {/* 👇 Group name centered over image */}
-      <View style={styles.groupNameOverlay}>
-        <Text style={styles.groupNameText}>{item.title}</Text>
-      </View>
+                      {/* 👇 Group name centered over image */}
+                      <View style={styles.groupNameOverlay}>
+                        <Text style={styles.groupNameText}>{item.title}</Text>
+                      </View>
 
-      {/* 👇 Badge for join requests */}
-      {currentUser && item?.joinRequests.length > 0 && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {item?.joinRequests?.length}
-          </Text>
-        </View>
-      )}
-    </View>
-  </TouchableOpacity>
-))}
-
+                      {/* 👇 Badge for join requests */}
+                      {currentUser && user._id === item?.admin && item?.joinRequests.length > 0 && (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>
+                            {item?.joinRequests?.length}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </View>
             ) : (
               <Text style={styles.noGroupText}>
@@ -1258,13 +1257,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-groupItem: {
-  width: '48%', // ~2 items per row with spacing
-  aspectRatio: 1, // makes the item square
-  marginBottom: 15,
-  borderRadius: 10,
-  overflow: 'hidden',
-},
+  groupItem: {
+    width: '48%', // ~2 items per row with spacing
+    aspectRatio: 1, // makes the item square
+    marginBottom: 15,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
   imageContainer: {
     position: 'relative',
   },
@@ -1274,29 +1273,29 @@ groupItem: {
     borderRadius: 10,
   },
   groupNameOverlay: {
-  position: 'absolute',
-  top: '50%',
-  left: '30%',
-  transform: [{ translateX: -50 }, { translateY: -50 }],
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: 'rgba(0,0,0,0.4)', // semi-transparent background
-  paddingHorizontal: 6,
-  paddingVertical: 4,
-  borderRadius: 6,
-},
+    position: 'absolute',
+    top: '50%',
+    left: '30%',
+    transform: [{translateX: -50}, {translateY: -50}],
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)', // semi-transparent background
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
 
-groupNameText: {
-  color: 'white',
-  fontSize: 14,
-  fontWeight: 'bold',
-  textAlign: 'center',
-},
+  groupNameText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
 
   badge: {
     position: 'absolute',
-    top: -5,
-    right: -5,
+    top: 2,
+    right: -1,
     backgroundColor: '#ff4444',
     borderRadius: 10,
     minWidth: 18,

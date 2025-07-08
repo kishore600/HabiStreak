@@ -45,6 +45,7 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
     state.routes.forEach((_: any, index: number) => {
       animateTab(index, state.index === index);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.index]);
 
   return (
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#111',
     borderRadius: 30,
-    height:90,
+    height:75,
     shadowOffset: {
       width: 0,
       height: -4,
@@ -348,7 +349,7 @@ const styles = StyleSheet.create({
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: 29,
+    bottom: 19,
     width: 6,
     height: 6,
     borderRadius: 3,

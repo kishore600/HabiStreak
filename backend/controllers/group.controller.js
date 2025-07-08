@@ -722,7 +722,7 @@ const acceptJoinRequest = asyncHandler(async (req, res) => {
       try {
         await sendNotificationToTokens([user.fcmToken], title, body, {
           Id: group._id.toString(), // ✅ include groupId
-          type: "taskCompleted", // optional custom type
+          type: "joinRequest", // optional custom type
         });
         console.log("✅ Notification sent to accepted user.");
       } catch (err) {
