@@ -27,7 +27,7 @@ export const CARD_WIDTH = screenWidth;
 const HomeScreen = ({navigation}: any) => {
   const {groups, loading, fetchGroups, fetchUserGroups, handleJoinRequest} =
     useGroup();
-  const {user, fetchUserProfile}: any = useAuth();
+  const {user, fetchProfile}: any = useAuth();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<any[]>([]);
@@ -42,7 +42,7 @@ const HomeScreen = ({navigation}: any) => {
   const handleJoinGroup = async (groupId: string) => {
     await handleJoinRequest(groupId);
     await fetchGroups();
-    await fetchUserProfile();
+    await fetchProfile();
   };
 
   useEffect(() => {

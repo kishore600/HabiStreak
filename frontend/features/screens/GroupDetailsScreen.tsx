@@ -324,6 +324,7 @@ const GroupDetailsScreen = ({ route,navigation }: any) => {
   const handleJoinGroup = async (groupId: string) => {
     await handleJoinRequest(groupId);
     await fetchGroupById(groupId);
+    await fetchProfile()
   };
 
   const acceptJoinRequest = async (userId: string) => {
