@@ -420,14 +420,25 @@ const renderHeader = () => (
 
       <View style={styles.groupInfo}>
         <Image source={{ uri: group?.image }} style={styles.groupImage} />
-        <Text style={styles.groupName}>{group?.title}</Text>
+        
+        <Text style={styles.groupName}>{group?.title}  
+
+        </Text>
         <Text style={styles.groupDescription}>{group?.goal}</Text>
+<View style={styles.bottomViewContainer}>
 
         <View style={styles.memberCount}>
           <Icon name="users" size={16} color="#FFFFFF" />
           <Text style={styles.memberCountText}>{members.length} members</Text>
         </View>
 
+      <View style={styles.memberCount}>
+         <Text style={styles.memberCountText}>{group?.streak}</Text>
+          <Icon name="fire" size={16} color="white" />
+        </View>
+</View>
+
+            
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.actionButton} onPress={() => setModalVisible(true)}>
             <Icon name="bar-chart" size={16} color="#8B5CF6" />
@@ -1056,6 +1067,11 @@ const styles = StyleSheet.create({
   groupInfo: {
     alignItems: "center",
     marginTop: 40,
+  },
+  bottomViewContainer:{
+    display:'flex',
+    flexDirection:'row',
+    gap:8
   },
   groupImage: {
     width: 80,

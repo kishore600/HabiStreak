@@ -35,46 +35,66 @@ cron.schedule(
 
 //weekly reset
 cron.schedule(
-  "59 23 * * 0",
+  "0 * * * *", // Every hour at minute 0
   async () => {
-    console.log("🔄 Weekly reset at Sunday 11:59 PM");
+    console.log("🕒 Running hourly timezone-aware weekly reset check...");
 
-    const users = await User.find();
+    try {
+      const users = await User.find();
 
-    for (const user of users) {
-      // Reset weeklyStats based on weeklyOption
-      const resetStats = {
-        mon: { rest: false },
-        tue: { rest: false },
-        wed: { rest: false },
-        thu: { rest: false },
-        fri: { rest: false },
-        sat: { rest: false },
-        sun: { rest: false },
-      };
+      for (const user of users) {
+        if (!user.timezone) continue;
 
-      if (user.weeklyOption) {
-        if (!user.weeklyOption.weekdays) {
-          resetStats.mon.rest = true;
-          resetStats.tue.rest = true;
-          resetStats.wed.rest = true;
-          resetStats.thu.rest = true;
-          resetStats.fri.rest = true;
-        }
-        if (!user.weeklyOption.weekend) {
-          resetStats.sat.rest = true;
-          resetStats.sun.rest = true;
+        const userNow = moment().tz(user.timezone);
+        const day = userNow.day(); // 0 = Sunday
+        const hour = userNow.hour(); // 0 to 23
+
+        const formattedTime = userNow.format("YYYY-MM-DD HH:mm:ss");
+        console.log(
+          `🧭 ${user.name}'s time (${user.timezone}): ${formattedTime}`
+        );
+
+        // ✅ Check if it's exactly Sunday at 11:00 PM
+        if (day === 0 && hour === 23) {
+          console.log(`🔄 Weekly reset triggered for ${user.name}`);
+
+          // Reset weeklyStats
+          const resetStats = {
+            mon: { rest: false },
+            tue: { rest: false },
+            wed: { rest: false },
+            thu: { rest: false },
+            fri: { rest: false },
+            sat: { rest: false },
+            sun: { rest: false },
+          };
+
+          if (user.weeklyOption) {
+            if (!user.weeklyOption.weekdays) {
+              resetStats.mon.rest = true;
+              resetStats.tue.rest = true;
+              resetStats.wed.rest = true;
+              resetStats.thu.rest = true;
+              resetStats.fri.rest = true;
+            }
+            if (!user.weeklyOption.weekend) {
+              resetStats.sat.rest = true;
+              resetStats.sun.rest = true;
+            }
+          }
+
+          user.weeklyStats = resetStats;
+          await user.save();
+
+          console.log(`✅ Weekly stats reset for ${user.name}`);
         }
       }
-
-      user.weeklyStats = resetStats;
-      await user.save();
+    } catch (err) {
+      console.error("❌ Error in weekly reset job:", err.message);
     }
-
-    console.log("✅ Weekly stats reset completed.");
   },
   {
-    timezone: "Asia/Kolkata",
+    timezone: "UTC", // Keep this UTC, moment-timezone adjusts per user
   }
 );
 
@@ -114,12 +134,16 @@ async function runStreakDeductionJob() {
         // Deduct user streak
         user.totalStreak = Math.max(0, (user.totalStreak || 0) - 1);
         await user.save();
-
+        console.log(group.userStreaks);
         // Deduct group streak
-        const groupStreak = group.userStreaks?.[userId] || 0;
-        group.userStreaks[userId] = Math.max(0, groupStreak - 1);
+        const userIdStr = userId.toString();
+
+        const groupStreak = group.userStreaks.get(userIdStr) || 0;
+        group.userStreaks.set(userIdStr, Math.max(0, groupStreak - 1));
 
         group.streakDeductedDates.push(userDateKey);
+
+        await group.save();
 
         // Send notification
         if (user.fcmToken) {
@@ -138,7 +162,6 @@ async function runStreakDeductionJob() {
       }
     }
 
-    await group.save();
   }
 }
 
@@ -156,7 +179,6 @@ cron.schedule(
     timezone: "UTC", // leave this in UTC since you're using moment-timezone per user
   }
 );
-
 
 // Routes
 app.use("/api/auth", authRoutes);

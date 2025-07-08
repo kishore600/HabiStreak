@@ -298,11 +298,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'transparent',
+    // height:'10%'
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#111',
     borderRadius: 30,
+    height:90,
     shadowOffset: {
       width: 0,
       height: -4,
@@ -346,7 +348,7 @@ const styles = StyleSheet.create({
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: 2,
+    bottom: 29,
     width: 6,
     height: 6,
     borderRadius: 3,
