@@ -13,8 +13,8 @@ import {useAuth} from '../context/AuthContext';
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-const SignupScreen = ({ navigation }: { navigation: any }) => {
-  const { signup }: any = useAuth();
+const SignupScreen = ({navigation}: {navigation: any}) => {
+  const {signup}: any = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,7 +30,7 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
 
   const selectImage = () => {
     launchImageLibrary(
-      { mediaType: 'photo', includeBase64: false },
+      {mediaType: 'photo', includeBase64: false},
       (response: any) => {
         if (response.didCancel) {
           console.log('User cancelled image picker');
@@ -39,7 +39,7 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
         } else if (response.assets && response.assets.length > 0) {
           setImageUri(response.assets[0].uri);
         }
-      }
+      },
     );
   };
 
@@ -61,7 +61,7 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
       setErrors(newErrors);
       return;
     }
-    
+
     try {
       setLoading(true);
       const data = await signup(name, email, password, imageUri);
@@ -71,8 +71,8 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
       }
     } catch (error: any) {
       console.log('Signup error:', error);
-      const errorMessage ='Signup failed. Please try again.';
-      setErrors({ general: errorMessage });
+      const errorMessage = 'Signup failed. Please try again.';
+      setErrors({general: errorMessage});
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
 
       <TouchableOpacity style={styles.imagePicker} onPress={selectImage}>
         {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.image} />
+          <Image source={{uri: imageUri}} style={styles.image} />
         ) : (
           <Image
             source={require('../../assets/dummy.jpg')}
@@ -92,81 +92,80 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
           />
         )}
       </TouchableOpacity>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        placeholderTextColor="#999"
-        value={name}
-        onChangeText={text => {
-          setName(text);
-          setErrors((prev: any) => ({ ...prev, name: '' }));
-        }}
-      />
-      {errors.name && (
-        <Animatable.Text animation="shake" style={styles.errorText}>
-          {errors.name}
-        </Animatable.Text>
-      )}
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#999"
-        value={email}
-        onChangeText={text => {
-          setEmail(text);
-          setErrors((prev: any) => ({ ...prev, email: '' }));
-        }}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      {errors.email && (
-        <Animatable.Text animation="shake" style={styles.errorText}>
-          {errors.email}
-        </Animatable.Text>
-      )}
-
-      {/* <View> */}
+      <View style={{width: '100%',display:'flex',gap:'6'}}>
         <TextInput
           style={styles.input}
-          placeholder="Password"
+          placeholder="Name"
           placeholderTextColor="#999"
-          value={password}
+          value={name}
           onChangeText={text => {
-            setPassword(text);
-            setErrors((prev: any) => ({ ...prev, password: '' }));
+            setName(text);
+            setErrors((prev: any) => ({...prev, name: ''}));
           }}
-          secureTextEntry={!showPassword}
         />
-        <TouchableOpacity
-          onPress={() => setShowPassword(prev => !prev)}
-          style={styles.eyeIcon}
-        >
-          <Icon
-            name={showPassword ? 'eye-slash' : 'eye'}
-            size={20}
-            color="#999"
-          />
-        </TouchableOpacity>
-      {/* </View> */}
-      {errors.password && (
-        <Animatable.Text animation="shake" style={styles.errorText}>
-          {errors.password}
-        </Animatable.Text>
-      )}
+        {errors.name && (
+          <Animatable.Text animation="shake" style={styles.errorText}>
+            {errors.name}
+          </Animatable.Text>
+        )}
 
-      {errors.general && (
-        <Animatable.Text animation="shake" style={styles.errorText}>
-          {errors.general}
-        </Animatable.Text>
-      )}
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#999"
+          value={email}
+          onChangeText={text => {
+            setEmail(text);
+            setErrors((prev: any) => ({...prev, email: ''}));
+          }}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        {errors.email && (
+          <Animatable.Text animation="shake" style={styles.errorText}>
+            {errors.email}
+          </Animatable.Text>
+        )}
+
+        <View style={{display: 'flex', flexDirection: 'row', width: '90%'}}>
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#999"
+            value={password}
+            onChangeText={text => {
+              setPassword(text);
+              setErrors((prev: any) => ({...prev, password: ''}));
+            }}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity
+            onPress={() => setShowPassword(prev => !prev)}
+            style={styles.eyeIcon}>
+            <Icon
+              name={showPassword ? 'eye-slash' : 'eye'}
+              size={20}
+              color="#999"
+            />
+          </TouchableOpacity>
+        </View>
+        {errors.password && (
+          <Animatable.Text animation="shake" style={styles.errorText}>
+            {errors.password}
+          </Animatable.Text>
+        )}
+
+        {errors.general && (
+          <Animatable.Text animation="shake" style={styles.errorText}>
+            {errors.general}
+          </Animatable.Text>
+        )}
+      </View>
 
       <TouchableOpacity
         style={[styles.button, loading && styles.disabledButton]}
         onPress={handleSignup}
-        disabled={loading}
-      >
+        disabled={loading}>
         {loading ? (
           <ActivityIndicator size="small" color="#1c1c1e" />
         ) : (
@@ -178,8 +177,7 @@ const SignupScreen = ({ navigation }: { navigation: any }) => {
         Already have an account?{' '}
         <Text
           style={styles.signupText}
-          onPress={() => navigation.navigate('Login')}
-        >
+          onPress={() => navigation.navigate('Login')}>
           Login
         </Text>
       </Text>

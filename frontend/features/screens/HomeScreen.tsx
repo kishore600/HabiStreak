@@ -199,7 +199,7 @@ const HomeScreen = ({navigation}: any) => {
       <View style={styles.headerContainer}>
         <View style={styles.TopcardContentWrapper}>
           <Image
-            source={{uri: user.image}}
+            source={{uri: user?.image}}
             style={styles.userImage}
             resizeMode="cover"
           />

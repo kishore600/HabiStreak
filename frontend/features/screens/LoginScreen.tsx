@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, {useState} from 'react';
 import {
   View,
@@ -9,7 +10,7 @@ import {
 import {useAuth} from '../context/AuthContext';
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { ActivityIndicator } from 'react-native-paper';
+import {ActivityIndicator} from 'react-native-paper';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 const LoginScreen = ({navigation}: any) => {
@@ -18,8 +19,8 @@ const LoginScreen = ({navigation}: any) => {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<any>({});
   const [showPassword, setShowPassword] = useState(false);
-  const[loading,setLoading] = useState(false)
-    const [isForgotVisible, setIsForgotVisible] = useState(false); // ← New
+  const [loading, setLoading] = useState(false);
+  const [isForgotVisible, setIsForgotVisible] = useState(false); // ← New
 
   const validateForm = () => {
     let newErrors: any = {};
@@ -43,7 +44,7 @@ const LoginScreen = ({navigation}: any) => {
   };
 
   const handleLogin = async () => {
-    setLoading(true)
+    setLoading(true);
     if (!validateForm()) return setLoading(false);
     try {
       const userData = await login(email, password); // ✅ Call login function
@@ -53,46 +54,55 @@ const LoginScreen = ({navigation}: any) => {
     } catch (error) {
       // Handle the error (e.g., show a message to the user)
       console.error('Login failed:', error);
-    }finally{
-      setLoading(false)
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#999"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      {errors.email && (
-        <Animatable.Text animation="shake" style={styles.errorText}>
-          {errors.email}
-        </Animatable.Text>
-      )}
+      <View
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          width: '100%',
+        }}>
         <TextInput
           style={styles.input}
-          placeholder="Password"
+          placeholder="Email"
           placeholderTextColor="#999"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={!showPassword}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
-        <TouchableOpacity
-          onPress={() => setShowPassword(prev => !prev)}
-          style={styles.eyeIcon}>
-          <Icon
-            name={showPassword ? 'eye-slash' : 'eye'}
-            size={20}
-            color="#999"
+        {errors.email && (
+          <Animatable.Text animation="shake" style={styles.errorText}>
+            {errors.email}
+          </Animatable.Text>
+        )}
+        <View style={{display: 'flex', flexDirection: 'row', width: '90%'}}>
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#999"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
           />
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setShowPassword(prev => !prev)}
+            style={styles.eyeIcon}>
+            <Icon
+              name={showPassword ? 'eye-slash' : 'eye'}
+              size={20}
+              color="#999"
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {errors.password && (
         <Animatable.Text animation="shake" style={styles.errorText}>
@@ -102,8 +112,7 @@ const LoginScreen = ({navigation}: any) => {
       <TouchableOpacity
         style={[styles.button, loading && styles.disabledButton]}
         onPress={handleLogin}
-        disabled={loading}
-      >
+        disabled={loading}>
         {loading ? (
           <ActivityIndicator size="small" color="#1c1c1e" />
         ) : (
@@ -118,17 +127,13 @@ const LoginScreen = ({navigation}: any) => {
           onPress={() => navigation.navigate('Signup')}>
           Sign up
         </Text>
-
-        
       </Text>
-       <TouchableOpacity
+      <TouchableOpacity
         onPress={() => setIsForgotVisible(true)}
-        style={{ alignSelf: 'center', marginBottom: 10,marginTop:10 }}
-      >
-        <Text style={{ color: '#FFD700', fontSize: 14 }}>Forgot Password?</Text>
+        style={{alignSelf: 'center', marginBottom: 10, marginTop: 10}}>
+        <Text style={{color: '#FFD700', fontSize: 14}}>Forgot Password?</Text>
       </TouchableOpacity>
-      
-       <ForgotPasswordModal
+      <ForgotPasswordModal
         visible={isForgotVisible}
         onClose={() => setIsForgotVisible(false)}
       />
@@ -191,7 +196,7 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 10,
   },
-    disabledButton: {
+  disabledButton: {
     backgroundColor: '#999',
     height: 59,
   },

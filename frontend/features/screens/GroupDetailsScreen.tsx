@@ -847,7 +847,7 @@ const renderHeader = () => (
                   ))
                 )}
                 <Button onPress={() => setShowJoinRequests(false)} style={styles.closeRequestsButton}>
-                  <Text>Close</Text>
+                  <Text style={{color:'white'}}>Close</Text>
                 </Button>
               </ScrollView>
             </View>
@@ -1591,6 +1591,7 @@ headerContent: {
   closeRequestsButton: {
     marginTop: 20,
     backgroundColor: "#8B5CF6",
+    color:'white',
   },
   taskDaysContainer: {
     flexDirection: "row",

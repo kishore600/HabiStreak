@@ -14,7 +14,7 @@ type SearchContextType = {
   query: string;
   setQuery: (query: string) => void;
   selectedType: 'user' | 'group' | null;
-  setSelectedType: (type: 'user' | 'group' | null) => void;
+  setSelectedType: any;
   results: ResultType[];
   search: () => Promise<void>;
   loading: boolean;
