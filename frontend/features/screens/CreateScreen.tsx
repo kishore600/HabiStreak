@@ -261,6 +261,7 @@ const CreateScreen = () => {
 
   const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+
   const renderTabContent = () => {
     // Validation functions for each tab
     const isTab0Complete = () => {
@@ -725,10 +726,6 @@ backgroundColor: '#2a2a2a',
     color: '#fff',
     
   },
-  inputError: {
-    borderColor: 'red',
-    borderWidth: 1,
-  },
   continueButtonInline: {
     backgroundColor: '#1e90ff',
     padding: 16,
@@ -743,10 +740,6 @@ backgroundColor: '#2a2a2a',
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
-  },
-  imagePickerError: {
-    borderColor: 'red',
-    borderWidth: 1,
   },
   header: {
     flexDirection: 'row',
@@ -958,6 +951,14 @@ backgroundColor: '#2a2a2a',
     color: '#ff6b6b',
     fontSize: 12,
     fontStyle: 'italic',
+  },
+  inputError: {
+    // borderColor: '',
+    // borderWidth: 2,
+  },
+  imagePickerError: {
+    // borderColor: '#ff4444',
+    // borderWidth: 2,
   },
   validationText: {
     color: '#ff6b6b',
