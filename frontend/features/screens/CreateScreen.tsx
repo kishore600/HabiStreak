@@ -261,12 +261,6 @@ const CreateScreen = () => {
 
   const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  const renderCarouselItem = ({item}: {item: any}) => (
-    <View style={styles.carouselItem}>
-      <Image source={item} style={styles.carouselImage} resizeMode="contain" />
-    </View>
-  );
-
   const renderTabContent = () => {
     // Validation functions for each tab
     const isTab0Complete = () => {
@@ -291,83 +285,6 @@ const CreateScreen = () => {
       case 0:
         return (
           <View style={styles.tabContent}>
-            <View style={styles.heroSection}>
-              <FlatList
-                ref={flatListRef}
-                data={carouselImages}
-                renderItem={renderCarouselItem}
-                keyExtractor={(item, index) => index.toString()}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={event => {
-                  const index = Math.round(
-                    event.nativeEvent.contentOffset.x / width,
-                  );
-                  setCurrentImageIndex(index);
-                }}
-                style={styles.carousel}
-              />
-            </View>
-
-            <TextInput
-              placeholder="Squad Name *"
-              value={groupTitle}
-              onChangeText={setGroupTitle}
-              style={[
-                styles.input,
-                groupTitle.trim() === '' && styles.inputError,
-              ]}
-              placeholderTextColor="#666"
-            />
-
-            <TextInput
-              placeholder="Squad Goal *"
-              value={goal}
-              onChangeText={setGoal}
-              style={[styles.input, goal.trim() === '' && styles.inputError]}
-              placeholderTextColor="#666"
-              multiline
-            />
-
-            <TouchableOpacity
-              onPress={nextTab}
-              style={[
-                styles.continueButtonInline,
-                !isTab0Complete() && styles.disabledButton,
-              ]}
-              disabled={!isTab0Complete()}>
-              <Text style={styles.continueButtonText}>CREATE A NEW SQUAD</Text>
-            </TouchableOpacity>
-          </View>
-        );
-
-      case 1:
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>SQUAD PROFILE IMAGE *</Text>
-
-            <TouchableOpacity
-              onPress={handlePickProfileImage}
-              style={[
-                styles.circularImagePicker,
-                !profileImageUri && styles.imagePickerError,
-              ]}>
-              {profileImageUri ? (
-                <Image
-                  source={{uri: profileImageUri}}
-                  style={styles.circularImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={styles.circularPlaceholder}>
-                  <Text style={styles.plusIcon}>+</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <Text style={styles.tabTitle}>BANNER IMAGE *</Text>
-
             <TouchableOpacity
               onPress={handlePickBannerImage}
               style={[
@@ -390,18 +307,120 @@ const CreateScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
+              onPress={handlePickProfileImage}
+              style={[
+                styles.circularImagePicker,
+                !profileImageUri && styles.imagePickerError,
+              ]}>
+              {profileImageUri ? (
+                <Image
+                  source={{uri: profileImageUri}}
+                  style={styles.circularImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.circularPlaceholder}>
+                  <Text style={styles.plusIcon}>+</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+<View style={{
+  marginTop:70
+}}>
+
+            <TextInput
+              placeholder="Squad Name *"
+              value={groupTitle}
+              onChangeText={setGroupTitle}
+              style={[
+                styles.input,
+                groupTitle.trim() === '' && styles.inputError,
+              ]}
+              placeholderTextColor="#666"
+            />
+
+            <TextInput
+              placeholder="Squad Goal *"
+              value={goal}
+              onChangeText={setGoal}
+              style={[styles.input, goal.trim() === '' && styles.inputError]}
+              placeholderTextColor="#666"
+              multiline
+            />
+</View>
+
+            <TouchableOpacity
               onPress={nextTab}
               style={[
                 styles.continueButtonInline,
-                !isTab1Complete() && styles.disabledButton,
+                (!isTab0Complete() ||  !isTab1Complete()) && styles.disabledButton,
               ]}
-              disabled={!isTab1Complete()}>
-              <Text style={styles.continueButtonText}>CONTINUE</Text>
+              disabled={!isTab0Complete() || !isTab1Complete }>
+              <Text style={styles.continueButtonText}>CREATE A NEW SQUAD</Text>
             </TouchableOpacity>
           </View>
         );
 
-      case 2:
+      // case 1:
+      //   return (
+      //     <View style={styles.tabContent}>
+      //       <Text style={styles.tabTitle}>SQUAD PROFILE IMAGE *</Text>
+
+      //       <TouchableOpacity
+      //         onPress={handlePickProfileImage}
+      //         style={[
+      //           styles.circularImagePicker,
+      //           !profileImageUri && styles.imagePickerError,
+      //         ]}>
+      //         {profileImageUri ? (
+      //           <Image
+      //             source={{uri: profileImageUri}}
+      //             style={styles.circularImage}
+      //             resizeMode="cover"
+      //           />
+      //         ) : (
+      //           <View style={styles.circularPlaceholder}>
+      //             <Text style={styles.plusIcon}>+</Text>
+      //           </View>
+      //         )}
+      //       </TouchableOpacity>
+
+      //       <Text style={styles.tabTitle}>BANNER IMAGE *</Text>
+
+      //       <TouchableOpacity
+      //         onPress={handlePickBannerImage}
+      //         style={[
+      //           styles.bannerImagePicker,
+      //           !bannerImageUri && styles.imagePickerError,
+      //         ]}>
+      //         {bannerImageUri ? (
+      //           <Image
+      //             source={{uri: bannerImageUri}}
+      //             style={styles.bannerImage}
+      //             resizeMode="cover"
+      //           />
+      //         ) : (
+      //           <View style={styles.bannerPlaceholder}>
+      //             <Text style={styles.placeholderText}>
+      //               Select Banner Image
+      //             </Text>
+      //           </View>
+      //         )}
+      //       </TouchableOpacity>
+
+      //       <TouchableOpacity
+      //         onPress={nextTab}
+      //         style={[
+      //           styles.continueButtonInline,
+      //           !isTab1Complete() && styles.disabledButton,
+      //         ]}
+      //         disabled={!isTab1Complete()}>
+      //         <Text style={styles.continueButtonText}>CONTINUE</Text>
+      //       </TouchableOpacity>
+      //     </View>
+      //   );
+
+      case 1:
         return (
           <View style={styles.tabContent}>
             <Text style={styles.tabTitle}>CREATE TASKS</Text>
@@ -539,7 +558,7 @@ const CreateScreen = () => {
           </View>
         );
 
-      case 3:
+      case 2:
         return (
           <View style={styles.tabContent}>
             <Text style={styles.tabTitle}>FINALIZE SQUAD</Text>
@@ -572,10 +591,13 @@ const CreateScreen = () => {
               ]}
               placeholderStyle={{color: '#666'}}
               selectedTextStyle={{color: '#fff'}}
+      activeColor="#1DA1F2" // Light blue background for selected items
+
+              // eslint-disable-next-line react-native/no-inline-styles
               inputSearchStyle={{
                 height: 40,
                 fontSize: 16,
-                backgroundColor: '#2a2a2a',
+                backgroundColor: '',
                 color: '#fff',
               }}
               data={categoryOptions}
@@ -588,7 +610,7 @@ const CreateScreen = () => {
               onChange={item => {
                 setSelectedCategories(item);
               }}
-              selectedStyle={{borderRadius: 12, backgroundColor: '#444'}}
+              selectedStyle={{borderRadius: 12, backgroundColor: '#1DA1F2'}}
               maxSelect={10}
             />
 
@@ -617,14 +639,14 @@ const CreateScreen = () => {
         <TouchableOpacity onPress={prevTab} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <View style={styles.progressDots}>
+        {/* <View style={styles.progressDots}>
           {[0, 1, 2, 3].map(index => (
             <View
               key={index}
               style={[styles.dot, currentTab === index && styles.activeDot]}
             />
           ))}
-        </View>
+        </View> */}
         <View style={styles.placeholder} />
       </View>
 
@@ -639,6 +661,92 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
+  },
+  tabContent: {
+    flex: 1,
+    // backgroundColor: '#000', // dark theme
+    paddingVertical: 20,
+  },
+  bannerImagePicker: {
+    height: 150,
+    width: '100%',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+    width: '100%',
+  },
+  circularImagePicker: {
+    position: 'absolute',
+    top: 100,
+    left: 20,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#2a2a2a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#000',
+  },
+  circularImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 50,
+  },
+  circularPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plusIcon: {
+    fontSize: 36,
+    color: '#ccc',
+  },
+
+  input: {
+backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 15,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#444',
+    color: '#fff',
+    
+  },
+  inputError: {
+    borderColor: 'red',
+    borderWidth: 1,
+  },
+  continueButtonInline: {
+    backgroundColor: '#1e90ff',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  disabledButton: {
+    backgroundColor: '#555',
+  },
+  continueButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  imagePickerError: {
+    borderColor: 'red',
+    borderWidth: 1,
   },
   header: {
     flexDirection: 'row',
@@ -680,10 +788,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20,
   },
-  tabContent: {
-    flex: 1,
-    paddingVertical: 20,
-  },
+
   tabTitle: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -723,60 +828,7 @@ const styles = StyleSheet.create({
   activeCarouselDot: {
     backgroundColor: '#8B5CF6',
   },
-  input: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#444',
-    color: '#fff',
-  },
-  circularImagePicker: {
-    alignSelf: 'center',
-    marginBottom: 30,
-  },
-  circularImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  circularPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#2a2a2a',
-    borderWidth: 2,
-    borderColor: '#555',
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  plusIcon: {
-    fontSize: 40,
-    color: '#666',
-  },
-  bannerImagePicker: {
-    height: 100,
-    marginBottom: 20,
-  },
-  bannerImage: {
-    width: '100%',
-    height: 100,
-    borderRadius: 8,
-  },
-  bannerPlaceholder: {
-    width: '100%',
-    height: 100,
-    backgroundColor: '#2a2a2a',
-    borderWidth: 2,
-    borderColor: '#555',
-    borderStyle: 'dashed',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
   placeholderText: {
     color: '#666',
     fontSize: 16,
@@ -792,6 +844,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: '#444',
+    // maxHeight:'70%'
+    // height:'10%'
   },
   daysContainer: {
     flexDirection: 'row',
@@ -862,26 +916,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: '#fff',
   },
-  continueButtonInline: {
-    backgroundColor: '#8B5CF6',
-    borderRadius: 25,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  continueButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  disabledButton: {
-    backgroundColor: '#666',
-  },
+
   noTasksContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
+    // paddingVertical: 40,
   },
   noTasksText: {
     color: '#666',
@@ -918,14 +958,6 @@ const styles = StyleSheet.create({
     color: '#ff6b6b',
     fontSize: 12,
     fontStyle: 'italic',
-  },
-  inputError: {
-    // borderColor: '',
-    borderWidth: 2,
-  },
-  imagePickerError: {
-    // borderColor: '#ff4444',
-    // borderWidth: 2,
   },
   validationText: {
     color: '#ff6b6b',

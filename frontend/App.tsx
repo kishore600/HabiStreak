@@ -27,12 +27,12 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // Enhanced Custom Tab Bar with Animations
-const CustomTabBar = ({state, descriptors, navigation}: any) => {
+const CustomTabBar = ({state, descriptors, navigation}:any) => {
   const [animatedValues] = useState(
     state.routes.map(() => new Animated.Value(0)),
   );
 
-  const animateTab = (index: number, isFocused: boolean) => {
+  const animateTab = (index:any, isFocused:any) => {
     Animated.spring(animatedValues[index], {
       toValue: isFocused ? 1 : 0,
       useNativeDriver: true,
@@ -42,7 +42,7 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
   };
 
   React.useEffect(() => {
-    state.routes.forEach((_: any, index: number) => {
+    state.routes.forEach((_, index) => {
       animateTab(index, state.index === index);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,7 +51,7 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
   return (
     <View style={styles.tabBarContainer}>
       <View style={styles.tabBar}>
-        {state.routes.map((route: any, index: number) => {
+        {state.routes.map((route, index) => {
           const {options} = descriptors[route.key];
           const label =
             options.tabBarLabel !== undefined
@@ -75,7 +75,7 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
           };
 
           // Icon mapping with better icons
-          const getIconName = (routeName: string) => {
+          const getIconName = (routeName) => {
             switch (routeName) {
               case 'Home':
                 return 'home';
@@ -148,6 +148,7 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
     </View>
   );
 };
+
 
 const TabNavigator = () => {
   return (
@@ -292,6 +293,7 @@ const AppNavigator = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
   tabBarContainer: {
     position: 'absolute',
@@ -299,13 +301,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'transparent',
-    // height:'10%'
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#111',
-    borderRadius: 30,
-    height:75,
+    // borderRadius: 30,
+    height: 75,
     shadowOffset: {
       width: 0,
       height: -4,
@@ -331,7 +332,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   iconContainer: {
-    backgroundColor: '#8B5CF6',
+    // backgroundColor: '#8B5CF6',
     borderRadius: 60,
     padding: 8,
     marginBottom: 4,
@@ -347,14 +348,13 @@ const styles = StyleSheet.create({
     color: '#8B5CF6',
     fontWeight: '600',
   },
-  activeIndicator: {
-    position: 'absolute',
-    bottom: 19,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#8B5CF6',
-  },
+  // activeIndicator: {
+  //   position: 'absolute',
+  //   bottom: 19,
+  //   width: 6,
+  //   height: 6,
+  //   borderRadius: 3,
+  //   backgroundColor: '#8B5CF6',
+  // },
 });
-
 export default AppNavigator;

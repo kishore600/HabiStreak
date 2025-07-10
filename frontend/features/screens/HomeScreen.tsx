@@ -17,6 +17,7 @@ import {useGroup} from '../context/GroupContext';
 import ForceUpdateCheck from '../components/ForceUpdateCheck';
 import React from 'react';
 import {useAuth} from '../context/AuthContext';
+import LinearGradient from 'react-native-linear-gradient';
 
 const {height: screenHeight, width: screenWidth} = Dimensions.get('window');
 
@@ -96,9 +97,12 @@ const HomeScreen = ({navigation}: any) => {
           />
 
           {/* Gradient Overlay */}
-          <View style={styles.gradientOverlay} />
 
           {/* Bottom Content */}
+          <LinearGradient
+            colors={['transparent', 'rgb(0, 0, 0)']}
+            style={styles.gradientOverlay}
+          />
           <View style={styles.bottomContent}>
             {/* Group Title */}
             <View>
@@ -108,6 +112,7 @@ const HomeScreen = ({navigation}: any) => {
                   style={styles.adminImage}
                   resizeMode="cover"
                 />
+
                 <Text style={styles.groupTitle}>
                   {item.title || "Kishore's Gym club"}
                 </Text>
@@ -327,6 +332,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
     marginBottom: 10,
+    marginLeft:-10
   },
   flatListContent: {
     flexGrow: 0,
@@ -361,16 +367,17 @@ const styles = StyleSheet.create({
     // Android shadow
     elevation: 8,
   },
-
   gradientOverlay: {
     position: 'absolute',
-    top: 0,
+    bottom: 0,
     left: 0,
-    width: '100%',
-    height: '100%',
-    // backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    top: '27.8%',
+    right: 0,
+    height: '50%',
+    width: '100%', // adjust based on how tall the shadow should be
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
   },
-
   // Top Right Section
   topRightSection: {
     position: 'absolute',
