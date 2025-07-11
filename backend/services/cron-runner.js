@@ -170,8 +170,7 @@ async function runStreakDeductionJob() {
     runStreakDeductionJob(),
   ]);
 
-  mongoose.connection.close(() => {
-    console.log("🔌 MongoDB connection closed.");
-    process.exit(0);
-  });
+await mongoose.connection.close();
+  console.log("🔌 MongoDB connection closed.");
+  process.exit(0);
 })();
