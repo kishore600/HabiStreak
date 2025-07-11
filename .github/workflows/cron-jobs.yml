@@ -3,7 +3,7 @@ name: Run Cron Jobs
 on:
   schedule:
     - cron: '*/15 * * * *' 
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   cron:
@@ -19,7 +19,9 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
+        working-directory: ./HabiStreak
         run: npm install
 
       - name: Run cron jobs
+        working-directory: ./HabiStreak
         run: node run-cron-jobs.js
