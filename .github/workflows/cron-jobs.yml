@@ -19,9 +19,9 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        working-directory: ./HabiStreak
+        working-directory: ./HabiStreak/backend
         run: npm install
 
       - name: Run cron jobs
-        working-directory: ./HabiStreak
+        working-directory: ./HabiStreak/backend
         run: node run-cron-jobs.js
