@@ -5,12 +5,10 @@ const Group = require("../models/group.model.js");
 const { sendNotificationToTokens } = require("./fcmSender.js");
 
 async function runReminderJob() {
-  const now = moment().tz("Asia/Kolkata");
-  if (now.minute() === 0 && now.hour() % 2 === 0) {
-    console.log("⏰ Running 2-hour reminder job");
+  
+   
     await sendReminderNotifications();
-  } else {
-    console.log("ℹ️ Skipping reminder job, not time yet");
+
   }
 }
 
