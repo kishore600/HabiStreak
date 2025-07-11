@@ -9,7 +9,7 @@ async function runReminderJob() {
    
     await sendReminderNotifications();
 
-  }
+  
 }
 
 async function runWeeklyResetJob() {
