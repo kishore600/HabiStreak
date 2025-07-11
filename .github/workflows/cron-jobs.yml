@@ -2,7 +2,7 @@ name: Run Cron Jobs
 
 on:
   schedule:
-    - cron: '*/15 * * * *' 
+    - cron: '*/15 * * * *'  # Every 15 minutes
   workflow_dispatch:
 
 jobs:
@@ -19,9 +19,9 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        working-directory: ./HabiStreak/backend
+        working-directory: ./backend
         run: npm install
 
       - name: Run cron jobs
-        working-directory: ./HabiStreak/backend
-        run: node run-cron-jobs.js
+        working-directory: ./backend
+        run: node services/cron-runner.js
