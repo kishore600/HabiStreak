@@ -6,12 +6,12 @@ const { sendNotificationToTokens } = require("./fcmSender.js");
 
 async function runReminderJob() {
   const now = moment().tz("Asia/Kolkata");
-  if (now.minute() === 0 && now.hour() % 2 === 0) {
+  // if (now.minute() === 0 && now.hour() % 2 === 0) {
     console.log("⏰ Running 2-hour reminder job");
     await sendReminderNotifications();
-  } else {
-    console.log("ℹ️ Skipping reminder job, not time yet");
-  }
+  // } else {
+  //   console.log("ℹ️ Skipping reminder job, not time yet");
+  // }
 }
 
 async function runWeeklyResetJob() {
@@ -134,6 +134,7 @@ async function runStreakDeductionJob() {
 
 // Main runner
 (async () => {
+
   await Promise.all([
     runReminderJob(),
     runWeeklyResetJob(),
