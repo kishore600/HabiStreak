@@ -30,7 +30,7 @@ async function runStreakDeductionJob() {
   try {
     const groups = await Group.find({}).populate("todo");
     for (const group of groups) {
-      console.log(group.todo,group)
+      // console.log(group.todo,group)
       const todo = group.todo;
       if (!todo) continue;
 
