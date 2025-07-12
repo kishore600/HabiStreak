@@ -41,7 +41,7 @@ async function runReminderJob() {
 // ---------------------- JOB 2: Weekly Reset (Sunday 11 PM per user) ----------------------
 async function runWeeklyResetJob() {
   const nowUtc = moment.utc();
-  if (nowUtc.minute() === 0) {
+  // if (nowUtc.minute() === 0) {
     console.log("🔁 Weekly reset scan...");
 
     try {
@@ -92,13 +92,13 @@ async function runWeeklyResetJob() {
     } catch (err) {
       console.error("❌ Error in weekly reset:", err.message);
     }
-  }
+  // }
 }
 
 // ---------------------- JOB 3: Streak Deduction ----------------------
 async function runStreakDeductionJob() {
   const now = moment.utc();
-  if (now.minute() % 15 === 0) {
+  // if (now.minute() % 15 === 0) {
     console.log("🕒 Running streak deduction job...");
 
     try {
@@ -113,7 +113,7 @@ async function runStreakDeductionJob() {
           if (!user || !user.timezone) continue;
 
           const userNow = now.clone().tz(user.timezone);
-          if (userNow.hour() !== 23) continue;
+          // if (userNow.hour() !== 23) continue;
 
           const today = userNow.format("YYYY-MM-DD");
           const userDateKey = `${user._id}_${today}`;
@@ -159,7 +159,7 @@ async function runStreakDeductionJob() {
     } catch (err) {
       console.error("❌ Error in streak deduction:", err.message);
     }
-  }
+  // }
 }
 
 // ---------------------- Main Runner ----------------------
