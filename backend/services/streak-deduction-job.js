@@ -5,6 +5,7 @@ const moment = require("moment-timezone");
 const { sendNotificationToTokens } = require("./fcmSender.js");
 const User = require("../models/user.Model.js");
 const Group = require("../models/group.model.js");
+const Todo = require("../models/todo.model.js");
 
 dotenv.config();
 mongoose.set("strictQuery", false);
@@ -28,8 +29,8 @@ async function runStreakDeductionJob() {
 
   try {
     const groups = await Group.find({}).populate("todo");
-
     for (const group of groups) {
+      console.log(group.todo,group)
       const todo = group.todo;
       if (!todo) continue;
 
