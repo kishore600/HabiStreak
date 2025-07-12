@@ -57,7 +57,7 @@ async function runWeeklyResetJob() {
         const formattedTime = userNow.format("YYYY-MM-DD HH:mm:ss");
         console.log(`🧭 ${user.name}'s time (${user.timezone}): ${formattedTime}`);
 
-        if (day === 0 && hour === 23) {
+        // if (day === 0 && hour === 23) {
           console.log(`🔄 Resetting stats for ${user.name}`);
 
           const resetStats = {
@@ -88,7 +88,7 @@ async function runWeeklyResetJob() {
           await user.save();
           console.log(`✅ Weekly stats reset for ${user.name}`);
         }
-      }
+      // }
     } catch (err) {
       console.error("❌ Error in weekly reset:", err.message);
     }
