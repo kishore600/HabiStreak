@@ -2,12 +2,27 @@ name: Run Cron Jobs
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Every 15 minutes
+    - cron: '*/15 * * * *'  # every 15 minutes
   workflow_dispatch:
 
 jobs:
   cron:
     runs-on: ubuntu-latest
+
+    env:
+      FIREBASE_TYPE: ${{ secrets.FIREBASE_TYPE }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
+      FIREBASE_AUTH_URI: ${{ secrets.FIREBASE_AUTH_URI }}
+      FIREBASE_TOKEN_URI: ${{ secrets.FIREBASE_TOKEN_URI }}
+      FIREBASE_AUTH_PROVIDER_X509_CERT_URL: ${{ secrets.FIREBASE_AUTH_PROVIDER_X509_CERT_URL }}
+      FIREBASE_CLIENT_X509_CERT_URL: ${{ secrets.FIREBASE_CLIENT_X509_CERT_URL }}
+      FIREBASE_UNIVERSE_DOMAIN: ${{ secrets.FIREBASE_UNIVERSE_DOMAIN }}
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
     steps:
       - name: Checkout repo
@@ -19,9 +34,9 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        working-directory: ./backend
+        working-directory: backend
         run: npm install
 
       - name: Run cron jobs
-        working-directory: ./backend
+        working-directory: backend
         run: node services/cron-runner.js
